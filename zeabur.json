@@ -1,0 +1,5 @@
+{
+  "name": "孔夫子 ISBN 查价",
+  "description": "批量查 ISBN 在孔夫子旧书网的最低进货价",
+  "startCommand": "python app.py"
+}
