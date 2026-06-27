@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- 书本形状（白色简约风格） -->
+  <g transform="translate(256,256)">
+    <rect x="-120" y="-130" width="240" height="260" rx="16" fill="white" opacity="0.15"/>
+    <rect x="-110" y="-120" width="220" height="240" rx="12" fill="white"/>
+    <!-- 书脊（中线） -->
+    <rect x="-3" y="-120" width="6" height="240" fill="#2563eb" opacity="0.4"/>
+    <!-- 书名标题线 -->
+    <rect x="-75" y="-78" width="120" height="6" rx="3" fill="#2563eb" opacity="0.6"/>
+    <rect x="-75" y="-50" width="90" height="6" rx="3" fill="#2563eb" opacity="0.4"/>
+    <rect x="-75" y="-22" width="100" height="6" rx="3" fill="#2563eb" opacity="0.3"/>
+    <!-- 查价符号 ¥ -->
+    <text x="0" y="70" font-family="system-ui, -apple-system, sans-serif" font-size="80" font-weight="700" text-anchor="middle" fill="#2563eb" opacity="0.15">¥</text>
+  </g>
+</svg>
