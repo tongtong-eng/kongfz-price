@@ -1,0 +1,7 @@
+name = "kongfz-price"
+main = "worker.js"
+compatibility_date = "2026-06-01"
+
+[[kv_namespaces]]
+binding = "KONGFZ_PRICE"
+id = ""

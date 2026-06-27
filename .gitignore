@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+data/
+!.gitkeep
+.env
+kongfz_price_*.csv
