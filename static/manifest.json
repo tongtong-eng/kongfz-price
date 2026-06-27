@@ -1,0 +1,20 @@
+{
+  "name": "孔夫子旧书网 · ISBN 查价",
+  "short_name": "孔夫子查价",
+  "description": "多 ISBN 批量查询孔夫子旧书网最低进货价，支持一键加购",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f1f5f9",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/static/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["shopping", "books", "utilities"],
+  "lang": "zh-CN"
+}
