@@ -161,16 +161,40 @@ def query_isbn(isbn, cookie_str, quality_filter=""):
     }
 
 
+def preprocess_image(img):
+    """对图片进行预处理，提升 OCR 准确率"""
+    from PIL import ImageFilter, ImageOps
+    img = img.convert("L")
+    img = ImageOps.autocontrast(img, cutoff=5)
+    w, h = img.size
+    if w < 800 or h < 200:
+        scale = max(800 / w, 200 / h, 2)
+        img = img.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
+    img = img.filter(ImageFilter.SHARPEN)
+    img = img.point(lambda x: 0 if x < 180 else 255)
+    return img
+
+
 def ocr_image(file_bytes, filename=""):
-    """OCR 识别图片中的文字，提取 ISBN"""
+    """OCR 识别图片中的文字，提取 ISBN（Tesseract + 预处理优化）"""
     try:
+        import pytesseract
+
         img = Image.open(io.BytesIO(file_bytes))
-        text = pytesseract.image_to_string(img, lang="chi_sim+eng")
+        img = preprocess_image(img)
+
+        custom_config = r"--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789ISBN"
+        text = pytesseract.image_to_string(img, lang="chi_sim+eng", config=custom_config)
+        if not text.strip():
+            custom_config = r"--oem 3 --psm 6 digits"
+            text = pytesseract.image_to_string(img, lang="eng", config=custom_config)
+
         if not text.strip():
             return {"isbns": [], "raw_text": "", "error": "未识别到文字"}
+
         isbns = set()
         for line in text.split("\n"):
-            cleaned = line.strip().replace("-", "").replace(" ", "").replace("　", "")
+            cleaned = line.strip().replace("-", "").replace(" ", "").replace("　", "").replace("I", "1").replace("S", "5").replace("B", "8").replace("O", "0")
             matches = re.findall(r"\b\d{10,13}\b", cleaned)
             for m in matches:
                 if 10 <= len(m) <= 13:
@@ -503,9 +527,10 @@ if __name__ == "__main__":
 
     try:
         pytesseract.get_tesseract_version()
-        print("🔍 Tesseract OCR 可用")
+        print("🔍 Tesseract OCR 可用（预处理优化）")
     except Exception:
         print("⚠️ Tesseract OCR 未安装，图片识别功能不可用")
+        print("   brew install tesseract tesseract-lang")
 
     server = http.server.HTTPServer(("0.0.0.0", PORT), Handler)
     print(f"""
