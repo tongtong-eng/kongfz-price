@@ -179,8 +179,23 @@ tr:active td{background:#f1f5f9}
       </label>
       <button class="btn btn-primary" id="btnQuery">🔍 查最低价</button>
       <button class="btn btn-outline" id="btnClear" style="padding:12px 16px">清空</button>
+      <button class="btn btn-outline" id="btnScan" onclick="scanBarcode()" style="display:none">📷 扫码</button>
     </div>
     <div id="status">就绪</div>
+
+    <!-- OCR 图片上传 -->
+    <div id="ocrArea" style="margin-top:12px;border:2px dashed #cbd5e1;border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:all .2s"
+         ondragover="this.style.borderColor='#2563eb';this.style.background='#eff6ff';return false"
+         ondragleave="this.style.borderColor='#cbd5e1';this.style.background='';return false"
+         ondrop="handleOcrDrop(event);return false"
+         onclick="document.getElementById('ocrInput').click()">
+      <div style="font-size:1.5rem;margin-bottom:4px">📷</div>
+      <div style="font-size:.85rem;color:#64748b">点击上传或拖拽书单截图，自动识别 ISBN</div>
+      <div style="font-size:.72rem;color:#94a3b8;margin-top:4px">支持 JPG / PNG / HEIC</div>
+      <input type="file" id="ocrInput" accept="image/*" multiple
+             style="display:none" onchange="handleOcrFiles(this.files)">
+      <div id="ocrStatus" style="display:none;margin-top:8px;font-size:.82rem"></div>
+    </div>
   </div>
 
   <!-- Cookie 状态条 -->
@@ -384,43 +399,60 @@ btnQuery.onclick = function() {
   btnQuery.disabled = true;
   emptyEl.style.display = 'none';
   resultsEl.innerHTML = '';
-  setStatus('正在查询 ' + isbns.length + ' 个...', 'loading');
+  setStatus('⏳ 并行查询 ' + isbns.length + ' 本...（并发 6）', 'loading');
+
+  // 进度摘要
+  var progressHtml = '<div class="summary">';
+  progressHtml += '<div class="s-card s-blue"><div class="n">0/' + isbns.length + '</div><div class="l">进度</div></div>';
+  progressHtml += '<div class="s-card s-green"><div class="n">0</div><div class="l">查到</div></div>';
+  progressHtml += '<div class="s-card s-amber"><div class="n">0</div><div class="l">异常</div></div>';
+  progressHtml += '</div>';
+  resultsEl.innerHTML = progressHtml;
 
   var allData = [];
+  var okCount = 0, failCount = 0;
+  var CONCURRENCY = 6;
+  var idx = 0, pending = 0, doneCount = 0;
 
-  function doNext(idx) {
-    if (idx >= isbns.length) {
-      showResults(allData);
-      isRunning = false;
-      btnQuery.disabled = false;
-      return;
+  function updateProgress() {
+    var cards = resultsEl.querySelectorAll('.summary .s-card .n');
+    if (cards.length >= 3) {
+      cards[0].textContent = doneCount + '/' + isbns.length;
+      cards[1].textContent = okCount;
+      cards[2].textContent = failCount;
     }
-    setStatus('查询中 (' + (idx+1) + '/' + isbns.length + '): ' + isbns[idx], 'loading');
-    queryIsbn(isbns[idx]).then(function(data) {
-      allData.push(data);
-      showPartial(allData, isbns.length);
-      if (idx + 1 < isbns.length) {
-        setTimeout(function() { doNext(idx + 1); }, 1500);
-      } else {
-        showResults(allData);
-        isRunning = false;
-        btnQuery.disabled = false;
-      }
-    });
   }
-  doNext(0);
-};
 
-function showPartial(data, total) {
-  var ok = 0, fail = 0;
-  data.forEach(function(r) { if (r.error) fail++; else ok++; });
-  resultsEl.innerHTML =
-    '<div class="summary">' +
-    '<div class="s-card s-blue"><div class="n">' + data.length + '/' + total + '</div><div class="l">进度</div></div>' +
-    '<div class="s-card s-green"><div class="n">' + ok + '</div><div class="l">查到</div></div>' +
-    '<div class="s-card s-amber"><div class="n">' + fail + '</div><div class="l">异常</div></div>' +
-    '</div>';
-}
+  function tryNext() {
+    while (pending < CONCURRENCY && idx < isbns.length) {
+      var i = idx++;
+      pending++;
+      (function(i) {
+        setStatus('⏳ 查询 ' + (i+1) + '/' + isbns.length + ': ' + isbns[i], 'loading');
+        queryIsbn(isbns[i]).then(function(data) {
+          allData.push(data);
+          doneCount++;
+          pending--;
+          if (data.cheapest) okCount++;
+          if (data.error) failCount++;
+          updateProgress();
+          if (doneCount >= isbns.length) {
+            lastResults = allData;
+            showResults(allData);
+            isRunning = false;
+            btnQuery.disabled = false;
+            var okTotal = allData.filter(function(r) { return !r.error; }).length;
+            setStatus('✅ 查询完成！共 ' + allData.length + ' 本，查到 ' + okTotal + ' 本', 'done');
+          } else {
+            tryNext();
+          }
+        });
+      })(i);
+    }
+  }
+
+  tryNext();
+};
 
 function esc(s) { return (s || '').replace(/[&<>]/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
 
@@ -900,6 +932,208 @@ function saveCookie() {
   })
   .catch(function() { msg.innerHTML = '❌ 网络错误'; msg.style.color = '#ef4444'; })
   .finally(function() { btn.disabled = false; btn.textContent = '💾 保存 Cookie'; });
+}
+
+// ── 智能粘贴提取 ISBN ──
+var pasteTimer = null;
+inputArea.addEventListener('paste', function() {
+  clearTimeout(pasteTimer);
+  pasteTimer = setTimeout(function() {
+    var text = inputArea.value;
+    var isbns = [];
+    var seen = {};
+    text.split(/[\s,，、\n\r]+/).forEach(function(s) {
+      s = s.trim().replace(/-/g, '').replace(/ /g, '');
+      if (/^\d{10,13}$/.test(s) && !seen[s]) { seen[s] = true; isbns.push(s); }
+    });
+    if (isbns.length > 0) {
+      var lines = text.split(/[\n\r]+/);
+      var ignored = 0;
+      lines.forEach(function(line) {
+        var c = line.trim().replace(/-/g, '').replace(/ /g, '');
+        if (c && !/^\d{10,13}$/.test(c)) ignored++;
+      });
+      showPasteConfirm(isbns.length, ignored);
+    }
+  }, 100);
+});
+
+function showPasteConfirm(count, ignored) {
+  var old = document.getElementById('pasteConfirm');
+  if (old) old.remove();
+
+  var bar = document.createElement('div');
+  bar.id = 'pasteConfirm';
+  bar.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;font-size:.85rem';
+  bar.innerHTML = '<span>📋</span><span style="flex:1">识别到 <strong>' + count + '</strong> 个 ISBN' +
+    (ignored > 0 ? '<span style="color:#94a3b8;font-size:.78rem;margin-left:6px">（忽略 ' + ignored + ' 行）</span>' : '') +
+    '</span>' +
+    '<button onclick="confirmPasteQuery()" style="padding:8px 18px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-weight:600;cursor:pointer;font-size:.85rem">🔍 立即查价</button>' +
+    '<button onclick="dismissPasteConfirm()" style="padding:8px 10px;border-radius:8px;border:none;background:transparent;color:#94a3b8;cursor:pointer;font-size:.8rem">✕</button>';
+
+  var card = inputArea.closest('.card');
+  if (card) card.appendChild(bar);
+}
+
+function confirmPasteQuery() {
+  var bar = document.getElementById('pasteConfirm');
+  if (bar) bar.remove();
+  btnQuery.click();
+}
+
+function dismissPasteConfirm() {
+  var bar = document.getElementById('pasteConfirm');
+  if (bar) bar.remove();
+}
+
+// ── OCR 图片识别 ISBN ──
+function handleOcrDrop(e) {
+  e.preventDefault();
+  document.getElementById('ocrArea').style.borderColor = '#cbd5e1';
+  document.getElementById('ocrArea').style.background = '';
+  var files = e.dataTransfer.files;
+  if (files.length > 0) handleOcrFiles(files);
+}
+
+function handleOcrFiles(files) {
+  var statusEl = document.getElementById('ocrStatus');
+  statusEl.style.display = 'block';
+  statusEl.innerHTML = '⏳ 正在识别 ' + files.length + ' 张图片...';
+  statusEl.style.color = '#2563eb';
+
+  var pending = files.length;
+  var allIsbns = [];
+
+  function processFile(i) {
+    if (i >= files.length) {
+      if (allIsbns.length > 0) {
+        statusEl.innerHTML = '✅ 识别到 <strong>' + allIsbns.length + '</strong> 个 ISBN，已填入输入框';
+        statusEl.style.color = '#059669';
+        var existing = inputArea.value.trim();
+        var newVal = allIsbns.join('\n');
+        inputArea.value = existing ? existing + '\n' + newVal : newVal;
+        showPasteConfirm(allIsbns.length, 0);
+      } else {
+        statusEl.innerHTML = '⚠️ 未识别到 ISBN，请检查图片是否清晰包含 ISBN 数字';
+        statusEl.style.color = '#d97706';
+      }
+      return;
+    }
+
+    var file = files[i];
+    if (!file.type.startsWith('image/')) {
+      pending--;
+      processFile(i + 1);
+      return;
+    }
+
+    var formData = new FormData();
+    formData.append('image', file);
+
+    fetch('/api/ocr', { method: 'POST', body: formData })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        pending--;
+        if (d.isbns && d.isbns.length > 0) {
+          d.isbns.forEach(function(isbn) {
+            if (allIsbns.indexOf(isbn) === -1) allIsbns.push(isbn);
+          });
+          statusEl.innerHTML = '⏳ 识别中... 已提取 ' + allIsbns.length + ' 个 ISBN（' + (files.length - pending) + '/' + files.length + '）';
+        }
+        processFile(i + 1);
+      })
+      .catch(function() {
+        pending--;
+        processFile(i + 1);
+      });
+  }
+
+  processFile(0);
+}
+
+// ── 手机扫码 ──
+(function() {
+  if ('BarcodeDetector' in window) {
+    document.getElementById('btnScan').style.display = '';
+  }
+})();
+
+function scanBarcode() {
+  if (!('BarcodeDetector' in window)) {
+    toast('当前浏览器不支持扫码功能');
+    return;
+  }
+  var btn = document.getElementById('btnScan');
+  btn.textContent = '⏳ 正在打开摄像头...';
+  btn.disabled = true;
+
+  try {
+    var barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'isbn_13', 'isbn_10'] });
+  } catch(e) {
+    btn.textContent = '📷 扫码';
+    btn.disabled = false;
+    toast('扫码初始化失败');
+    return;
+  }
+
+  var video = document.createElement('video');
+  video.style.cssText = 'max-width:100%;border-radius:10px;margin-top:10px';
+  video.setAttribute('playsinline', '');
+  video.setAttribute('autoplay', '');
+
+  var scanContainer = document.createElement('div');
+  scanContainer.id = 'scanContainer';
+  scanContainer.style.cssText = 'margin-top:8px;text-align:center';
+  scanContainer.appendChild(video);
+
+  var cancelBtn = document.createElement('button');
+  cancelBtn.textContent = '✕ 关闭扫码';
+  cancelBtn.style.cssText = 'margin-top:8px;padding:6px 16px;border-radius:6px;border:none;background:#e2e8f0;color:#64748b;cursor:pointer;font-size:.8rem';
+  cancelBtn.onclick = stopScan;
+  scanContainer.appendChild(cancelBtn);
+
+  var inputCard = inputArea.closest('.card');
+  if (inputCard) inputCard.appendChild(scanContainer);
+
+  var stream = null;
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(function(s) {
+      stream = s;
+      video.srcObject = s;
+      video.play();
+
+      var scanTimer = setInterval(function() {
+        if (!stream) { clearInterval(scanTimer); return; }
+        barcodeDetector.detect(video)
+          .then(function(barcodes) {
+            if (barcodes.length > 0) {
+              var code = barcodes[0].rawValue.replace(/-/g, '');
+              if (/^\d{10,13}$/.test(code)) {
+                stopScan();
+                inputArea.value = (inputArea.value.trim() ? inputArea.value.trim() + '\n' : '') + code;
+                toast('✅ 扫码成功: ' + code);
+                setTimeout(function() { btnQuery.click(); }, 500);
+              }
+            }
+          })
+          .catch(function() {});
+      }, 500);
+    })
+    .catch(function() {
+      btn.textContent = '📷 扫码';
+      btn.disabled = false;
+      toast('无法打开摄像头，请确保有摄像头权限');
+      stopScan();
+    });
+
+  function stopScan() {
+    if (stream) { stream.getTracks().forEach(function(t) { t.stop(); }); stream = null; }
+    var container = document.getElementById('scanContainer');
+    if (container) container.remove();
+    btn.textContent = '📷 扫码';
+    btn.disabled = false;
+  }
 }
 
 // 初始加载

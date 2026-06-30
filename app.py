@@ -22,6 +22,9 @@ from kongfz_cookie import (
 )
 import uuid
 import posixpath
+import io
+import pytesseract
+from PIL import Image
 
 # ── 配置 ──────────────────────────────────────────────────
 PORT = int(os.environ.get("PORT", 5000))
@@ -156,6 +159,29 @@ def query_isbn(isbn, cookie_str, quality_filter=""):
             "avg": round(sum(all_prices) / len(all_prices), 1),
         },
     }
+
+
+def ocr_image(file_bytes, filename=""):
+    """OCR 识别图片中的文字，提取 ISBN"""
+    try:
+        img = Image.open(io.BytesIO(file_bytes))
+        text = pytesseract.image_to_string(img, lang="chi_sim+eng")
+        if not text.strip():
+            return {"isbns": [], "raw_text": "", "error": "未识别到文字"}
+        isbns = set()
+        for line in text.split("\n"):
+            cleaned = line.strip().replace("-", "").replace(" ", "").replace("　", "")
+            matches = re.findall(r"\b\d{10,13}\b", cleaned)
+            for m in matches:
+                if 10 <= len(m) <= 13:
+                    isbns.add(m)
+        return {
+            "isbns": sorted(isbns),
+            "raw_text": text.strip()[:500],
+            "image_count": 1,
+        }
+    except Exception as e:
+        return {"isbns": [], "raw_text": "", "error": str(e)[:60]}
 
 
 # ── 历史记录 ───────────────────────────────────────────────
@@ -373,6 +399,33 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.send_json({"success": True, "id": rid, "name": name})
             except Exception as e:
                 self.send_json({"error": str(e)[:60]})
+        elif self.path.startswith("/api/ocr"):
+            content_type = self.headers.get("Content-Type", "")
+            if "multipart/form-data" not in content_type:
+                self.send_json({"error": "需要 multipart/form-data"})
+                return
+            try:
+                content_len = int(self.headers.get("Content-Length", 0))
+                body = self.rfile.read(content_len)
+                boundary = content_type.split("boundary=")[1].strip()
+                if boundary.startswith('"') and boundary.endswith('"'):
+                    boundary = boundary[1:-1]
+                parts = body.split(("--" + boundary).encode())
+                for part in parts:
+                    if b'name="image"' in part:
+                        marker = b"\r\n\r\n"
+                        idx = part.find(marker)
+                        if idx > 0:
+                            img_data = part[idx + len(marker):]
+                            img_data = img_data.rstrip(b"\r\n-")
+                            if img_data:
+                                result = ocr_image(img_data)
+                                self.send_json(result)
+                                return
+                self.send_json({"error": "未找到图片数据"})
+                self.send_json(result)
+            except Exception as e:
+                self.send_json({"error": str(e)[:60]})
         else:
             self.send_json({"error": "未知接口"})
 
@@ -447,6 +500,12 @@ if __name__ == "__main__":
         print("⚠️ 未找到 Cookie，启动后请通过页面设置 Cookie")
     else:
         print(f"🍪 Cookie 已加载（{len(cookie)} 字符）")
+
+    try:
+        pytesseract.get_tesseract_version()
+        print("🔍 Tesseract OCR 可用")
+    except Exception:
+        print("⚠️ Tesseract OCR 未安装，图片识别功能不可用")
 
     server = http.server.HTTPServer(("0.0.0.0", PORT), Handler)
     print(f"""
