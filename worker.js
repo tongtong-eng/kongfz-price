@@ -112,8 +112,21 @@ td{padding:7px 6px;border-bottom:1px solid #e2e8f0;white-space:nowrap}
       </label>
       <button class="btn btn-primary" id="btnQuery">🔍 查最低价</button>
       <button class="btn btn-outline" id="btnClear" style="padding:12px 16px">清空</button>
+      <button class="btn btn-outline" id="btnScan" onclick="scanBarcode()" style="display:none">📷 扫码</button>
     </div>
     <div id="status">就绪</div>
+    <div id="ocrArea" style="margin-top:12px;border:2px dashed #cbd5e1;border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:all .2s"
+         ondragover="this.style.borderColor='#2563eb';this.style.background='#eff6ff';return false"
+         ondragleave="this.style.borderColor='#cbd5e1';this.style.background='';return false"
+         ondrop="handleOcrDrop(event);return false"
+         onclick="document.getElementById('ocrInput').click()">
+      <div style="font-size:1.5rem;margin-bottom:4px">📷</div>
+      <div style="font-size:.85rem;color:#64748b">点击上传或拖拽书单截图，自动识别 ISBN</div>
+      <div style="font-size:.72rem;color:#94a3b8;margin-top:4px">支持 JPG / PNG / HEIC</div>
+      <input type="file" id="ocrInput" accept="image/*" multiple
+             style="display:none" onchange="handleOcrFiles(this.files)">
+      <div id="ocrStatus" style="display:none;margin-top:8px;font-size:.82rem"></div>
+    </div>
   </div>
   <div id="cookieBar" class="card" style="display:none;padding:12px 16px;border-radius:10px" onclick="toggleCookie()">
     <div style="display:flex;align-items:center;gap:10px;font-size:.85rem">
@@ -189,11 +202,11 @@ document.getElementById('btnClear').onclick=function(){inputArea.value='';result
 function queryIsbn(isbn){var q=document.getElementById('qualitySelect').value;var u='/api/query?isbn='+encodeURIComponent(isbn);if(q)u+='&quality='+encodeURIComponent(q);return fetch(u).then(function(r){return r.json()}).catch(function(){return{isbn:isbn,error:'请求失败'}})}
 btnQuery.onclick=function(){if(isRunning)return;var t=inputArea.value.trim();if(!t){setStatus('请输入ISBN','error');return}
 var isbns=[],seen={};t.split(/[\s,，、\n]+/).forEach(function(s){s=s.trim().replace(/-/g,'');if(/^\\d{8,13}$/.test(s)&&!seen[s]){seen[s]=true;isbns.push(s)}});if(!isbns.length){setStatus('没有有效的ISBN','error');return}
-isRunning=true;btnQuery.disabled=true;emptyEl.style.display='none';resultsEl.innerHTML='';setStatus('正在查询'+isbns.length+'个...','loading');var allData=[];
-function doNext(idx){if(idx>=isbns.length){showResults(allData);isRunning=false;btnQuery.disabled=false;return}
-setStatus('查询中('+(idx+1)+'/'+isbns.length+'): '+isbns[idx],'loading');queryIsbn(isbns[idx]).then(function(d){allData.push(d);showPartial(allData,isbns.length);if(idx+1<isbns.length){setTimeout(function(){doNext(idx+1)},1500)}else{showResults(allData);isRunning=false;btnQuery.disabled=false}})}
-doNext(0)};
-function showPartial(data,total){var ok=0,fail=0;data.forEach(function(r){if(r.error)fail++;else ok++});resultsEl.innerHTML='<div class="summary"><div class="s-card s-blue"><div class="n">'+data.length+'/'+total+'</div><div class="l">进度</div></div><div class="s-card s-green"><div class="n">'+ok+'</div><div class="l">查到</div></div><div class="s-card s-amber"><div class="n">'+fail+'</div><div class="l">异常</div></div></div>'}
+isRunning=true;btnQuery.disabled=true;emptyEl.style.display='none';resultsEl.innerHTML='';setStatus('⏳并行查询'+isbns.length+'本...(并发6)','loading')
+var ph='<div class="summary"><div class="s-card s-blue"><div class="n">0/'+isbns.length+'</div><div class="l">进度</div></div><div class="s-card s-green"><div class="n">0</div><div class="l">查到</div></div><div class="s-card s-amber"><div class="n">0</div><div class="l">异常</div></div></div>';resultsEl.innerHTML=ph
+var allData=[],okC=0,failC=0,CONC=6,idx=0,pend=0,done=0
+function up(){var c=resultsEl.querySelectorAll('.summary .s-card .n');if(c.length>=3){c[0].textContent=done+'/'+isbns.length;c[1].textContent=okC;c[2].textContent=failC}}
+function nx(){while(pend<CONC&&idx<isbns.length){var i=idx++;pend++;(function(i){setStatus('⏳查询'+(i+1)+'/'+isbns.length+': '+isbns[i],'loading');queryIsbn(isbns[i]).then(function(d){allData.push(d);done++;pend--;if(d.cheapest)okC++;if(d.error)failC++;up();if(done>=isbns.length){lastResults=allData;showResults(allData);isRunning=false;btnQuery.disabled=false;var ot=allData.filter(function(r){return!r.error}).length;setStatus('✅查询完成！共'+allData.length+'本,查到'+ot+'本','done')}else{nx()}})})(i)}}nx()}
 function esc(s){return(s||'').replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
 function showResults(data){var ok=data.filter(function(r){return!r.error}),priced=ok.filter(function(r){return r.cheapest}),fails=data.filter(function(r){return r.error}),html='';if(fails.length>0){var ft='';fails.forEach(function(r){ft+=r.isbn+'  '+(r.error||'')+'\\n'})
 html+='<div class="card" style="border:2px solid #ef4444;background:#fef2f2;margin-bottom:14px"><div class="card-title" style="color:#dc2626;font-size:.9rem">⚠️ 异常 '+fails.length+' 个</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">'
@@ -239,6 +252,34 @@ if(!d.has_cookie||!d.is_valid){var b=document.getElementById('cookieBody'),t=doc
 function saveCookie(){var inp=document.getElementById('cookieInput'),btn=document.getElementById('btnSaveCookie'),msg=document.getElementById('cookieMsg'),raw=inp.value.trim();if(!raw){msg.innerHTML='❌ 请粘贴 Cookie';msg.style.color='#ef4444';return}
 btn.disabled=true;btn.textContent='⏳';msg.textContent='';fetch('/api/cookie/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cookie:raw})}).then(function(r){return r.json()}).then(function(d){if(d.success){msg.innerHTML=d.warning?'⚠️ '+d.warning:'✅ 保存并验证通过！';msg.style.color=d.warning?'#d97706':'#059669';checkCookieStatus();inp.value=''}else{msg.innerHTML='❌ '+(d.error||'保存失败');msg.style.color='#ef4444'}}).catch(function(){msg.innerHTML='❌ 网络错误';msg.style.color='#ef4444'}).finally(function(){btn.disabled=false;btn.textContent='💾 保存 Cookie'})}
 setTimeout(function(){loadHistoryList();checkCookieStatus()},500);
+
+// ── 智能粘贴 ISBN ──
+var pasteTimer=null;
+inputArea.addEventListener('paste',function(){clearTimeout(pasteTimer);pasteTimer=setTimeout(function(){var t=inputArea.value;var isbns=[],seen={};t.split(/[\s,，、\n\r]+/).forEach(function(s){s=s.trim().replace(/-/g,'').replace(/ /g,'');if(/^\d{10,13}$/.test(s)&&!seen[s]){seen[s]=true;isbns.push(s)}});if(isbns.length>0){var lines=t.split(/[\n\r]+/);var ig=0;lines.forEach(function(l){var c=l.trim().replace(/-/g,'').replace(/ /g,'');if(c&&!/^\d{10,13}$/.test(c))ig++});showPasteConfirm(isbns.length,ig)}},100)});
+function showPasteConfirm(c,ig){var o=document.getElementById('pasteConfirm');if(o)o.remove();var bar=document.createElement('div');bar.id='pasteConfirm';bar.style.cssText='display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;font-size:.85rem';bar.innerHTML='<span>📋</span><span style="flex:1">识别到 <strong>'+c+'</strong> 个 ISBN'+(ig>0?'<span style="color:#94a3b8;font-size:.78rem;margin-left:6px">（忽略 '+ig+' 行）</span>':'')+'</span><button onclick="confirmPasteQuery()" style="padding:8px 18px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-weight:600;cursor:pointer;font-size:.85rem">🔍 立即查价</button><button onclick="dismissPasteConfirm()" style="padding:8px 10px;border-radius:8px;border:none;background:transparent;color:#94a3b8;cursor:pointer;font-size:.8rem">✕</button>';var card=inputArea.closest('.card');if(card)card.appendChild(bar)}
+function confirmPasteQuery(){var b=document.getElementById('pasteConfirm');if(b)b.remove();btnQuery.click()}
+function dismissPasteConfirm(){var b=document.getElementById('pasteConfirm');if(b)b.remove()}
+
+// ── OCR 图片识别 ISBN ──
+function handleOcrDrop(e){e.preventDefault();document.getElementById('ocrArea').style.borderColor='#cbd5e1';document.getElementById('ocrArea').style.background='';var files=e.dataTransfer.files;if(files.length>0)handleOcrFiles(files)}
+function handleOcrFiles(files){var se=document.getElementById('ocrStatus');se.style.display='block';se.innerHTML='⏳ 正在识别 '+files.length+' 张图片...';se.style.color='#2563eb';var pend=files.length,allIsbns=[];function pf(i){if(i>=files.length){if(allIsbns.length>0){se.innerHTML='✅ 识别到 <strong>'+allIsbns.length+'</strong> 个 ISBN，已填入输入框';se.style.color='#059669';var ex=inputArea.value.trim();inputArea.value=ex?ex+'\n'+allIsbns.join('\n'):allIsbns.join('\n');showPasteConfirm(allIsbns.length,0)}else{se.innerHTML='⚠️ 未识别到 ISBN';se.style.color='#d97706'}return}
+var file=files[i];if(!file.type.startsWith('image/')){pend--;pf(i+1);return}
+var fd=new FormData();fd.append('image',file);fetch('/api/ocr',{method:'POST',body:fd}).then(function(r){return r.json()}).then(function(d){pend--;if(d.isbns&&d.isbns.length>0){d.isbns.forEach(function(isbn){if(allIsbns.indexOf(isbn)===-1)allIsbns.push(isbn)});se.innerHTML='⏳ 识别中... 已提取 '+allIsbns.length+' 个 ISBN'};pf(i+1)}).catch(function(){pend--;pf(i+1)})}
+pf(0)}
+
+// ── 手机扫码 ──
+(function(){if('BarcodeDetector'in window)document.getElementById('btnScan').style.display=''})();
+function scanBarcode(){if(!('BarcodeDetector'in window)){toast('不支持扫码');return}
+var btn=document.getElementById('btnScan');btn.textContent='⏳ 打开摄像头...';btn.disabled=true;
+var bd;try{bd=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','isbn_13','isbn_10']})}catch(e){btn.textContent='📷 扫码';btn.disabled=false;toast('扫码初始化失败');return}
+var v=document.createElement('video');v.style.cssText='max-width:100%;border-radius:10px;margin-top:10px';v.setAttribute('playsinline','');v.setAttribute('autoplay','');
+var sc=document.createElement('div');sc.id='scanContainer';sc.style.cssText='margin-top:8px;text-align:center';sc.appendChild(v);
+var cb=document.createElement('button');cb.textContent='✕ 关闭扫码';cb.style.cssText='margin-top:8px;padding:6px 16px;border-radius:6px;border:none;background:#e2e8f0;color:#64748b;cursor:pointer;font-size:.8rem';cb.onclick=stopScan;sc.appendChild(cb);
+var ic=inputArea.closest('.card');if(ic)ic.appendChild(sc);var stream=null;
+navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(function(s){stream=s;v.srcObject=s;v.play();var st=setInterval(function(){if(!stream){clearInterval(st);return}
+bd.detect(v).then(function(bs){if(bs.length>0){var c=bs[0].rawValue.replace(/-/g,'');if(/^\d{10,13}$/.test(c)){stopScan();inputArea.value=inputArea.value.trim()?inputArea.value.trim()+'\n'+c:c;toast('✅ 扫码成功: '+c);setTimeout(function(){btnQuery.click()},500)}}}).catch(function(){})},500)}).catch(function(){btn.textContent='📷 扫码';btn.disabled=false;toast('无法打开摄像头');stopScan()});
+function stopScan(){if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}var c=document.getElementById('scanContainer');if(c)c.remove();btn.textContent='📷 扫码';btn.disabled=false}}
+
 inputArea.addEventListener('keydown',function(e){if((e.metaKey||e.ctrlKey)&&e.key==='Enter')btnQuery.click()});
 </script>
 </body>
