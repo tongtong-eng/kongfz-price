@@ -525,12 +525,19 @@ if __name__ == "__main__":
     else:
         print(f"🍪 Cookie 已加载（{len(cookie)} 字符）")
 
+    # 尝试安装 Tesseract（Railway 环境）
     try:
+        import subprocess
+        try:
+            pytesseract.get_tesseract_version()
+        except Exception:
+            print("📦 正在安装 Tesseract OCR...")
+            subprocess.run(["apt-get", "update", "-qq"], capture_output=True)
+            subprocess.run(["apt-get", "install", "-y", "-qq", "tesseract-ocr", "tesseract-ocr-chi-sim", "tesseract-ocr-chi-tra"], capture_output=True)
         pytesseract.get_tesseract_version()
         print("🔍 Tesseract OCR 可用（预处理优化）")
     except Exception:
         print("⚠️ Tesseract OCR 未安装，图片识别功能不可用")
-        print("   brew install tesseract tesseract-lang")
 
     server = http.server.HTTPServer(("0.0.0.0", PORT), Handler)
     print(f"""
