@@ -5,1146 +5,344 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#2563eb">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="mobile-web-app-capable" content="yes">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>孔夫子 ISBN 查价</title>
 <link rel="manifest" href="/static/manifest.json">
 <link rel="apple-touch-icon" href="/static/icon.svg">
 <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
-<!-- 加载状态（SW 注册前显示） -->
 <style>
-/* ── 全局 ── */
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;background:#f1f5f9;color:#1e293b;padding:16px 12px 80px;min-height:100vh;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#f1f5f9;color:#1e293b;padding:12px 10px 76px;min-height:100vh;-webkit-tap-highlight-color:transparent}
 .container{max-width:960px;margin:0 auto}
-
-/* ── 头部 ── */
-.header{display:flex;align-items:center;gap:10px;margin-bottom:4px}
-.header h1{font-size:1.25rem;font-weight:700;background:linear-gradient(135deg,#2563eb,#1d4ed8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.header .badge{font-size:.65rem;color:#64748b;background:#e2e8f0;padding:2px 8px;border-radius:10px;font-weight:500;-webkit-text-fill-color:#64748b}
-.subtitle{color:#64748b;font-size:.8rem;margin-bottom:16px;line-height:1.4}
-.card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:14px}
-.card-title{font-size:1rem;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:6px}
-
-/* ── 输入区 ── */
-textarea{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px;font-size:.9rem;min-height:90px;outline:none;font-family:inherit;line-height:1.6;resize:vertical}
-textarea:focus{border-color:#3b82f6;box-shadow:0 0 0 3px #dbeafe}
-.row{display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap}
-.btn{-webkit-appearance:none;appearance:none;padding:12px 24px;border-radius:10px;border:none;font-weight:600;cursor:pointer;font-size:.9rem;transition:all .15s;touch-action:manipulation;user-select:none}
-.btn:active{transform:scale(.97)}
-.btn-primary{background:#2563eb;color:#fff}
-.btn-primary:hover{background:#1d4ed8}
-.btn-primary:disabled{background:#93c5fd;cursor:not-allowed}
-.btn-outline{background:transparent;border:1.5px solid #cbd5e1;color:#64748b}
-.btn-outline:active{background:#f1f5f9}
-.btn-save{background:#f59e0b;color:#fff;padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-weight:600;font-size:.85rem;touch-action:manipulation}
-.btn-save:active{transform:scale(.97)}
-.btn-save:disabled{background:#fcd34d;cursor:not-allowed}
-
-/* ── 品相筛选 ── */
-select{-webkit-appearance:none;appearance:none;padding:11px 32px 11px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:.85rem;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center;outline:none;min-width:120px}
-select:focus{border-color:#3b82f6;box-shadow:0 0 0 3px #dbeafe}
-
-/* ── 状态 ── */
-#status{font-size:.82rem;color:#64748b;padding:4px 0}.status-loading{color:#2563eb}.status-done{color:#059669}.status-error{color:#dc2626}
-
-/* ── 汇总卡片 ── */
-.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.s-card{text-align:center;padding:10px 6px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0}
-.s-card .n{font-size:1.2rem;font-weight:700}
-.s-card .l{font-size:.68rem;color:#64748b;margin-top:3px}
-.s-blue .n{color:#2563eb}.s-green .n{color:#059669}.s-amber .n{color:#d97706}.s-red .n{color:#dc2626}
-
-/* ── 结果卡片 ── */
-.result-box{border:2px solid #059669;border-radius:12px;padding:14px 14px 10px;margin-bottom:14px;background:linear-gradient(135deg,#f0fdf4,#ecfdf5)}
-.result-box .book-title{font-size:1rem;font-weight:700;color:#065f46;line-height:1.4;word-break:break-all}
-.result-box .meta{font-size:.72rem;color:#64748b;margin-top:3px}
-.empty-state{text-align:center;color:#94a3b8;padding:40px 20px;font-size:.88rem;line-height:1.6}
-
-/* ── 表格（横向滚动） ── */
-.table-wrap{overflow-x:auto;margin:8px -4px 0;-webkit-overflow-scrolling:touch}
-.table-wrap::-webkit-scrollbar{height:4px}
-.table-wrap::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:2px}
-table{width:100%;border-collapse:collapse;font-size:.8rem;min-width:480px}
+h1{font-size:1.2rem;background:linear-gradient(135deg,#2563eb,#1d4ed8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:2px}
+.subtitle{color:#64748b;font-size:.78rem;margin-bottom:12px}
+.card{background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:10px}
+.card-title{font-size:.92rem;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+textarea,.field{width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.85rem;outline:none;font-family:inherit}
+textarea:focus,.field:focus{border-color:#3b82f6;box-shadow:0 0 0 3px #dbeafe}
+textarea{min-height:80px;line-height:1.5;resize:vertical}
+.row{display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap}
+.btn{padding:8px 18px;border-radius:8px;border:none;font-weight:500;cursor:pointer;font-size:.82rem;transition:opacity .15s}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:#3b82f6;color:#fff}
+.btn-primary:hover:not(:disabled){background:#2563eb}
+.btn-outline{background:transparent;border:1px solid #e2e8f0;color:#64748b}
+.btn-outline:hover{background:#f8fafc}
+#status{font-size:.8rem;color:#64748b}
+#status.loading{color:#3b82f6}
+#status.done{color:#10b981}
+#status.error{color:#ef4444}
+table{width:100%;border-collapse:collapse;font-size:.78rem;margin-top:4px}
 thead{background:#f8fafc}
-th{padding:7px 6px;text-align:left;font-weight:600;white-space:nowrap;border-bottom:2px solid #e2e8f0;font-size:.75rem;color:#64748b}
-td{padding:7px 6px;border-bottom:1px solid #e2e8f0;white-space:nowrap}
-tr:active td{background:#f1f5f9}
+th{padding:5px;text-align:left;font-weight:600;white-space:nowrap;border-bottom:2px solid #e2e8f0}
+td{padding:5px;border-bottom:1px solid #e2e8f0}
+tr:hover td{background:#f8fafc}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:6px;margin-bottom:10px}
+.s-card{text-align:center;padding:8px;border-radius:8px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.s-card .n{font-size:1.1rem;font-weight:700}
+.s-card .l{font-size:.68rem;color:#64748b;margin-top:2px}
+.blue .n{color:#3b82f6}.green .n{color:#10b981}.amber .n{color:#f59e0b}
+.result-box{border:2px solid #10b981;border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#f0fdf4}
+.result-box .book-title{font-size:.95rem;font-weight:700;color:#065f46}
+.result-box .meta{font-size:.7rem;color:#64748b;margin-top:2px}
+.empty-state{text-align:center;color:#94a3b8;padding:20px;font-size:.82rem}
+select{padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:.82rem;background:#fff;outline:none}
 
-/* ── 按钮操作 ── */
-.btn-cart-all{display:inline-flex;align-items:center;gap:4px;padding:10px 20px;border-radius:8px;border:none;background:#059669;color:#fff;font-size:.88rem;font-weight:600;cursor:pointer;touch-action:manipulation}
-.btn-cart-all:active{transform:scale(.97)}
-.btn-cart{display:inline-flex;align-items:center;gap:3px;padding:6px 12px;border-radius:6px;border:1px solid #3b82f6;background:transparent;color:#3b82f6;font-size:.78rem;cursor:pointer;touch-action:manipulation}
-.btn-cart:active{background:#eff6ff}
+/* 折叠 */
+.fold-header{display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
+.fold-header .arrow{font-size:.75rem;color:#64748b;transition:transform .2s}
+.fold-header .arrow.open{transform:rotate(90deg)}
+.fold-body{max-height:0;overflow:hidden;transition:max-height .25s ease}
+.fold-body.open{max-height:2000px}
 
-/* ── 批量加购按钮 ── */
-.btn-batch-cart{display:block;width:100%;padding:14px;border-radius:10px;border:none;background:#dc2626;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;touch-action:manipulation;box-shadow:0 2px 8px rgba(220,38,38,.25)}
-.btn-batch-cart:active{transform:scale(.98)}
-.btn-batch-cart:disabled{background:#fca5a5;cursor:not-allowed;box-shadow:none}
+/* 历史记录 */
+.h-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;margin-top:6px;gap:6px;flex-wrap:wrap}
+.h-item .info{flex:1;min-width:120px}
+.h-item .name{font-weight:500;font-size:.82rem}
+.h-item .meta{font-size:.7rem;color:#64748b;margin-top:2px}
+.h-item .actions{display:flex;gap:4px}
+.h-item .actions button{padding:5px 10px;border-radius:6px;border:none;cursor:pointer;font-size:.72rem;font-weight:500}
+.btn-h-q{background:#3b82f6;color:#fff}
+.btn-h-c{background:#dc2626;color:#fff}
+.btn-h-d{background:transparent;border:1px solid #e2e8f0!important;color:#94a3b8}
 
-/* ── 异常区域 ── */
-.fail-chip{display:inline-flex;align-items:center;gap:4px;padding:7px 14px;border:1px solid #fca5a5;border-radius:20px;font-size:.78rem;font-family:monospace;background:#fff;cursor:pointer;color:#dc2626;touch-action:manipulation}
-.fail-chip:active{background:#fef2f2}
-
-/* ── 保存条 ── */
-.save-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px}
-.save-bar input{flex:1;min-width:140px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.85rem;outline:none}
-.save-bar input:focus{border-color:#f59e0b;box-shadow:0 0 0 3px #fef3c7}
-
-/* ── Cookie 状态 ── */
-#cookieBar{transition:all .2s;cursor:pointer}
-#cookieBar:hover{filter:brightness(.97)}
+/* Cookie 条 */
+#cookieBar{padding:8px 12px;border-radius:8px;cursor:pointer;display:none;margin-bottom:10px;font-size:.82rem;border:1px solid #e2e8f0}
 #cookieBar.valid{border-color:#86efac;background:#f0fdf4}
-#cookieBar.invalid{border-color:#fca5a5;background:#fef2f2;border-width:2px}
-#cookieBar.warning{border-color:#fde68a;background:#fffbeb;border-width:2px}
+#cookieBar.invalid{border-color:#fca5a5;background:#fef2f2}
+#cookieBar.warning{border-color:#fde68a;background:#fffbeb}
+.fail-chip{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border:1px solid #fca5a5;border-radius:14px;font-size:.72rem;font-family:monospace;background:#fff;cursor:pointer;color:#dc2626}
+.save-bar{display:flex;gap:6px;align-items:center;justify-content:center;margin-bottom:10px;padding:8px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;flex-wrap:wrap}
+.save-bar input{max-width:200px;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:.8rem;outline:none}
+.btn-save{background:#f59e0b;color:#fff;padding:5px 14px;border-radius:6px;border:none;cursor:pointer;font-weight:500;font-size:.8rem}
+.pc-bar{display:flex;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:.8rem}
 
-/* ── 历史记录 ── */
-.history-header{display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
-.history-header .toggle{font-size:.8rem;color:#94a3b8;transition:transform .25s}.history-header .toggle.open{transform:rotate(90deg)}
-.history-body{max-height:0;overflow:hidden;transition:max-height .3s ease}
-.history-body.open{max-height:2000px}
-.history-item{display:flex;justify-content:space-between;align-items:center;padding:12px;border:1px solid #e2e8f0;border-radius:10px;margin-top:8px;flex-wrap:wrap;gap:8px}
-.history-item:active{background:#f8fafc}
-.history-item .info{flex:1;min-width:140px}
-.history-item .name{font-weight:500;font-size:.85rem}
-.history-item .meta{font-size:.72rem;color:#64748b;margin-top:2px}
-.history-item .actions{display:flex;gap:6px;flex-wrap:wrap}
-.history-item .actions button{padding:8px 14px;border-radius:8px;border:none;font-size:.78rem;font-weight:500;cursor:pointer;touch-action:manipulation}
-.btn-h-query{background:#2563eb;color:#fff}
-.btn-h-query:active{background:#1d4ed8}
-.btn-h-cart{background:#dc2626;color:#fff}
-.btn-h-cart:active{background:#b91c1c}
-.btn-h-del{background:transparent;border:1px solid #e2e8f0!important;color:#94a3b8}
-.btn-h-del:active{background:#fef2f2;color:#ef4444!important;border-color:#fca5a5!important}
+/* 底部导航 */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e2e8f0;display:flex;justify-content:space-around;padding:6px 0 env(safe-area-inset-bottom,6px);z-index:100}
+.bottom-nav button{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:#64748b;font-size:.65rem;cursor:pointer;padding:4px 16px}
+.bottom-nav button svg{width:22px;height:22px;stroke:currentColor;stroke-width:2;fill:none}
+.bottom-nav button:active{color:#2563eb}
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.75);color:#fff;padding:10px 20px;border-radius:8px;font-size:.85rem;z-index:999;display:none;max-width:80vw;text-align:center;pointer-events:none}
 
-/* ── Cookie 设置折叠 ── */
-#cookieCard{border:2px solid #fde68a}
-#cookieCard .btn-primary{background:#f59e0b}
-#cookieCard .btn-primary:active{background:#d97706}
-
-/* ── 右上角 PWA 安装提示 ── */
-.install-banner{display:none;align-items:center;gap:10px;padding:10px 14px;background:#2563eb;color:#fff;border-radius:10px;margin-bottom:14px;font-size:.82rem;font-weight:500}
-.install-banner .close-btn{margin-left:auto;background:rgba(255,255,255,.2);border:none;color:#fff;width:26px;height:26px;border-radius:50%;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-
-/* ── 底部导航栏（快捷操作） ── */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e2e8f0;display:flex;padding:8px 12px;justify-content:space-around;z-index:100;padding-bottom:max(8px,env(safe-area-inset-bottom))}
-.bottom-nav button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 12px;border:none;background:transparent;color:#64748b;font-size:.7rem;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}.bottom-nav button:active{color:#2563eb}
-.bottom-nav button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-
-/* ── 二维码弹窗 ── */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;justify-content:center;align-items:center;padding:20px}
-.modal-overlay.open{display:flex}
-.modal-box{background:#fff;border-radius:16px;padding:28px 24px 20px;max-width:340px;width:100%;text-align:center}
-.modal-box h3{font-size:1rem;margin-bottom:12px}
-.modal-box .close-modal{margin-top:16px;padding:10px 32px;border-radius:8px;border:none;background:#e2e8f0;color:#64748b;font-size:.88rem;cursor:pointer}
-
-/* ── Toast ── */
-.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:10px 20px;border-radius:10px;font-size:.82rem;z-index:300;opacity:0;transition:opacity .25s;pointer-events:none}
-.toast.show{opacity:1}
-
-/* ── 响应式 ── */
-@media(min-width:640px){body{padding:24px 20px 24px;}.bottom-nav{display:none}.header h1{font-size:1.4rem}}
+/* 手机专用 */
+@media(max-width:480px){
+  body{padding:10px 8px 72px}
+  .card{padding:10px;margin-bottom:8px}
+  .result-box{padding:10px}
+}
 </style>
 </head>
 <body>
-<div class="container" id="app">
-  <div class="header">
-    <h1>📚 孔夫子查价</h1>
-    <span class="badge">PWA</span>
-  </div>
-  <p class="subtitle">批量查 ISBN 在孔夫子旧书网的最低进货价，支持一键加购</p>
+<div class="container">
+  <h1>📚 孔夫子进货查价</h1>
+  <p class="subtitle">输入 ISBN 查最低进货价+运费</p>
 
-  <!-- PWA 安装横幅 -->
-  <div class="install-banner" id="installBanner">
-    <span>📲 添加到主屏幕，像 App 一样使用</span>
-    <button class="close-btn" onclick="dismissInstallBanner()">✕</button>
-  </div>
-
-  <!-- 主要输入区 -->
   <div class="card">
-    <div class="card-title">📖 输入 ISBN（每行一个）</div>
-    <textarea id="inputArea" placeholder="9787108009821&#10;9787020002207&#10;或输入多个，空格/逗号/换行分隔" enterkeyhint="done"></textarea>
+    <div class="card-title">📖 ISBN（每行一个）</div>
+    <textarea id="inputArea" placeholder="9787108009821&#10;9787020002207&#10;可批量粘贴，自动识别 ISBN"></textarea>
     <div class="row">
-      <label style="font-size:.82rem;color:#64748b;display:flex;align-items:center;gap:4px">📦
-        <select id="qualitySelect">
-          <option value="">不限品相</option>
-          <option value="100~100">全新</option>
-          <option value="95~100">九五品及以上</option>
-          <option value="90~100">九品及以上</option>
-          <option value="85~100">八五品及以上</option>
-          <option value="80~100">八品及以上</option>
-          <option value="70~100">七品及以上</option>
-        </select>
-      </label>
+      <label style="font-size:.8rem;color:#64748b">品相:</label>
+      <select id="qualitySelect">
+        <option value="">不限</option><option value="100~100">全新</option>
+        <option value="95~100">九五品+</option><option value="90~100">九品+</option>
+        <option value="85~100">八五品+</option>
+      </select>
       <button class="btn btn-primary" id="btnQuery">🔍 查最低价</button>
-      <button class="btn btn-outline" id="btnClear" style="padding:12px 16px">清空</button>
-      <button class="btn btn-outline" id="btnScan" onclick="scanBarcode()" style="display:none">📷 扫码</button>
+      <button class="btn btn-outline" id="btnClear">清空</button>
+      <span id="status">就绪</span>
     </div>
-    <div id="status">就绪</div>
-
-    <!-- OCR 图片上传 -->
-    <div id="ocrArea" style="margin-top:12px;border:2px dashed #cbd5e1;border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:all .2s"
-         ondragover="this.style.borderColor='#2563eb';this.style.background='#eff6ff';return false"
-         ondragleave="this.style.borderColor='#cbd5e1';this.style.background='';return false"
-         ondrop="handleOcrDrop(event);return false"
-         onclick="document.getElementById('ocrInput').click()">
-      <div style="font-size:1.5rem;margin-bottom:4px">📷</div>
-      <div style="font-size:.85rem;color:#64748b">点击上传或拖拽书单截图，自动识别 ISBN</div>
-      <div style="font-size:.72rem;color:#94a3b8;margin-top:4px">支持 JPG / PNG / HEIC</div>
-      <input type="file" id="ocrInput" accept="image/*" multiple
-             style="display:none" onchange="handleOcrFiles(this.files)">
-      <div id="ocrStatus" style="display:none;margin-top:8px;font-size:.82rem"></div>
+    <div style="margin-top:8px;padding:8px;border:1px dashed #cbd5e1;border-radius:8px;text-align:center;font-size:.75rem;color:#94a3b8;cursor:pointer" onclick="document.getElementById('ocrInp').click()">
+      📷 上传截图自动识别 ISBN
+      <input type="file" id="ocrInp" accept="image/*" multiple style="display:none" onchange="doOcr(this.files)">
     </div>
+    <div id="ocrSt" style="display:none;margin-top:4px;font-size:.78rem"></div>
   </div>
 
   <!-- Cookie 状态条 -->
-  <div id="cookieBar" class="card" style="display:none;padding:12px 16px;border-radius:10px" onclick="toggleCookie()">
-    <div style="display:flex;align-items:center;gap:10px;font-size:.85rem">
-      <span>🍪</span>
-      <span id="cookieBarIcon" style="font-size:1rem">🟢</span>
-      <span id="cookieBarText" style="flex:1">加载中...</span>
-      <span id="cookieBarAction" style="font-size:.75rem;padding:6px 14px;border-radius:8px;background:#f1f5f9;color:#64748b;white-space:nowrap">设置 →</span>
-    </div>
+  <div id="cookieBar" onclick="fold('cookie')">
+    <span id="cookIcon">🟢</span> <span id="cookText"></span> <span id="cookAct" style="font-size:.75rem;color:#64748b;float:right">→</span>
   </div>
 
-  <!-- Cookie 设置 -->
-  <div class="card" id="cookieCard">
-    <div class="history-header" onclick="toggleCookie()">
+  <div class="card" style="border:1px solid #fde68a">
+    <div class="fold-header" onclick="fold('cookie')">
       <div class="card-title" style="margin-bottom:0">🍪 Cookie 设置</div>
-      <span><span id="cookieStatusBadge" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#94a3b8;margin-right:6px"></span><span class="toggle" id="cookieToggle">▶</span></span>
+      <span><span id="cookDot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#94a3b8;margin-right:4px"></span><span class="arrow" id="cookArrow">▶</span></span>
     </div>
-    <div class="history-body" id="cookieBody">
-      <div style="margin-top:8px;font-size:.82rem;color:#475569;line-height:1.7">
-        <div id="cookieStatus" style="margin-bottom:10px;padding:10px 14px;border-radius:8px;background:#f8fafc;font-size:.82rem;border:1px solid #e2e8f0">
-          正在检查 Cookie 状态...
-        </div>
-
-        <!-- 手机专用提示 -->
-        <details style="margin-bottom:10px;background:#eff6ff;border-radius:8px;padding:10px 14px;border:1px solid #bfdbfe" id="mobileCookieHelp">
-          <summary style="font-weight:600;font-size:.82rem;color:#2563eb;cursor:pointer">📱 手机如何获取 Cookie？</summary>
-          <div style="margin-top:8px;font-size:.78rem;color:#475569;line-height:1.8">
-            <p><strong>方法一（推荐）：</strong></p>
-            <ol style="margin:4px 0 8px 16px">
-              <li>在手机 Safari/Chrome 打开 <strong>kongfz.com</strong> 并登录</li>
-              <li>在地址栏输入 <code style="background:#e2e8f0;padding:1px 6px;border-radius:4px;font-size:.75rem;word-break:break-all">javascript:prompt('复制 Cookie',document.cookie)</code> 并回车</li>
-              <li>全选弹窗里的文本 → 复制 → 粘贴到下方输入框</li>
-            </ol>
-            <p><strong>方法二（电脑/手机配合）：</strong></p>
-            <ol style="margin:4px 0 0 16px">
-              <li>电脑登录 kongfz.com</li>
-              <li>F12 → Network → 点请求 → 复制 Cookie</li>
-              <li>发送到手机，粘贴到下方输入框</li>
-            </ol>
+    <div class="fold-body" id="fold_cookie">
+      <div style="margin-top:6px;font-size:.8rem;color:#475569;line-height:1.6">
+        <div id="cookSt" style="padding:6px 10px;border-radius:6px;background:#f8fafc;font-size:.78rem;border:1px solid #e2e8f0;margin-bottom:6px">检查中...</div>
+        <details style="margin-bottom:6px;background:#eff6ff;border-radius:6px;padding:8px 10px;border:1px solid #bfdbfe;font-size:.75rem">
+          <summary style="font-weight:600;color:#2563eb;cursor:pointer">📱 手机取 Cookie</summary>
+          <div style="margin-top:6px;line-height:1.7">
+            在手机浏览器打开 <strong>kongfz.com</strong> 并登录 → 地址栏输入 <code style="background:#e2e8f0;padding:1px 4px;border-radius:3px;word-break:break-all">javascript:prompt('',document.cookie)</code> → 复制弹窗内容
           </div>
         </details>
-
-        <p style="margin-bottom:8px;color:#64748b">📌 粘贴 Cookie 字符串或完整的 cURL 命令（自动识别）：</p>
-        <textarea id="cookieInput" placeholder="在此粘贴 Cookie 字符串&#10;或 cURL 命令中的 Cookie 值&#10;&#10;手机用户：按上方「手机如何获取」的说明操作" style="width:100%;min-height:70px;padding:10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.78rem;font-family:monospace;outline:none;resize:vertical"></textarea>
+        <textarea id="cookInp" placeholder="粘贴 Cookie 字符串或 cURL 命令" style="width:100%;min-height:50px;font-family:monospace;font-size:.78rem"></textarea>
         <div class="row">
-          <button class="btn btn-primary" id="btnSaveCookie" onclick="saveCookie()" style="background:#f59e0b">💾 保存 Cookie</button>
-          <span id="cookieMsg" style="font-size:.82rem;flex:1"></span>
+          <button class="btn btn-primary" onclick="saveCookie()" style="background:#f59e0b;font-size:.8rem">💾 保存</button>
+          <span id="cookMsg" style="font-size:.8rem"></span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 历史查询记录 -->
-  <div class="card" id="historyCard">
-    <div class="history-header" onclick="toggleHistory()">
+  <div class="card">
+    <div class="fold-header" onclick="fold('hist')">
       <div class="card-title" style="margin-bottom:0">📋 历史记录</div>
-      <span class="toggle" id="historyToggle">▶</span>
+      <span class="arrow" id="histArrow">▶</span>
     </div>
-    <div class="history-body" id="historyBody">
-      <div id="historyList" style="margin-top:8px">
-        <div style="text-align:center;color:#94a3b8;font-size:.85rem;padding:16px" id="historyEmpty">暂无记录</div>
-      </div>
-    </div>
+    <div class="fold-body" id="fold_hist"><div id="histList" style="margin-top:4px"><div style="text-align:center;color:#94a3b8;font-size:.8rem;padding:10px">暂无</div></div></div>
   </div>
 
-  <!-- 结果区域 -->
   <div id="results"></div>
-  <div id="empty" class="empty-state">📝 输入 ISBN 后点「查最低价」</div>
+  <div id="empty" class="empty-state">📝 输入 ISBN 后点查最低价</div>
 </div>
 
-<!-- 底部导航（手机上固定） -->
-<div class="bottom-nav" id="bottomNav">
-  <button onclick="scrollToTop()">
-    <svg viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
-    <span>回到顶部</span>
-  </button>
-  <button onclick="toggleCookie()">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="8" r="1.5" fill="currentColor"/><circle cx="8" cy="12" r="1.5" fill="currentColor"/><circle cx="15" cy="13" r="1.5" fill="currentColor"/></svg>
-    <span>Cookie</span>
-  </button>
-  <button onclick="toggleHistory()">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-    <span>历史</span>
-  </button>
+<div class="bottom-nav">
+  <button onclick="scrollTo(0,0)"><svg viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg><span>顶部</span></button>
+  <button onclick="fold('cookie')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg><span>Cookie</span></button>
+  <button onclick="fold('hist')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>历史</span></button>
 </div>
-
-<!-- Toast 消息 -->
 <div class="toast" id="toast"></div>
 
 <script>
-// ============================================================
-//  状态
-// ============================================================
-var isRunning = false;
-var lastResults = [];
-var inputArea = document.getElementById('inputArea');
-var statusEl = document.getElementById('status');
-var resultsEl = document.getElementById('results');
-var emptyEl = document.getElementById('empty');
-var btnQuery = document.getElementById('btnQuery');
+var R=false,L=[],I=id('inputArea'),S=id('status'),E=id('results'),N=id('empty'),Q=id('btnQuery');
+function id(s){return document.getElementById(s)}
+function esc(s){return(s||'').replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
+function ss(t,c){S.textContent=t;S.className=c||''}
+function fj(u,o){return fetch(u,o||{}).then(function(r){return r.json()})}
 
-function setStatus(text, type) {
-  statusEl.textContent = text;
-  statusEl.className = type ? 'status-' + type : '';
+// 折叠
+function fold(n){
+  var b=id('fold_'+n),a=id(n+'Arrow');
+  if(!b)return;
+  b.classList.toggle('open');
+  if(a)a.classList.toggle('open');
+  if(b.classList.contains('open')&&n==='hist')loadH();
+  if(b.classList.contains('open')&&n==='cookie')ckC();
 }
 
-function toast(msg, duration) {
-  var el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(el._timer);
-  el._timer = setTimeout(function() { el.classList.remove('show'); }, duration || 2000);
-}
+// 粘贴
+var pt;I.addEventListener('paste',function(){clearTimeout(pt);pt=setTimeout(function(){var is=[],v={};I.value.split(/[\s,，、\n\r]+/).forEach(function(s){s=s.trim().replace(/-/g,'').replace(/ /g,'');if(/^\d{10,13}$/.test(s)&&!v[s]){v[s]=1;is.push(s)}});if(is.length){var b=id('pc');if(!b){b=document.createElement('div');b.className='pc-bar';b.id='pc';b.innerHTML='📋 识别到 <strong id="pcN"></strong> 个 ISBN <button onclick="cp()" style="padding:5px 12px;border-radius:6px;border:none;background:#2563eb;color:#fff;font-weight:600;cursor:pointer;font-size:.8rem">🔍 查价</button><button onclick="document.getElementById(\'pc\').remove()" style="padding:4px;border:none;background:transparent;color:#94a3b8;cursor:pointer">✕</button>';I.closest('.card').appendChild(b)}id('pcN').textContent=is.length}},150)});
+I.addEventListener('keydown',function(e){if((e.metaKey||e.ctrlKey)&&e.key==='Enter')Q.click()});
+function cp(){var b=id('pc');if(b)b.remove();Q.click()}
 
-function scrollToTop() {
-  window.scrollTo({top: 0, behavior: 'smooth'});
-}
-
-// ============================================================
-//  PWA 安装横幅
-// ============================================================
-var deferredPrompt = null;
-
-window.addEventListener('beforeinstallprompt', function(e) {
-  e.preventDefault();
-  deferredPrompt = e;
-  var banner = document.getElementById('installBanner');
-  if (!localStorage.getItem('pwaInstallDismissed')) {
-    banner.style.display = 'flex';
+// 查价
+Q.onclick=function(){
+  if(R)return;
+  var t=I.value.trim();
+  if(!t){ss('请输入 ISBN','error');return}
+  var is=[],v={};
+  t.split(/[\s,]+/).forEach(function(s){s=s.trim().replace(/-/g,'');if(/^\d{8,13}$/.test(s)&&!v[s]){v[s]=1;is.push(s)}});
+  if(!is.length){ss('无效 ISBN','error');return}
+  R=1;Q.disabled=1;N.style.display='none';E.innerHTML='';
+  ss('⏳ 查询 '+is.length+' 本...','loading');
+  var ql=id('qualitySelect').value,al=[],ok=0,ng=0,idx=0,pd=0,dn=0,CC=6;
+  function up(){var c=E.querySelectorAll('.summary .s-card .n');if(c.length>=3){c[0].textContent=dn+'/'+is.length;c[1].textContent=ok;c[2].textContent=ng}}
+  function nx(){
+    while(pd<CC&&idx<is.length){var i=idx++;pd++;(function(i){
+      var u='/api/query?isbn='+encodeURIComponent(is[i]);if(ql)u+='&quality='+encodeURIComponent(ql);
+      fj(u).then(function(d){al.push(d);dn++;pd--;if(d.cheapest)ok++;if(d.error)ng++;up();if(dn>=is.length){L=al;sh(al);R=0;Q.disabled=0;ss('✅ 完成！查到 '+ok+'/'+al.length+' 本','done')}else{nx()}})
+    })(i)}
   }
-});
-
-function dismissInstallBanner() {
-  document.getElementById('installBanner').style.display = 'none';
-  localStorage.setItem('pwaInstallDismissed', '1');
-}
-
-// 当用户点击 PWA 横幅时触发安装
-document.getElementById('installBanner').addEventListener('click', function(e) {
-  if (e.target.tagName === 'BUTTON') return;
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(function() {
-    deferredPrompt = null;
-    dismissInstallBanner();
-  });
-});
-
-// 已安装则隐藏横幅
-window.addEventListener('appinstalled', function() {
-  dismissInstallBanner();
-  toast('✅ 已安装到主屏幕！');
-});
-
-// ============================================================
-//  Service Worker 注册
-// ============================================================
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('/static/sw.js').catch(function(err) {
-      console.warn('SW 注册失败:', err);
-    });
-  });
-}
-
-// ============================================================
-//  查询逻辑
-// ============================================================
-
-document.getElementById('btnClear').onclick = function() {
-  inputArea.value = '';
-  resultsEl.innerHTML = '';
-  emptyEl.style.display = 'block';
-  setStatus('就绪', '');
+  E.innerHTML='<div class="summary"><div class="s-card blue"><div class="n">0/'+is.length+'</div><div class="l">进度</div></div><div class="s-card green"><div class="n">0</div><div class="l">查到</div></div><div class="s-card amber"><div class="n">0</div><div class="l">异常</div></div></div>';
+  nx()
 };
 
-function queryIsbn(isbn) {
-  var quality = document.getElementById('qualitySelect').value;
-  var url = '/api/query?isbn=' + encodeURIComponent(isbn);
-  if (quality) url += '&quality=' + encodeURIComponent(quality);
-  return fetch(url)
-    .then(function(r) { return r.json(); })
-    .then(function(d) { return d; })
-    .catch(function() { return {isbn: isbn, error: '请求失败'}; });
-}
-
-btnQuery.onclick = function() {
-  if (isRunning) return;
-  var text = inputArea.value.trim();
-  if (!text) { setStatus('请输入 ISBN', 'error'); return; }
-
-  var isbns = [], seen = {};
-  text.split(/[\s,，、\n]+/).forEach(function(s) {
-    s = s.trim().replace(/-/g, '');
-    if (/^\d{8,13}$/.test(s) && !seen[s]) { seen[s] = true; isbns.push(s); }
-  });
-  if (!isbns.length) { setStatus('没有有效的 ISBN', 'error'); return; }
-
-  isRunning = true;
-  btnQuery.disabled = true;
-  emptyEl.style.display = 'none';
-  resultsEl.innerHTML = '';
-  setStatus('⏳ 并行查询 ' + isbns.length + ' 本...（并发 6）', 'loading');
-
-  // 进度摘要
-  var progressHtml = '<div class="summary">';
-  progressHtml += '<div class="s-card s-blue"><div class="n">0/' + isbns.length + '</div><div class="l">进度</div></div>';
-  progressHtml += '<div class="s-card s-green"><div class="n">0</div><div class="l">查到</div></div>';
-  progressHtml += '<div class="s-card s-amber"><div class="n">0</div><div class="l">异常</div></div>';
-  progressHtml += '</div>';
-  resultsEl.innerHTML = progressHtml;
-
-  var allData = [];
-  var okCount = 0, failCount = 0;
-  var CONCURRENCY = 6;
-  var idx = 0, pending = 0, doneCount = 0;
-
-  function updateProgress() {
-    var cards = resultsEl.querySelectorAll('.summary .s-card .n');
-    if (cards.length >= 3) {
-      cards[0].textContent = doneCount + '/' + isbns.length;
-      cards[1].textContent = okCount;
-      cards[2].textContent = failCount;
-    }
+function sh(data){
+  var ok=data.filter(function(r){return !r.error}),pd=ok.filter(function(r){return r.cheapest}),fl=data.filter(function(r){return r.error}),html='';
+  if(fl.length){
+    html+='<div class="card" style="border:2px solid #ef4444;background:#fef2f2;margin-bottom:10px"><div class="card-title" style="color:#dc2626">⚠️ 异常 '+fl.length+' 个</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">';
+    fl.forEach(function(f){html+='<span class="fail-chip" onclick="rq(\''+f.isbn+'\')">🔍 '+f.isbn+' <span style="color:#fca5a5">('+esc(f.error||'')+')</span></span>'});
+    html+='</div><button class="btn btn-primary" onclick="rqA()" style="background:#dc2626;font-size:.8rem">🔍 重查全部</button></div>';
   }
-
-  function tryNext() {
-    while (pending < CONCURRENCY && idx < isbns.length) {
-      var i = idx++;
-      pending++;
-      (function(i) {
-        setStatus('⏳ 查询 ' + (i+1) + '/' + isbns.length + ': ' + isbns[i], 'loading');
-        queryIsbn(isbns[i]).then(function(data) {
-          allData.push(data);
-          doneCount++;
-          pending--;
-          if (data.cheapest) okCount++;
-          if (data.error) failCount++;
-          updateProgress();
-          if (doneCount >= isbns.length) {
-            lastResults = allData;
-            showResults(allData);
-            isRunning = false;
-            btnQuery.disabled = false;
-            var okTotal = allData.filter(function(r) { return !r.error; }).length;
-            setStatus('✅ 查询完成！共 ' + allData.length + ' 本，查到 ' + okTotal + ' 本', 'done');
-          } else {
-            tryNext();
-          }
-        });
-      })(i);
-    }
-  }
-
-  tryNext();
-};
-
-function esc(s) { return (s || '').replace(/[&<>]/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
-
-function showResults(data) {
-  var ok = data.filter(function(r) { return !r.error; });
-  var priced = ok.filter(function(r) { return r.cheapest; });
-
-  // 异常 ISBN
-  var fails = data.filter(function(r) { return r.error; });
-  var html = '';
-
-  if (fails.length > 0) {
-    var failText = '';
-    fails.forEach(function(r) { failText += r.isbn + '  ' + (r.error || '') + '\n'; });
-    html += '<div class="card" style="border:2px solid #ef4444;background:#fef2f2;margin-bottom:14px">';
-    html += '<div class="card-title" style="color:#dc2626;font-size:.9rem">⚠️ 异常 ' + fails.length + ' 个</div>';
-    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">';
-    for (var fi = 0; fi < fails.length; fi++) {
-      var f = fails[fi];
-      html += '<span class="fail-chip" onclick="reQueryFailed(\'' + f.isbn + '\')">🔍 ' + f.isbn + ' <span style="color:#fca5a5;font-size:.7rem">(' + esc(f.error || '') + ')</span></span>';
-    }
-    html += '</div>';
-    html += '<div class="row" style="margin-top:6px">';
-    html += '<button class="btn btn-primary" onclick="reQueryAllFailed()" style="background:#dc2626;font-size:.85rem">🔍 重新查询全部异常</button>';
-    html += '<button class="btn btn-outline" onclick="copyFailText(\'' + esc(failText) + '\')" style="border-color:#ef4444;color:#ef4444;font-size:.85rem">📋 复制异常列表</button>';
-    html += '</div></div>';
-  }
-
-  // 汇总
-  var totalCost = 0;
-  if (priced.length) {
-    priced.forEach(function(r) { totalCost += r.cheapest.total; });
-  }
-  html += '<div class="summary">';
-  html += '<div class="s-card s-blue"><div class="n">' + data.length + '</div><div class="l">查询</div></div>';
-  html += '<div class="s-card s-green"><div class="n">' + ok.length + '</div><div class="l">查到</div></div>';
-  html += '<div class="s-card s-amber"><div class="n">' + (data.length-ok.length) + '</div><div class="l">异常</div></div>';
-  html += '</div>';
-
-  if (priced.length) {
-    html += '<div style="text-align:center;margin-bottom:14px">';
-    html += '<div style="font-size:.75rem;color:#64748b;margin-bottom:6px">最低进货总价</div>';
-    html += '<div style="font-size:1.5rem;font-weight:800;color:#059669">¥' + totalCost.toFixed(1) + '</div>';
-    html += '<button id="btnBatchCart" class="btn-batch-cart" style="margin-top:10px" onclick="batchAddAll()">🛒 一键加购最低价 ' + priced.length + ' 本</button>';
-    html += '</div>';
-  }
-
-  // 每本书的结果
-  for (var i = 0; i < data.length; i++) {
-    var r = data[i];
-    if (r.error) {
-      html += '<div class="card" style="border-left:4px solid #ef4444">';
-      html += '<div style="font-family:monospace;font-size:.8rem;color:#94a3b8">' + esc(r.isbn) + '</div>';
-      html += '<div style="color:#ef4444;font-size:.85rem;margin-top:4px">' + esc(r.error) + '</div></div>';
-    } else if (r.cheapest) {
-      html += '<div class="result-box">';
-      html += '<div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:6px">';
-      html += '<div class="book-title">' + esc(r.title) + '</div>';
-      html += '<span style="font-size:.7rem;color:#94a3b8;white-space:nowrap">' + esc(r.isbn) + '</span>';
-      html += '</div>';
-      if (r.author || r.press) {
-        html += '<div class="meta">' + esc(r.author) + (r.author && r.press ? ' · ' : '') + esc(r.press) + '</div>';
-      }
-
-      // 一键加购最低价
-      if (r.cheapest && r.cheapest.itemId && r.cheapest.shopId) {
-        var cheap = r.cheapest;
-        html += '<div style="margin:8px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">';
-        html += '<button class="btn-cart-all" onclick="addToCart(' + cheap.itemId + ',' + cheap.shopId + ',this)">🛒 加购 ¥' + cheap.total.toFixed(1) + '</button>';
-        html += '<span style="font-size:.72rem;color:#64748b">' + esc(cheap.shop) + ' · ' + esc(cheap.quality_text) + '</span>';
-        html += '</div>';
-      }
-
-      // 价格排行表格
-      var items = r.top_cheapest || [r.cheapest];
-      html += '<div class="table-wrap"><table>';
-      html += '<thead><tr><th>#</th><th>店铺</th><th>品相</th><th style="text-align:right">书价</th><th style="text-align:right">运费</th><th style="text-align:right;color:#dc2626">总价</th><th style="text-align:center">操作</th></tr></thead><tbody>';
-      for (var j = 0; j < items.length; j++) {
-        var it = items[j];
-        var cls = j === 0 ? ' style="font-weight:600;color:#dc2626"' : '';
-        html += '<tr><td>' + (j+1) + '</td>';
-        html += '<td>' + esc(it.shop) + '</td>';
-        html += '<td>' + esc(it.quality_text || '—') + '</td>';
-        html += '<td style="text-align:right">¥' + it.price.toFixed(2) + '</td>';
-        html += '<td style="text-align:right">¥' + it.shipping.toFixed(1) + '</td>';
-        html += '<td style="text-align:right"><span' + cls + '>¥' + it.total.toFixed(1) + '</span></td>';
-        html += '<td style="text-align:center">';
-        if (it.itemId && it.shopId) {
-          html += '<button class="btn-cart" onclick="addToCart(' + it.itemId + ',' + it.shopId + ',this)">🛒</button>';
-        }
-        html += '</td></tr>';
-      }
-      html += '</tbody></table></div>';
-      html += '<div style="font-size:.68rem;color:#94a3b8;margin-top:6px">扫描' + (r.pages_scanned||1) + '页 · 在售' + r.total_count + '本</div>';
-      html += '</div>';
-    }
-  }
-  resultsEl.innerHTML = html;
-  lastResults = data;
-
-  setStatus('查询完成！', 'done');
-
-  // 保存栏
-  var saveBarId = 'saveBar_' + Date.now();
-  var saveHtml = '<div class="save-bar" id="' + saveBarId + '">';
-  saveHtml += '<span>💾</span>';
-  saveHtml += '<input id="saveNameInput" placeholder="给本次查询起个名字" value="">';
-  saveHtml += '<button class="btn-save" onclick="saveHistory(\'' + saveBarId + '\')">保存</button>';
-  saveHtml += '</div>';
-  resultsEl.insertAdjacentHTML('afterbegin', saveHtml);
-};
-
-// ============================================================
-//  加购功能
-// ============================================================
-
-function addToCart(itemId, shopId, btn) {
-  var originalText = btn.textContent;
-  btn.textContent = '⏳';
-  btn.disabled = true;
-  btn.style.opacity = '0.5';
-  fetch('/api/addtocart?itemId=' + itemId + '&shopId=' + shopId)
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.success) {
-        btn.textContent = '✅';
-        btn.style.borderColor = '#059669';
-        btn.style.color = '#059669';
-        toast('✅ 已加购');
-      } else {
-        btn.textContent = '❌';
-        btn.style.color = '#ef4444';
-        toast('❌ ' + (d.error || '加购失败'));
-        setTimeout(function() {
-          btn.textContent = originalText;
-          btn.style.color = '#3b82f6';
-          btn.disabled = false;
-          btn.style.opacity = '1';
-        }, 1500);
-      }
-    })
-    .catch(function() {
-      btn.textContent = '❌';
-      toast('❌ 网络错误');
-      setTimeout(function() {
-        btn.textContent = originalText;
-        btn.disabled = false;
-        btn.style.opacity = '1';
-      }, 1500);
-    });
-}
-
-function batchAddAll() {
-  var priced = lastResults.filter(function(r) { return r.cheapest && r.cheapest.itemId && r.cheapest.shopId; });
-  if (!priced.length) { toast('没有可加购的商品'); return; }
-
-  var btn = document.getElementById('btnBatchCart');
-  btn.disabled = true;
-  btn.textContent = '⏳ 正在加购 0/' + priced.length;
-
-  var success = 0, failCount = 0;
-  function addNext(idx) {
-    if (idx >= priced.length) {
-      btn.textContent = '✅ ' + success + '/' + priced.length + (failCount > 0 ? ' (' + failCount + '失败)' : '');
-      btn.style.background = success > 0 ? '#059669' : '#dc2626';
-      toast('✅ 已加购 ' + success + ' 本' + (failCount > 0 ? '，' + failCount + ' 本失败' : ''));
-      setTimeout(function() { btn.disabled = false; }, 2000);
-      return;
-    }
-    var r = priced[idx];
-    btn.textContent = '⏳ ' + (idx+1) + '/' + priced.length;
-    fetch('/api/addtocart?itemId=' + r.cheapest.itemId + '&shopId=' + r.cheapest.shopId)
-      .then(function(resp) { return resp.json(); })
-      .then(function(d) {
-        if (d.success) success++;
-        else failCount++;
-        setTimeout(function() { addNext(idx + 1); }, 1200);
-      })
-      .catch(function() {
-        failCount++;
-        setTimeout(function() { addNext(idx + 1); }, 1200);
+  html+='<div class="summary"><div class="s-card blue"><div class="n">'+data.length+'</div><div class="l">查询</div></div><div class="s-card green"><div class="n">'+ok.length+'</div><div class="l">查到</div></div><div class="s-card amber"><div class="n">'+(data.length-ok.length)+'</div><div class="l">异常</div></div>';
+  if(pd.length){var tot=0;pd.forEach(function(r){tot+=r.cheapest.total});html+='<div class="s-card green"><div class="n">¥'+tot.toFixed(1)+'</div><div class="l">最低总价</div></div><div style="grid-column:1/-1;text-align:center;margin-top:4px"><button onclick="ba()" style="padding:8px 24px;border-radius:8px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:600;font-size:1rem;box-shadow:0 2px 8px rgba(220,38,38,.3)">🛒 一键加购全部 '+pd.length+' 本</button></div>'}
+  html+='</div>';
+  data.forEach(function(r){
+    if(r.error){html+='<div class="card" style="border-left:3px solid #ef4444"><div style="font-family:monospace;font-size:.75rem;color:#94a3b8">'+esc(r.isbn)+'</div><div style="color:#ef4444;font-size:.8rem;margin-top:2px">'+esc(r.error)+'</div></div>'}
+    else if(r.cheapest){
+      html+='<div class="result-box"><div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:4px"><div class="book-title">'+esc(r.title)+'</div><span style="font-size:.7rem;color:#94a3b8">'+esc(r.isbn)+'</span></div>';
+      if(r.author||r.press)html+='<div class="meta">'+esc(r.author)+(r.author&&r.press?' · ':'')+esc(r.press)+'</div>';
+      var pr=r.price_range||{},prmin=pr.min||0,pravg=pr.avg||0,prmax=pr.max||0;
+      html+='<div style="display:flex;gap:10px;margin:3px 0 6px;padding:4px 8px;background:#f8fafc;border-radius:6px;font-size:.75rem;align-items:center;flex-wrap:wrap"><span>📊 <strong style="color:#dc2626">最低书价 ¥'+prmin.toFixed(2)+'</strong></span><span style="color:#64748b">|</span><span>均价 <strong>¥'+pravg.toFixed(2)+'</strong></span><span style="color:#64748b">|</span><span style="color:#94a3b8">最高 ¥'+prmax.toFixed(2)+' · 在售 '+r.total_count+'本</span></div>';
+      if(r.cheapest.itemId&&r.cheapest.shopId){var c=r.cheapest;html+='<div style="margin:4px 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button onclick="ac('+c.itemId+','+c.shopId+',this)" style="padding:5px 14px;border-radius:6px;border:none;background:#059669;color:#fff;cursor:pointer;font-size:.82rem;font-weight:500">🛒 最低价 ¥'+c.total.toFixed(1)+'</button><span style="font-size:.7rem;color:#64748b">'+esc(c.shop)+' · '+esc(c.quality_text)+'</span></div>'}
+      var items=r.top_cheapest||[r.cheapest];
+      html+='<table><thead><tr><th>#</th><th>店铺</th><th>品相</th><th style="text-align:right">书价</th><th style="text-align:right">运费</th><th style="text-align:right;color:#dc2626">总价</th><th></th></tr></thead><tbody>';
+      items.forEach(function(it,j){
+        html+='<tr><td>'+(j+1)+'</td><td>'+esc(it.shop)+(it.area?'<div class="meta">'+esc(it.area)+'</div>':'')+'</td><td>'+esc(it.quality_text||'—')+'</td><td style="text-align:right">¥'+it.price.toFixed(2)+'</td><td style="text-align:right">¥'+it.shipping.toFixed(1)+'</td><td style="text-align:right'+(j===0?';font-weight:700;color:#dc2626':'')+'">¥'+it.total.toFixed(1)+'</td><td style="text-align:center">'+(it.itemId&&it.shopId?'<button onclick="ac('+it.itemId+','+it.shopId+',this)" style="padding:2px 6px;border-radius:4px;border:1px solid #3b82f6;background:transparent;color:#3b82f6;cursor:pointer;font-size:.72rem">🛒</button>':'')+'</td></tr>'
       });
-  }
-  addNext(0);
-}
-
-function copyFailText(text) {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(function() {
-      toast('✅ 已复制');
-    }).catch(function() {
-      fallbackCopy(text);
-    });
-  } else {
-    fallbackCopy(text);
-  }
-}
-
-function fallbackCopy(text) {
-  var ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed'; ta.style.left = '-9999px';
-  document.body.appendChild(ta);
-  ta.select();
-  try { document.execCommand('copy'); toast('✅ 已复制'); } catch(e) { toast('❌ 复制失败'); }
-  document.body.removeChild(ta);
-}
-
-function reQueryFailed(isbn) {
-  if (isRunning) return;
-  inputArea.value = isbn;
-  resultsEl.innerHTML = '';
-  emptyEl.style.display = 'none';
-  window.scrollTo({top: 0, behavior: 'smooth'});
-  setTimeout(function() { btnQuery.click(); }, 300);
-}
-
-function reQueryAllFailed() {
-  if (isRunning) return;
-  var chips = document.querySelectorAll('.fail-chip');
-  if (!chips.length) return;
-  var isbns = [];
-  chips.forEach(function(el) {
-    var m = (el.textContent || '').match(/\d{8,13}/);
-    if (m) isbns.push(m[0]);
+      html+='</tbody></table><div style="font-size:.65rem;color:#94a3b8;margin-top:3px">扫描'+(r.pages_scanned||1)+'页 · 在售'+r.total_count+'本</div></div>'
+    }
   });
-  if (!isbns.length) return;
-  inputArea.value = isbns.join('\n');
-  resultsEl.innerHTML = '';
-  emptyEl.style.display = 'none';
-  window.scrollTo({top: 0, behavior: 'smooth'});
-  setTimeout(function() { btnQuery.click(); }, 300);
+  E.innerHTML=html;L=data;
+  var sb='sb_'+Date.now();E.insertAdjacentHTML('afterbegin','<div class="save-bar" id="'+sb+'"><span>💾</span><input id="si" placeholder="命名（可选）"><button class="btn-save" onclick="sH(\''+sb+'\')">保存查询</button></div>');
 }
 
-// ============================================================
-//  历史记录
-// ============================================================
-
-function toggleHistory() {
-  var body = document.getElementById('historyBody');
-  var toggle = document.getElementById('historyToggle');
-  body.classList.toggle('open');
-  toggle.classList.toggle('open');
-  if (body.classList.contains('open')) loadHistoryList();
+// 加购
+function ac(iid,sid,btn){
+  var o=btn.textContent;btn.textContent='⏳';btn.disabled=1;btn.style.opacity='.6';
+  fj('/api/addtocart?itemId='+iid+'&shopId='+sid).then(function(d){
+    if(d.success){btn.textContent='✅';btn.style.borderColor='#10b981';btn.style.color='#10b981';toast('已加购')}
+    else{btn.textContent='❌';setTimeout(function(){btn.textContent=o;btn.disabled=0;btn.style.opacity='1'},2000)}
+  }).catch(function(){btn.textContent='❌';setTimeout(function(){btn.textContent=o;btn.disabled=0;btn.style.opacity='1'},2000)})
+}
+function ba(){
+  var is=L.filter(function(r){return r.cheapest&&r.cheapest.itemId&&r.cheapest.shopId});if(!is.length){toast('无商品');return}
+  var btn=document.querySelector('[onclick="ba()"]');btn.disabled=1;btn.textContent='⏳ 0/'+is.length;var ok=0,ng=0;
+  function nx(i){if(i>=is.length){btn.textContent='✅ '+ok+'/'+is.length+(ng?' ('+ng+'失败)':'');btn.style.background=ok>0?'#059669':'#dc2626';toast('已完成 '+ok+'/'+is.length);return}btn.textContent='⏳ '+(i+1)+'/'+is.length;fj('/api/addtocart?itemId='+is[i].cheapest.itemId+'&shopId='+is[i].cheapest.shopId).then(function(d){if(d.success)ok++;else ng++;setTimeout(function(){nx(i+1)},1200)}).catch(function(){ng++;setTimeout(function(){nx(i+1)},1200)})}nx(0)
 }
 
-function saveHistory(saveBarId) {
-  var btn = document.querySelector('#' + saveBarId + ' .btn-save');
-  if (!btn) return;
-  var nameInput = document.getElementById('saveNameInput');
-  var name = nameInput ? nameInput.value.trim() : '';
-  if (!name) { name = '查询 ' + new Date().toLocaleString('zh-CN', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}); }
+// 重查
+function rq(is){I.value=is;E.innerHTML='';N.style.display='none';scrollTo(0,0);setTimeout(function(){Q.click()},300)}
+function rqA(){var is=[];document.querySelectorAll('.fail-chip').forEach(function(el){var m=(el.textContent||'').match(/\d{8,13}/);if(m)is.push(m[0])});if(!is.length)return;I.value=is.join('\n');rq(is[0])}
 
-  btn.disabled = true;
-  btn.textContent = '⏳';
-  var quality = document.getElementById('qualitySelect').value;
+// 历史
+function loadH(){
+  fj('/api/history/list').then(function(d){
+    var el=id('histList');
+    if(!d.records||!d.records.length){el.innerHTML='<div style="text-align:center;color:#94a3b8;font-size:.8rem;padding:10px">暂无记录</div>';return}
+    el.innerHTML=d.records.map(function(r){
+      return '<div class="h-item" id="hi_'+r.id+'"><div class="info"><div class="name">'+esc(r.name)+'</div><div class="meta">'+(r.created_at||'')+' · '+r.book_count+'本'+(r.priced_count?' · 🏷️ ¥'+r.total_cost.toFixed(1):'')+'</div></div><div class="actions"><button class="btn-h-q" onclick="rH(\''+r.id+'\')">🔍</button>'+(r.priced_count?'<button class="btn-h-c" onclick="cH(\''+r.id+'\')">🛒</button>':'')+'<button class="btn-h-d" onclick="dH(\''+r.id+'\')">🗑️</button></div></div>'
+    }).join('')
+  }).catch(function(){})
+}
+function sH(sbId){
+  var btn=document.querySelector('#'+sbId+' .btn-save');if(!btn)return;
+  var nm=(id('si').value||'').trim()||('查询 '+new Date().toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}));
+  btn.disabled=1;btn.textContent='⏳';
+  fj('/api/history/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:nm,results:L,quality_filter:id('qualitySelect').value})}).then(function(d){
+    if(d.success){btn.textContent='✅';btn.style.background='#10b981';fold('hist');id('histArrow')&&id('histArrow').classList.add('open');loadH()}
+    else{btn.textContent='❌';setTimeout(function(){btn.disabled=0;btn.textContent='保存';btn.style.background='#f59e0b'},2000)}
+  }).catch(function(){btn.textContent='❌';setTimeout(function(){btn.disabled=0;btn.textContent='保存';btn.style.background='#f59e0b'},2000)})
+}
+function rH(id){
+  fj('/api/history/get?id='+encodeURIComponent(id)).then(function(rec){
+    if(rec.error||!rec.isbns||!rec.isbns.length){toast('无数据');return}
+    I.value=rec.isbns.join('\n');if(rec.quality_filter)id('qualitySelect').value=rec.quality_filter;
+    E.innerHTML='';N.style.display='none';scrollTo(0,0);setTimeout(function(){Q.click()},300)
+  }).catch(function(){toast('获取失败')})
+}
+function cH(id){
+  fj('/api/history/get?id='+encodeURIComponent(id)).then(function(rec){
+    if(rec.error){toast(rec.error);return}
+    var is=(rec.results||[]).filter(function(r){return r.cheapest&&r.cheapest.itemId&&r.cheapest.shopId});
+    if(!is.length){toast('无商品');return}
+    var btn=event&&event.target;if(btn){btn.disabled=1;btn.textContent='⏳ 0/'+is.length}
+    var ok=0,ng=0;
+    function nx(i){if(i>=is.length){if(btn){btn.textContent='✅ '+ok+'/'+is.length+(ng?' ('+ng+'失败)':'');btn.style.background=ok>0?'#059669':'#dc2626';setTimeout(function(){btn.disabled=0},2000)}return}if(btn)btn.textContent='⏳ '+(i+1)+'/'+is.length;fj('/api/addtocart?itemId='+encodeURIComponent(is[i].cheapest.itemId)+'&shopId='+encodeURIComponent(is[i].cheapest.shopId)).then(function(d){if(d.success)ok++;else ng++;setTimeout(function(){nx(i+1)},1200)}).catch(function(){ng++;setTimeout(function(){nx(i+1)},1200)})}nx(0)
+  }).catch(function(){toast('获取记录失败')})
+}
+function dH(id){
+  if(!confirm('删除？'))return;
+  fj('/api/history/delete?id='+encodeURIComponent(id)).then(function(d){if(d.success){var el=document.getElementById('hi_'+id);if(el)el.style.display='none';loadH()}}).catch(function(){})
+}
 
-  fetch('/api/history/save', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ name: name, results: lastResults, quality_filter: quality })
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(d) {
-    if (d.success) {
-      btn.textContent = '✅ 已保存';
-      btn.style.background = '#059669';
-      var body = document.getElementById('historyBody');
-      var toggle = document.getElementById('historyToggle');
-      body.classList.add('open');
-      toggle.classList.add('open');
-      loadHistoryList();
-    } else {
-      btn.textContent = '❌ 失败';
-      setTimeout(function() {
-        btn.disabled = false;
-        btn.textContent = '保存';
-        btn.style.background = '#f59e0b';
-      }, 2000);
+// Cookie
+function ckC(){
+  fj('/api/cookie/status').then(function(d){
+    var el=id('cookSt'),dot=id('cookDot'),bar=id('cookieBar'),ico=id('cookIcon'),txt=id('cookText'),act=id('cookAct');
+    if(d.has_cookie){el.innerHTML='✅ Cookie 已设置 · '+d.cookie_len+' 字符';el.style.background='#f0fdf4';dot.style.background='#10b981'}
+    else{el.innerHTML='❌ 未设置 Cookie';el.style.background='#fef2f2';dot.style.background='#ef4444'}
+    if(!d.has_cookie){bar.style.display='flex';bar.className='invalid';ico.textContent='🔴';txt.textContent='未设置 Cookie';act.textContent='设置 →'}
+    else if(d.is_valid){bar.style.display='flex';bar.className='valid';ico.textContent='🟢';txt.textContent='Cookie 正常'+(d.days_since_update>7?'，已用 '+d.days_since_update.toFixed(0)+' 天':'');act.textContent='→'}
+    else{bar.style.display='flex';bar.className='invalid';ico.textContent='🔴';txt.textContent='Cookie 已失效';act.textContent='更新 →'}
+    if(!d.has_cookie||!d.is_valid){id('fold_cookie')&&id('fold_cookie').classList.add('open');id('cookArrow')&&id('cookArrow').classList.add('open')}
+  }).catch(function(){id('cookSt').innerHTML='⚠️ 获取失败';id('cookDot').style.background='#94a3b8'})
+}
+function saveCookie(){
+  var inp=id('cookInp'),msg=id('cookMsg'),raw=inp.value.trim();
+  if(!raw){msg.textContent='❌ 请输入';msg.style.color='#ef4444';return}
+  fj('/api/cookie/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cookie:raw})}).then(function(d){
+    if(d.success){msg.textContent=d.warning?'⚠️ '+d.warning:'✅ 保存成功';msg.style.color=d.warning?'#f59e0b':'#10b981';ckC();inp.value=''}
+    else{msg.textContent='❌ '+(d.error||'失败');msg.style.color='#ef4444'}
+  }).catch(function(){msg.textContent='❌ 网络错误';msg.style.color='#ef4444'})
+}
+
+// OCR
+function doOcr(files){
+  var st=id('ocrSt');st.style.display='block';st.innerHTML='⏳ 识别 '+files.length+' 张...';st.style.color='#3b82f6';
+  var all=[];
+  function p(i){
+    if(i>=files.length){
+      if(all.length){st.innerHTML='✅ 识别到 <strong>'+all.length+'</strong> 个 ISBN';st.style.color='#059669';I.value=(I.value.trim()?I.value.trim()+'\n':'')+all.join('\n')}
+      else{st.innerHTML='⚠️ 未识别到 ISBN';st.style.color='#d97706'}
+      return
     }
-  })
-  .catch(function() {
-    btn.textContent = '❌ 错误';
-    setTimeout(function() {
-      btn.disabled = false;
-      btn.textContent = '保存';
-      btn.style.background = '#f59e0b';
-    }, 2000);
-  });
-}
-
-function loadHistoryList() {
-  fetch('/api/history/list')
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      var listEl = document.getElementById('historyList');
-      if (!d.records || d.records.length === 0) {
-        listEl.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:.85rem;padding:16px">暂无记录</div>';
-        return;
-      }
-      var html = '';
-      for (var i = 0; i < d.records.length; i++) {
-        var r = d.records[i];
-        html += '<div class="history-item" id="hitem_' + r.id + '">';
-        html += '<div class="info"><div class="name">' + esc(r.name) + '</div>';
-        html += '<div class="meta">' + (r.created_at||'') + ' · ' + r.book_count + '本';
-        if (r.priced_count > 0) html += ' · 最低总价 ¥' + r.total_cost.toFixed(1);
-        html += '</div></div>';
-        html += '<div class="actions">';
-        html += '<button class="btn-h-query" onclick="reQueryHistory(\'' + r.id + '\')">🔍 重查</button>';
-        if (r.priced_count > 0) html += '<button class="btn-h-cart" onclick="batchCartHistory(\'' + r.id + '\')">🛒 加购</button>';
-        html += '<button class="btn-h-del" onclick="deleteHistory(\'' + r.id + '\')">🗑️</button>';
-        html += '</div></div>';
-      }
-      listEl.innerHTML = html;
-    })
-    .catch(function() {});
-}
-
-function reQueryHistory(recordId) {
-  fetch('/api/history/get?id=' + encodeURIComponent(recordId))
-    .then(function(r) { return r.json(); })
-    .then(function(record) {
-      if (record.error || !record.isbns || !record.isbns.length) {
-        toast('获取记录失败'); return;
-      }
-      inputArea.value = record.isbns.join('\n');
-      if (record.quality_filter) document.getElementById('qualitySelect').value = record.quality_filter;
-      resultsEl.innerHTML = '';
-      emptyEl.style.display = 'none';
-      window.scrollTo({top: 0, behavior: 'smooth'});
-      setTimeout(function() { btnQuery.click(); }, 300);
-    })
-    .catch(function() { toast('获取记录失败'); });
-}
-
-function batchCartHistory(recordId) {
-  fetch('/api/history/get?id=' + encodeURIComponent(recordId))
-    .then(function(r) { return r.json(); })
-    .then(function(record) {
-      if (record.error || !record.results) { toast('获取记录失败'); return; }
-      var priced = record.results.filter(function(r) { return r.cheapest && r.cheapest.itemId && r.cheapest.shopId; });
-      if (!priced.length) { toast('没有可加购的商品'); return; }
-      var total = priced.length, done = 0, success = 0, failCount = 0;
-      var btn = document.querySelector('[onclick*="batchCartHistory"]') || event && event.target;
-      if (btn) { btn.disabled = true; btn.textContent = '⏳ 0/' + total; }
-      function addNext(idx) {
-        if (idx >= total) {
-          if (btn) {
-            btn.textContent = '✅ ' + success + '/' + total + (failCount > 0 ? ' (' + failCount + '失败)' : '');
-            setTimeout(function() { btn.disabled = false; }, 2000);
-          }
-          toast('✅ 已加购 ' + success + ' 本');
-          return;
-        }
-        var r = priced[idx];
-        if (btn) btn.textContent = '⏳ ' + (idx+1) + '/' + total;
-        fetch('/api/addtocart?itemId=' + encodeURIComponent(r.cheapest.itemId) + '&shopId=' + encodeURIComponent(r.cheapest.shopId))
-          .then(function(resp) { return resp.json(); })
-          .then(function(d) {
-            if (d.success) success++; else failCount++;
-            setTimeout(function() { addNext(idx + 1); }, 1200);
-          })
-          .catch(function() {
-            failCount++;
-            setTimeout(function() { addNext(idx + 1); }, 1200);
-          });
-      }
-      addNext(0);
-    })
-    .catch(function() { toast('获取记录失败'); });
-}
-
-function deleteHistory(recordId) {
-  if (!confirm('删除这条记录？')) return;
-  fetch('/api/history/delete?id=' + encodeURIComponent(recordId))
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.success) { loadHistoryList(); toast('已删除'); }
-    })
-    .catch(function() {});
-}
-
-// ============================================================
-//  Cookie 管理
-// ============================================================
-
-function toggleCookie() {
-  var body = document.getElementById('cookieBody');
-  var toggle = document.getElementById('cookieToggle');
-  body.classList.toggle('open');
-  toggle.classList.toggle('open');
-  if (body.classList.contains('open')) checkCookieStatus();
-}
-
-function updateCookieBar(info) {
-  var bar = document.getElementById('cookieBar');
-  var icon = document.getElementById('cookieBarIcon');
-  var text = document.getElementById('cookieBarText');
-  var action = document.getElementById('cookieBarAction');
-
-  if (!info.has_cookie) {
-    bar.style.display = 'flex'; bar.className = 'card invalid';
-    icon.textContent = '🔴'; text.textContent = '未设置 Cookie，查询会失败';
-    action.textContent = '立即设置 →'; return;
+    if(!files[i].type.startsWith('image/')){p(i+1);return}
+    var fd=new FormData();fd.append('image',files[i]);
+    fetch('/api/ocr',{method:'POST',body:fd}).then(function(r){return r.json()}).then(function(d){
+      if(d.isbns&&d.isbns.length)d.isbns.forEach(function(v){if(all.indexOf(v)===-1)all.push(v)});st.innerHTML='⏳ 已提取 '+all.length+' 个';p(i+1)
+    }).catch(function(){p(i+1)})
   }
-
-  if (info.is_valid) {
-    bar.style.display = 'flex'; bar.className = 'card valid';
-    icon.textContent = '🟢';
-    var days = info.days_since_update || 0;
-    if (days > 7) {
-      text.textContent = 'Cookie 有效，但已 ' + days.toFixed(0) + ' 天，建议更新';
-      bar.className = 'card warning'; icon.textContent = '🟡';
-      action.textContent = '更新 →';
-    } else {
-      text.textContent = 'Cookie 正常 · ' + (days > 0 ? days.toFixed(0) + ' 天' : '刚刚更新');
-      action.textContent = '详情 →';
-    }
-  } else {
-    bar.style.display = 'flex'; bar.className = 'card invalid';
-    icon.textContent = '🔴'; text.textContent = 'Cookie 已失效，请更新';
-    action.textContent = '立即更新 →';
-  }
+  p(0)
 }
 
-function checkCookieStatus() {
-  var statusEl = document.getElementById('cookieStatus');
-  var badge = document.getElementById('cookieStatusBadge');
-  fetch('/api/cookie/status')
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      updateCookieBar(d);
-      if (d.has_cookie) {
-        var dateStr = d.updated_at ? d.updated_at.replace('T',' ').substring(0,19) : '未知';
-        statusEl.innerHTML = '✅ Cookie 已设置 · ' + d.cookie_len + ' 字符 · ' + dateStr;
-        statusEl.style.background = '#f0fdf4'; statusEl.style.borderColor = '#86efac';
-        badge.style.background = '#059669';
-      } else {
-        statusEl.innerHTML = '❌ 未设置 Cookie';
-        statusEl.style.background = '#fef2f2'; statusEl.style.borderColor = '#fca5a5';
-        badge.style.background = '#ef4444';
-      }
-      if (!d.has_cookie || !d.is_valid) {
-        var body = document.getElementById('cookieBody');
-        var toggle = document.getElementById('cookieToggle');
-        if (!body.classList.contains('open')) { body.classList.add('open'); toggle.classList.add('open'); }
-      }
-    })
-    .catch(function() {
-      statusEl.innerHTML = '⚠️ 无法获取状态';
-      badge.style.background = '#94a3b8';
-    });
-}
+function toast(t){var el=id('toast');el.textContent=t;el.style.display='block';clearTimeout(el._t);el._t=setTimeout(function(){el.style.display='none'},2000)}
 
-function saveCookie() {
-  var input = document.getElementById('cookieInput');
-  var btn = document.getElementById('btnSaveCookie');
-  var msg = document.getElementById('cookieMsg');
-  var raw = input.value.trim();
-  if (!raw) { msg.innerHTML = '❌ 请粘贴 Cookie'; msg.style.color = '#ef4444'; return; }
-  btn.disabled = true; btn.textContent = '⏳'; msg.textContent = '';
-  fetch('/api/cookie/update', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({cookie: raw})
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(d) {
-    if (d.success) {
-      msg.innerHTML = d.warning ? '⚠️ ' + d.warning : '✅ 保存并验证通过！';
-      msg.style.color = d.warning ? '#d97706' : '#059669';
-      checkCookieStatus(); input.value = '';
-    } else {
-      msg.innerHTML = '❌ ' + (d.error || '保存失败');
-      msg.style.color = '#ef4444';
-    }
-  })
-  .catch(function() { msg.innerHTML = '❌ 网络错误'; msg.style.color = '#ef4444'; })
-  .finally(function() { btn.disabled = false; btn.textContent = '💾 保存 Cookie'; });
-}
-
-// ── 智能粘贴提取 ISBN ──
-var pasteTimer = null;
-inputArea.addEventListener('paste', function() {
-  clearTimeout(pasteTimer);
-  pasteTimer = setTimeout(function() {
-    var text = inputArea.value;
-    var isbns = [];
-    var seen = {};
-    text.split(/[\s,，、\n\r]+/).forEach(function(s) {
-      s = s.trim().replace(/-/g, '').replace(/ /g, '');
-      if (/^\d{10,13}$/.test(s) && !seen[s]) { seen[s] = true; isbns.push(s); }
-    });
-    if (isbns.length > 0) {
-      var lines = text.split(/[\n\r]+/);
-      var ignored = 0;
-      lines.forEach(function(line) {
-        var c = line.trim().replace(/-/g, '').replace(/ /g, '');
-        if (c && !/^\d{10,13}$/.test(c)) ignored++;
-      });
-      showPasteConfirm(isbns.length, ignored);
-    }
-  }, 100);
-});
-
-function showPasteConfirm(count, ignored) {
-  var old = document.getElementById('pasteConfirm');
-  if (old) old.remove();
-
-  var bar = document.createElement('div');
-  bar.id = 'pasteConfirm';
-  bar.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;font-size:.85rem';
-  bar.innerHTML = '<span>📋</span><span style="flex:1">识别到 <strong>' + count + '</strong> 个 ISBN' +
-    (ignored > 0 ? '<span style="color:#94a3b8;font-size:.78rem;margin-left:6px">（忽略 ' + ignored + ' 行）</span>' : '') +
-    '</span>' +
-    '<button onclick="confirmPasteQuery()" style="padding:8px 18px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-weight:600;cursor:pointer;font-size:.85rem">🔍 立即查价</button>' +
-    '<button onclick="dismissPasteConfirm()" style="padding:8px 10px;border-radius:8px;border:none;background:transparent;color:#94a3b8;cursor:pointer;font-size:.8rem">✕</button>';
-
-  var card = inputArea.closest('.card');
-  if (card) card.appendChild(bar);
-}
-
-function confirmPasteQuery() {
-  var bar = document.getElementById('pasteConfirm');
-  if (bar) bar.remove();
-  btnQuery.click();
-}
-
-function dismissPasteConfirm() {
-  var bar = document.getElementById('pasteConfirm');
-  if (bar) bar.remove();
-}
-
-// ── OCR 图片识别 ISBN ──
-function handleOcrDrop(e) {
-  e.preventDefault();
-  document.getElementById('ocrArea').style.borderColor = '#cbd5e1';
-  document.getElementById('ocrArea').style.background = '';
-  var files = e.dataTransfer.files;
-  if (files.length > 0) handleOcrFiles(files);
-}
-
-function handleOcrFiles(files) {
-  var statusEl = document.getElementById('ocrStatus');
-  statusEl.style.display = 'block';
-  statusEl.innerHTML = '⏳ 正在识别 ' + files.length + ' 张图片...';
-  statusEl.style.color = '#2563eb';
-
-  var pending = files.length;
-  var allIsbns = [];
-
-  function processFile(i) {
-    if (i >= files.length) {
-      if (allIsbns.length > 0) {
-        statusEl.innerHTML = '✅ 识别到 <strong>' + allIsbns.length + '</strong> 个 ISBN，已填入输入框';
-        statusEl.style.color = '#059669';
-        var existing = inputArea.value.trim();
-        var newVal = allIsbns.join('\n');
-        inputArea.value = existing ? existing + '\n' + newVal : newVal;
-        showPasteConfirm(allIsbns.length, 0);
-      } else {
-        statusEl.innerHTML = '⚠️ 未识别到 ISBN，请检查图片是否清晰包含 ISBN 数字';
-        statusEl.style.color = '#d97706';
-      }
-      return;
-    }
-
-    var file = files[i];
-    if (!file.type.startsWith('image/')) {
-      pending--;
-      processFile(i + 1);
-      return;
-    }
-
-    var formData = new FormData();
-    formData.append('image', file);
-
-    fetch('/api/ocr', { method: 'POST', body: formData })
-      .then(function(r) { return r.json(); })
-      .then(function(d) {
-        pending--;
-        if (d.isbns && d.isbns.length > 0) {
-          d.isbns.forEach(function(isbn) {
-            if (allIsbns.indexOf(isbn) === -1) allIsbns.push(isbn);
-          });
-          statusEl.innerHTML = '⏳ 识别中... 已提取 ' + allIsbns.length + ' 个 ISBN（' + (files.length - pending) + '/' + files.length + '）';
-        }
-        processFile(i + 1);
-      })
-      .catch(function() {
-        pending--;
-        processFile(i + 1);
-      });
-  }
-
-  processFile(0);
-}
-
-// ── 手机扫码 ──
-(function() {
-  if ('BarcodeDetector' in window) {
-    document.getElementById('btnScan').style.display = '';
-  }
-})();
-
-function scanBarcode() {
-  if (!('BarcodeDetector' in window)) {
-    toast('当前浏览器不支持扫码功能');
-    return;
-  }
-  var btn = document.getElementById('btnScan');
-  btn.textContent = '⏳ 正在打开摄像头...';
-  btn.disabled = true;
-
-  try {
-    var barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'isbn_13', 'isbn_10'] });
-  } catch(e) {
-    btn.textContent = '📷 扫码';
-    btn.disabled = false;
-    toast('扫码初始化失败');
-    return;
-  }
-
-  var video = document.createElement('video');
-  video.style.cssText = 'max-width:100%;border-radius:10px;margin-top:10px';
-  video.setAttribute('playsinline', '');
-  video.setAttribute('autoplay', '');
-
-  var scanContainer = document.createElement('div');
-  scanContainer.id = 'scanContainer';
-  scanContainer.style.cssText = 'margin-top:8px;text-align:center';
-  scanContainer.appendChild(video);
-
-  var cancelBtn = document.createElement('button');
-  cancelBtn.textContent = '✕ 关闭扫码';
-  cancelBtn.style.cssText = 'margin-top:8px;padding:6px 16px;border-radius:6px;border:none;background:#e2e8f0;color:#64748b;cursor:pointer;font-size:.8rem';
-  cancelBtn.onclick = stopScan;
-  scanContainer.appendChild(cancelBtn);
-
-  var inputCard = inputArea.closest('.card');
-  if (inputCard) inputCard.appendChild(scanContainer);
-
-  var stream = null;
-
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-    .then(function(s) {
-      stream = s;
-      video.srcObject = s;
-      video.play();
-
-      var scanTimer = setInterval(function() {
-        if (!stream) { clearInterval(scanTimer); return; }
-        barcodeDetector.detect(video)
-          .then(function(barcodes) {
-            if (barcodes.length > 0) {
-              var code = barcodes[0].rawValue.replace(/-/g, '');
-              if (/^\d{10,13}$/.test(code)) {
-                stopScan();
-                inputArea.value = (inputArea.value.trim() ? inputArea.value.trim() + '\n' : '') + code;
-                toast('✅ 扫码成功: ' + code);
-                setTimeout(function() { btnQuery.click(); }, 500);
-              }
-            }
-          })
-          .catch(function() {});
-      }, 500);
-    })
-    .catch(function() {
-      btn.textContent = '📷 扫码';
-      btn.disabled = false;
-      toast('无法打开摄像头，请确保有摄像头权限');
-      stopScan();
-    });
-
-  function stopScan() {
-    if (stream) { stream.getTracks().forEach(function(t) { t.stop(); }); stream = null; }
-    var container = document.getElementById('scanContainer');
-    if (container) container.remove();
-    btn.textContent = '📷 扫码';
-    btn.disabled = false;
-  }
-}
-
-// 初始加载
-setTimeout(function() { loadHistoryList(); checkCookieStatus(); }, 500);
-
-// 输入框快捷键
-inputArea.addEventListener('keydown', function(e) {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-    btnQuery.click();
-  }
-});
+// 初始化
+id('btnClear').onclick=function(){I.value='';E.innerHTML='';N.style.display='block';ss('就绪','')};
+setTimeout(function(){ckC();loadH()},500);
 </script>
 </body>
 </html>
