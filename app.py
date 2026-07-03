@@ -12,27 +12,35 @@ import urllib.request
 import urllib.parse
 import re
 import os
-import time
+import sys
 import mimetypes
+import io
+import socketserver
 from datetime import datetime
+
+# ── 配置（前置：用于 import 路径） ──────────────────────────
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+# 共享模块在父目录（kongfz_query.py, kongfz_inventory.py 等）
+_PARENT = os.path.dirname(BASE_DIR)
+if _PARENT not in sys.path:
+    sys.path.insert(0, _PARENT)
+
 from kongfz_cookie import (
     load_cookie, save_cookie, test_cookie, get_cookie_info,
     verify_current_cookie, extract_from_curl,
     migrate_from_shelve_needed, migrate_from_shelve,
 )
-import uuid
-import posixpath
-import io
-import pytesseract
-from PIL import Image
+from kongfz_query import query_isbn, batch_query, HEADERS
+from kongfz_address import cleanup_addresses, MAX_ADDRESSES
+from kongfz_inventory import (
+    load_inventory, add_item, sell_item, update_sale_price,
+    delete_item, get_stats,
+)
 
 # ── 配置 ──────────────────────────────────────────────────
 PORT = int(os.environ.get("PORT", 5000))
-
-# 云部署时，项目根目录为当前文件所在目录
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
-DATA_DIR = os.path.join(BASE_DIR, "data")
 
 # 确保 data 目录存在（用于持久化 Cookie 和历史记录）
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -43,143 +51,56 @@ kongfz_cookie.STORAGE_FILE = os.path.join(DATA_DIR, ".kongfz_cookies.json")
 
 HTML_FILE = os.path.join(BASE_DIR, "index.html")
 HISTORY_FILE = os.path.join(DATA_DIR, "kongfz_history.json")
-
-API_HOST = "https://search.kongfz.com"
-API_PATH = "/pc-gw/search-web/client/pc/product/keyword/list"
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-    "Accept": "application/json, text/plain, */*",
-    "Referer": "https://search.kongfz.com/product/",
-}
+INVENTORY_FILE = os.path.join(DATA_DIR, "inventory.json")
 
 
-# ── 查询逻辑 ───────────────────────────────────────────────
-
-def query_isbn(isbn, cookie_str, quality_filter=""):
-    """查询单个 ISBN，返回价格信息"""
-    isbn = isbn.strip().replace("-", "").replace(" ", "")
-    if not re.match(r'^\d{8,13}$', isbn):
-        return {"isbn": isbn, "title": "—", "error": "格式不对"}
-
-    # 第一页获取基本信息
-    params_dict = {"keyword": isbn, "page": 1, "size": 30}
-    if quality_filter:
-        params_dict["quality"] = quality_filter
-    params = urllib.parse.urlencode(params_dict)
-    url = f"{API_HOST}{API_PATH}?{params}"
-    try:
-        req = urllib.request.Request(url, headers={**HEADERS, "Cookie": cookie_str})
-        resp = urllib.request.urlopen(req, timeout=20)
-        data = json.loads(resp.read().decode("utf-8"))
-    except Exception as e:
-        return {"isbn": isbn, "title": "—", "error": str(e)[:30]}
-
-    if data.get("status") != 1:
-        msg = data.get("message", "查询失败")
-        return {"isbn": isbn, "title": "—", "error": msg}
-
-    payload = data.get("data", {})
-    item_resp = payload.get("itemResponse", {})
-    total = payload.get("totalFound") or payload.get("totalCount") or 0
-    items = item_resp.get("list") or item_resp.get("items") or []
-    if not items:
-        return {"isbn": isbn, "title": "—", "error": "无在售记录", "count": total}
-
-    title = items[0].get("title", "—")
-    author = items[0].get("author", "")
-    press = items[0].get("press", "")
-
-    # 翻页扫描找出最低价
-    cheap_items = []
-    all_prices = []
-    total_pages = max(1, (total + 29) // 30)
-    max_pages = min(total_pages, 5)
-
-    for page in range(1, max_pages + 1):
-        if page > 1:
-            p_dict = {"keyword": isbn, "page": page, "size": 30}
-            if quality_filter:
-                p_dict["quality"] = quality_filter
-            params = urllib.parse.urlencode(p_dict)
-            url = f"{API_HOST}{API_PATH}?{params}"
-            try:
-                req = urllib.request.Request(url, headers={**HEADERS, "Cookie": cookie_str})
-                resp = urllib.request.urlopen(req, timeout=15)
-                data = json.loads(resp.read().decode("utf-8"))
-                items = data.get("data", {}).get("itemResponse", {}).get("list") or []
-            except Exception:
-                break
-
-        for item in items:
-            p = item.get("price") or item.get("salePrice")
-            if not p or not (0 < float(p) < 100000):
-                continue
-            p = float(p)
-            ship_fee = 0
-            sl = item.get("postage", {}).get("shippingList", [])
-            if sl and sl[0].get("shippingFee") is not None:
-                ship_fee = float(sl[0]["shippingFee"])
-
-            cheap_items.append({
-                "price": round(p, 2),
-                "shipping": ship_fee,
-                "total": round(p + ship_fee, 1),
-                "quality_text": item.get("qualityText", "") or "",
-                "shop": item.get("shopName", "") or "",
-                "area": item.get("shopAreaText", "") or "",
-                "itemId": item.get("itemId"),
-                "shopId": item.get("shopId"),
-                "link": item.get("link", {}).get("pc", "") or "",
-            })
-            all_prices.append(p)
-
-        if page < max_pages:
-            time.sleep(0.3)
-
-    if not cheap_items:
-        return {"isbn": isbn, "title": title, "error": "未解析到价格", "count": total}
-
-    cheap_items.sort(key=lambda x: x["total"])
-    cheapest = cheap_items[0]
-
-    return {
-        "isbn": isbn,
-        "title": title,
-        "author": author[:20],
-        "press": press[:20],
-        "count": len(cheap_items),
-        "total_count": total,
-        "pages_scanned": max_pages,
-        "error": None,
-        "cheapest": cheapest,
-        "top_cheapest": cheap_items[:5],
-        "price_range": {
-            "min": min(all_prices),
-            "max": max(all_prices),
-            "avg": round(sum(all_prices) / len(all_prices), 1),
-        },
-    }
+def preprocess_image(img):
+    """对图片进行预处理，提升 OCR 准确率"""
+    from PIL import ImageFilter, ImageOps
+    img = img.convert("L")
+    img = ImageOps.autocontrast(img, cutoff=5)
+    w, h = img.size
+    if w < 800 or h < 200:
+        scale = max(800 / w, 200 / h, 2)
+        img = img.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
+    img = img.filter(ImageFilter.SHARPEN)
+    img = img.point(lambda x: 0 if x < 180 else 255)
+    return img
 
 
 def ocr_image(file_bytes, filename=""):
-    """OCR 识别图片中的文字，提取 ISBN"""
+    """OCR 识别图片中的文字，提取 ISBN（Tesseract，懒加载）"""
     try:
+        import pytesseract
+        from PIL import Image
+
         img = Image.open(io.BytesIO(file_bytes))
-        text = pytesseract.image_to_string(img, lang="chi_sim+eng")
+        img = preprocess_image(img)
+
+        custom_config = r"--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789ISBN"
+        text = pytesseract.image_to_string(img, lang="chi_sim+eng", config=custom_config)
+        if not text.strip():
+            custom_config = r"--oem 3 --psm 6 digits"
+            text = pytesseract.image_to_string(img, lang="eng", config=custom_config)
+
         if not text.strip():
             return {"isbns": [], "raw_text": "", "error": "未识别到文字"}
+
         isbns = set()
         for line in text.split("\n"):
-            cleaned = line.strip().replace("-", "").replace(" ", "").replace("　", "")
-            matches = re.findall(r"\b\d{10,13}\b", cleaned)
-            for m in matches:
-                if 10 <= len(m) <= 13:
-                    isbns.add(m)
-        return {
-            "isbns": sorted(isbns),
-            "raw_text": text.strip()[:500],
-            "image_count": 1,
-        }
+            # 先试纯数字提取（Vision 识别准确的场景）
+            digits = re.sub(r"[^0-9]", "", line.strip())
+            if 10 <= len(digits) <= 13:
+                isbns.add(digits)
+            # 再试带字符替换的（Tesseract 易混淆场景）
+            alt = line.strip().replace("-", "").replace(" ", "").replace("　", "")
+            alt = alt.replace("I", "1").replace("S", "5").replace("B", "8").replace("O", "0").replace("l", "1")
+            alt_digits = re.sub(r"[^0-9]", "", alt)
+            if 10 <= len(alt_digits) <= 13:
+                isbns.add(alt_digits)
+        return {"isbns": sorted(isbns), "raw_text": text.strip()[:500], "image_count": 1}
+    except ImportError:
+        return {"isbns": [], "raw_text": "", "error": "缺少 Tesseract"}
     except Exception as e:
         return {"isbns": [], "raw_text": "", "error": str(e)[:60]}
 
@@ -203,7 +124,7 @@ def save_history(data):
 def add_history_record(name, results, quality_filter=""):
     data = load_history()
     priced = [r for r in results if r.get("cheapest")]
-    record_id = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + uuid.uuid4().hex[:4]
+    record_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     total_cost = sum(r["cheapest"]["total"] for r in priced if r.get("cheapest"))
     record = {
         "id": record_id,
@@ -261,6 +182,25 @@ class Handler(http.server.BaseHTTPRequestHandler):
             quality_filter = q.get("quality", [""])[0]
             result = query_isbn(isbn, cookie, quality_filter)
             self.send_json(result)
+        elif path.startswith("/api/batch_query"):
+            cookie = load_cookie()
+            if not cookie:
+                self.send_json({"error": "Cookie 未找到，请先设置 Cookie"})
+                return
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            isbns_raw = q.get("isbns", [""])[0]
+            if not isbns_raw:
+                self.send_json({"error": "缺少 isbns 参数（逗号分隔）"})
+                return
+            isbns = [s.strip().replace("-", "") for s in isbns_raw.split(",") if s.strip().isdigit()]
+            if not isbns:
+                self.send_json({"error": "无有效 ISBN"})
+                return
+            quality_filter = q.get("quality", [""])[0]
+            # 有品相过滤时用完整模式（fast_mode 不支持 quality_filter）
+            fast = not bool(quality_filter)
+            results = batch_query(isbns, cookie, quality_filter, max_concurrent=20, fast_mode=fast)
+            self.send_json({"results": results, "count": len(results)})
         elif path.startswith("/api/addtocart"):
             cookie = load_cookie()
             if not cookie:
@@ -295,6 +235,43 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     self.send_json({"error": "接口返回异常"})
             except Exception as e:
                 self.send_json({"error": str(e)[:40]})
+        elif path.startswith("/api/inventory/list"):
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            items = load_inventory(INVENTORY_FILE).get("items", [])
+            # 按 status 筛选
+            status = q.get("status", [""])[0]
+            if status == "in_stock":
+                items = [i for i in items if i.get("status") == "in_stock"]
+            elif status == "sold":
+                items = [i for i in items if i.get("status") == "sold"]
+            # 按书名/ISBN 搜索
+            search = q.get("q", [""])[0].strip()
+            if search:
+                search_lower = search.lower()
+                items = [i for i in items
+                         if search_lower in i.get("title", "").lower()
+                         or search in str(i.get("isbn", ""))]
+            # 按月份筛选
+            month = q.get("month", [""])[0].strip()
+            if month:
+                items = [i for i in items if i.get("created_at", "").startswith(month)]
+            self.send_json({"items": items, "total": len(items)})
+        elif path.startswith("/api/inventory/stats"):
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            period = q.get("period", [""])[0] or None
+            items = load_inventory(INVENTORY_FILE).get("items", [])
+            stats = get_stats(items, period)
+            self.send_json(stats)
+        elif path.startswith("/api/address/cleanup"):
+            cookie = load_cookie()
+            if not cookie:
+                self.send_json({"error": "Cookie 未找到"})
+                return
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            dry_run = q.get("dry_run", [""])[0] in ("1", "true", "yes")
+            max_count = int(q.get("max", [MAX_ADDRESSES])[0])
+            result = cleanup_addresses(cookie, max_count=max_count, dry_run=dry_run)
+            self.send_json(result)
         elif path.startswith("/api/history/list"):
             data = load_history()
             summaries = []
@@ -399,6 +376,83 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.send_json({"success": True, "id": rid, "name": name})
             except Exception as e:
                 self.send_json({"error": str(e)[:60]})
+        elif self.path.startswith("/api/inventory/add"):
+            content_len = int(self.headers.get("Content-Length", 0))
+            if content_len == 0:
+                self.send_json({"error": "请求体为空"})
+                return
+            try:
+                body = json.loads(self.rfile.read(content_len).decode("utf-8"))
+                item = add_item(
+                    isbn=body.get("isbn", ""),
+                    title=body.get("title", ""),
+                    author=body.get("author", ""),
+                    cost_price=body.get("cost_price", 0),
+                    shipping=body.get("shipping", 0),
+                    source_batch=body.get("source_batch", ""),
+                    storage_path=INVENTORY_FILE,
+                )
+                self.send_json({"success": True, "item": item})
+            except json.JSONDecodeError:
+                self.send_json({"error": "JSON 解析失败"})
+            except Exception as e:
+                self.send_json({"error": str(e)[:60]})
+        elif self.path.startswith("/api/inventory/sell"):
+            content_len = int(self.headers.get("Content-Length", 0))
+            if content_len == 0:
+                self.send_json({"error": "请求体为空"})
+                return
+            try:
+                body = json.loads(self.rfile.read(content_len).decode("utf-8"))
+                success = sell_item(
+                    item_id=body["id"],
+                    sale_price=body["sale_price"],
+                    storage_path=INVENTORY_FILE,
+                )
+                self.send_json({"success": success})
+            except KeyError:
+                self.send_json({"error": "缺少必要参数 id 或 sale_price"})
+            except json.JSONDecodeError:
+                self.send_json({"error": "JSON 解析失败"})
+            except Exception as e:
+                self.send_json({"error": str(e)[:60]})
+        elif self.path.startswith("/api/inventory/update_sale_price"):
+            content_len = int(self.headers.get("Content-Length", 0))
+            if content_len == 0:
+                self.send_json({"error": "请求体为空"})
+                return
+            try:
+                body = json.loads(self.rfile.read(content_len).decode("utf-8"))
+                success = update_sale_price(
+                    item_id=body["id"],
+                    sale_price=body["sale_price"],
+                    storage_path=INVENTORY_FILE,
+                )
+                self.send_json({"success": success})
+            except KeyError:
+                self.send_json({"error": "缺少必要参数 id 或 sale_price"})
+            except json.JSONDecodeError:
+                self.send_json({"error": "JSON 解析失败"})
+            except Exception as e:
+                self.send_json({"error": str(e)[:60]})
+        elif self.path.startswith("/api/inventory/delete"):
+            content_len = int(self.headers.get("Content-Length", 0))
+            if content_len == 0:
+                self.send_json({"error": "请求体为空"})
+                return
+            try:
+                body = json.loads(self.rfile.read(content_len).decode("utf-8"))
+                success = delete_item(
+                    item_id=body["id"],
+                    storage_path=INVENTORY_FILE,
+                )
+                self.send_json({"success": success})
+            except KeyError:
+                self.send_json({"error": "缺少必要参数 id"})
+            except json.JSONDecodeError:
+                self.send_json({"error": "JSON 解析失败"})
+            except Exception as e:
+                self.send_json({"error": str(e)[:60]})
         elif self.path.startswith("/api/ocr"):
             content_type = self.headers.get("Content-Type", "")
             if "multipart/form-data" not in content_type:
@@ -436,7 +490,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         # 防止路径穿越
         rel = path[len("/static/"):]
         rel = rel.split("?")[0].split("#")[0]
-        rel = posixpath.normpath(rel)
+        rel = os.path.normpath(rel)
         if rel.startswith("..") or rel.startswith("/"):
             self.send_response(403)
             self.end_headers()
@@ -500,14 +554,32 @@ if __name__ == "__main__":
         print("⚠️ 未找到 Cookie，启动后请通过页面设置 Cookie")
     else:
         print(f"🍪 Cookie 已加载（{len(cookie)} 字符）")
+        # 自动清理收货地址
+        try:
+            result = cleanup_addresses(cookie)
+            if result.get("deleted", 0) > 0:
+                print(f"  🧹 收货地址自动清理：删除了 {result['deleted']} 个旧地址，保留 {result['kept']} 个")
+            elif result.get("to_delete"):
+                print(f"  🧹 收货地址检查：{result['message']}")
+            elif result.get("success") is False:
+                print(f"  ⚠️ 地址清理：{result.get('error', 'Cookie 未登录地址管理')}")
+        except Exception as e:
+            print(f"  ⚠️ 地址清理出错: {e}")
 
     try:
-        pytesseract.get_tesseract_version()
-        print("🔍 Tesseract OCR 可用")
+        import subprocess
+        subprocess.run(["tesseract", "--version"], capture_output=True, timeout=3)
+        print("🔍 Tesseract OCR 可用（图片识别功能已开启）")
     except Exception:
-        print("⚠️ Tesseract OCR 未安装，图片识别功能不可用")
+        print("ℹ️ Tesseract 未安装，图片识别功能不可用")
 
-    server = http.server.HTTPServer(("0.0.0.0", PORT), Handler)
+    # 多线程服务器：并发请求同时处理（查价不再排队）
+    class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+        allow_reuse_address = True
+        daemon_threads = True
+
+    server = ThreadedHTTPServer(("0.0.0.0", PORT), Handler)
+    server.max_children = 16  # 最大线程数
     print(f"""
 ╔══════════════════════════════════════════╗
 ║  📚 孔夫子 ISBN 查价 · 云服务           ║
