@@ -289,14 +289,29 @@ function ba(){
   function nx(i){if(i>=is.length){btn.textContent='✅ '+ok+'/'+is.length+(ng?' ('+ng+'失败)':'');btn.style.background=ok>0?'#059669':'#dc2626';toast('已完成 '+ok+'/'+is.length);return}btn.textContent='⏳ '+(i+1)+'/'+is.length;fj('/api/addtocart?itemId='+is[i].cheapest.itemId+'&shopId='+is[i].cheapest.shopId).then(function(d){if(d.success)ok++;else ng++;setTimeout(function(){nx(i+1)},1200)}).catch(function(){ng++;setTimeout(function(){nx(i+1)},1200)})}nx(0)
 }
 
-// 复制异常书号
+// 复制异常书号（一键复制转发消息）
 function cpyFail(){
   var fail=[];
   document.querySelectorAll('.fail-chip').forEach(function(el){var m=(el.textContent||'').match(/\d{8,13}/);if(m)fail.push(m[0])});
   if(!fail.length){toast('无异常书号');return}
-  var txt=fail.join('\n');
-  var p=prompt('📋 异常书号（'+fail.length+' 个），复制后关闭：',txt);
-  if(p!==null)toast('✅ 已复制 '+fail.length+' 个书号');
+  var txt='📋 以下书号暂未查到结果，请确认：\n'+fail.join('\n');
+  doCopy(txt,function(){toast('✅ 已复制 '+fail.length+' 个异常书号，可直接转发')},function(){prompt('📋 异常书号（'+fail.length+' 个），复制后关闭：',txt)})
+}
+function doCopy(txt,onOk,onFail){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(onOk).catch(function(){cpyEl(txt,onOk,onFail)})
+  }else{cpyEl(txt,onOk,onFail)}
+}
+function cpyEl(txt,onOk,onFail){
+  var ta=document.createElement('textarea');
+  ta.value=txt;
+  ta.style.position='fixed';ta.style.left='-9999px';ta.style.top='0';ta.style.width='1px';ta.style.height='1px';ta.style.opacity='0';ta.style.zIndex='-1';
+  document.body.appendChild(ta);
+  var r=ta.createTextRange?ta.createTextRange():null;
+  if(r){r.moveToElementText(ta);r.select()}
+  else{ta.focus();ta.setSelectionRange(0,txt.length)}
+  try{if(document.execCommand('copy')){document.body.removeChild(ta);onOk();return}}catch(e){}
+  document.body.removeChild(ta);onFail()
 }
 // 重查
 function rq(is){I.value=is;E.innerHTML='';N.style.display='none';scrollTo(0,0);setTimeout(function(){Q.click()},300)}
