@@ -7,9 +7,25 @@
 """
 import re
 import json
+import time
 import urllib.request
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+# ── 内存缓存（短时缓存查价结果，减少重复请求） ──────────────
+_CACHE = {}          # key: "isbn:quality" → result
+_CACHE_TTL = 300     # 缓存有效期 5 分钟
+
+def _cache_get(isbn, quality_filter=""):
+    key = f"{isbn}:{quality_filter}"
+    entry = _CACHE.get(key)
+    if entry and time.time() - entry["ts"] < _CACHE_TTL:
+        return entry["result"]
+    return None
+
+def _cache_set(isbn, quality_filter="", result=None):
+    key = f"{isbn}:{quality_filter}"
+    _CACHE[key] = {"result": result, "ts": time.time()}
 
 # ── 常量 ──────────────────────────────────────────────────
 API_HOST = "https://search.kongfz.com"
@@ -32,6 +48,10 @@ def query_isbn(isbn, cookie_str, quality_filter=""):
     isbn = isbn.strip().replace("-", "").replace(" ", "")
     if not re.match(r'^\d{8,13}$', isbn):
         return {"isbn": isbn, "title": "—", "error": "格式不对"}
+
+    cached = _cache_get(isbn, quality_filter)
+    if cached:
+        return cached
 
     # 第 1 页：获取书名 + 总量 + 商品列表
     params_dict = {"keyword": isbn, "page": 1, "size": PAGE_SIZE}
@@ -125,7 +145,7 @@ def query_isbn(isbn, cookie_str, quality_filter=""):
     cheap_items.sort(key=lambda x: x["total"])
     cheapest = cheap_items[0]
 
-    return {
+    result = {
         "isbn": isbn,
         "title": title,
         "author": author[:20],
@@ -142,6 +162,8 @@ def query_isbn(isbn, cookie_str, quality_filter=""):
             "avg": round(sum(all_prices) / len(all_prices), 1),
         },
     }
+    _cache_set(isbn, quality_filter, result)
+    return result
 
 
 def query_isbn_simple(isbn, cookie_str):
@@ -149,6 +171,10 @@ def query_isbn_simple(isbn, cookie_str):
     isbn = isbn.strip().replace("-", "").replace(" ", "")
     if not re.match(r'^\d{10,13}$', isbn):
         return {"isbn": isbn, "error": "ISBN 格式不正确"}
+
+    cached = _cache_get(isbn)
+    if cached:
+        return cached
 
     params = urllib.parse.urlencode({"keyword": isbn, "page": 1, "size": 20})
     url = f"{API_HOST}{API_PATH}?{params}"
@@ -291,6 +317,7 @@ def query_isbn_simple(isbn, cookie_str):
     elif not prices:
         result["error"] = "孔夫子无在售记录"
 
+    _cache_set(isbn, result=result)
     return result
 
 
