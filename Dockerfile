@@ -1,21 +1,19 @@
-# 用 Python 3.11+ 运行时
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# 复制项目文件
+# 安装依赖
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt || true
 
-# 缓存破坏层：每次构建强制复制最新文件
-# 每次构建唯一值，强制刷新缓存
-ARG BUILD_COMMIT=1784004708dd6_1784004498
-RUN echo "Build: $BUILD_COMMIT"
-
+# 复制所有项目文件（无缓存）
 COPY . .
 
-# 数据目录
+# 确保数据目录
 RUN mkdir -p /app/data
+
+# 构建版本标记
+RUN echo "Deploy version: 2026-07-14 06:38:05 UTC"
 
 EXPOSE 5000
 CMD ["python", "app.py"]
