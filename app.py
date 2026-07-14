@@ -45,9 +45,16 @@ STATIC_DIR = os.path.join(BASE_DIR, "static")
 # 确保 data 目录存在（用于持久化 Cookie 和历史记录）
 os.makedirs(DATA_DIR, exist_ok=True)
 
-# 覆盖 cookie 模块的存储路径到 data 目录
+# 覆盖 cookie 模块的存储路径（优先用根目录，Git 可追踪）
 import kongfz_cookie
-kongfz_cookie.STORAGE_FILE = os.path.join(DATA_DIR, ".kongfz_cookies.json")
+COOKIE_FILE = os.path.join(BASE_DIR, ".kongfz_cookies.json")
+# 如果根目录没有 cookie 文件，尝试 data 目录（Zeabur 持久卷迁移）
+if not os.path.exists(COOKIE_FILE):
+    legacy = os.path.join(DATA_DIR, ".kongfz_cookies.json")
+    if os.path.exists(legacy):
+        import shutil
+        shutil.copy2(legacy, COOKIE_FILE)
+kongfz_cookie.STORAGE_FILE = COOKIE_FILE
 
 HTML_FILE = os.path.join(BASE_DIR, "index.html")
 HISTORY_FILE = os.path.join(DATA_DIR, "kongfz_history.json")
