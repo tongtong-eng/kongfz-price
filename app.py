@@ -101,21 +101,23 @@ def ocr_image(file_bytes, filename=""):
         isbns = set()
         for line in text.split("\n"):
             raw = line.strip()
+            if not raw:
+                continue
+            # 直接匹配 13 位 ISBN（978/979 开头）
+            for m in re.finditer(r'(?:978|979)\d{10}', raw):
+                isbns.add(m.group())
+            # 替换易混淆字符后匹配
+            alt = raw.replace("I", "1").replace("S", "5").replace("B", "8").replace("O", "0").replace("l", "1")
+            alt = alt.replace("⑥", "6").replace("①", "1").replace("②", "2").replace("③", "3")
+            alt = alt.replace("④", "4").replace("⑤", "5").replace("⑦", "7").replace("⑧", "8").replace("⑨", "9").replace("⑩", "0")
+            for m in re.finditer(r'(?:978|979)\d{10}', alt):
+                isbns.add(m.group())
+            # 整行去除非数字
             digits = re.sub(r"[^0-9]", "", raw)
-            if 10 <= len(digits) <= 13:
-                if len(digits) == 13 and (digits.startswith("978") or digits.startswith("979")):
-                    isbns.add(digits)
-                elif len(digits) == 10 and digits[0] != '0':
-                    isbns.add(digits)
-            # 带字符替换
-            alt = raw.replace("-", "").replace(" ", "").replace("　", "")
-            alt = alt.replace("I", "1").replace("S", "5").replace("B", "8").replace("O", "0").replace("l", "1")
-            alt_digits = re.sub(r"[^0-9]", "", alt)
-            if 10 <= len(alt_digits) <= 13 and alt_digits not in isbns:
-                if len(alt_digits) == 13 and (alt_digits.startswith("978") or alt_digits.startswith("979")):
-                    isbns.add(alt_digits)
-                elif len(alt_digits) == 10 and alt_digits[0] != '0':
-                    isbns.add(alt_digits)
+            if len(digits) == 13 and (digits.startswith("978") or digits.startswith("979")) and digits not in isbns:
+                isbns.add(digits)
+            if len(digits) == 10 and digits[0] != '0' and digits not in isbns:
+                isbns.add(digits)
         return {"isbns": sorted(isbns), "raw_text": text.strip()[:500], "image_count": 1}
     except ImportError:
         return {"isbns": [], "raw_text": "", "error": "缺少 Tesseract"}
