@@ -226,14 +226,16 @@ def query_isbn_simple(isbn, cookie_str):
     else:
         total_count = len(items)
 
-    # 提取价格
-    prices = []
+    # 提取价格 + 运费
+    cheap_items = []
+    all_prices = []
     titles = set()
     book_title = book_author = book_press = None
 
     for item in items:
         if not isinstance(item, dict):
             continue
+        # 标题
         for k in ["title", "itemName", "bookName", "name", "productName"]:
             v = item.get(k)
             if v and len(str(v)) > 3:
@@ -242,6 +244,7 @@ def query_isbn_simple(isbn, cookie_str):
                     titles.add(t)
                     book_title = book_title or t
 
+        # 价格
         price_val = None
         for k in ["price", "salePrice", "currentPrice", "showPrice", "itemPrice"]:
             v = item.get(k)
@@ -259,8 +262,27 @@ def query_isbn_simple(isbn, cookie_str):
                     if m:
                         price_val = float(m.group(1))
                         break
-        if price_val and 0 < price_val < 100000:
-            prices.append(price_val)
+        if not price_val or not (0 < price_val < 100000):
+            continue
+
+        # 运费（与 query_isbn 同样的解析逻辑）
+        ship_fee = 0
+        sl = item.get("postage", {}).get("shippingList", [])
+        if sl and sl[0].get("shippingFee") is not None:
+            ship_fee = float(sl[0]["shippingFee"])
+
+        cheap_items.append({
+            "price": round(price_val, 2),
+            "shipping": ship_fee,
+            "total": round(price_val + ship_fee, 1),
+            "quality_text": item.get("qualityText", "") or "",
+            "shop": item.get("shopName", "") or "",
+            "area": item.get("shopAreaText", "") or "",
+            "itemId": item.get("itemId"),
+            "shopId": item.get("shopId"),
+            "link": item.get("link", {}).get("pc", "") or "",
+        })
+        all_prices.append(price_val)
 
         if not book_author:
             for k in ["author", "itemAuthor"]:
@@ -272,6 +294,10 @@ def query_isbn_simple(isbn, cookie_str):
                 v = item.get(k)
                 if v and len(str(v)) > 1:
                     book_press = str(v).strip()[:30]
+
+    # 按总价（含运费）排序
+    cheap_items.sort(key=lambda x: x["total"])
+    prices = [c["price"] for c in cheap_items]
 
     result = {
         "isbn": isbn,
@@ -286,7 +312,6 @@ def query_isbn_simple(isbn, cookie_str):
         "total_count": total_count or len(items),
         "pages_scanned": 1,
         "error": None,
-        # 统一 price_range 格式，方便前端统一渲染
         "price_range": {
             "min": min(prices) if prices else 0,
             "max": max(prices) if prices else 0,
@@ -294,23 +319,10 @@ def query_isbn_simple(isbn, cookie_str):
         },
     }
 
-    # 添加 cheapest，使前端渲染能正常工作
-    if prices:
-        min_p = min(prices)
-        max_p = max(prices)
-        result["cheapest"] = {
-            "price": round(min_p, 2),
-            "shipping": 0,
-            "total": round(min_p, 1),
-            "quality_text": "",
-            "shop": "",
-            "area": "",
-        }
-        result["top_cheapest"] = [
-            {"price": round(p, 2), "shipping": 0, "total": round(p, 1),
-             "quality_text": "", "shop": "", "area": ""}
-            for p in sorted(set(prices))[:5]
-        ]
+    # 添加 cheapest（含运费），使前端渲染能正常工作
+    if cheap_items:
+        result["cheapest"] = cheap_items[0]
+        result["top_cheapest"] = cheap_items[:5]
 
     if not prices and total_count > 0:
         result["error"] = "有商品但未解析到价格"
