@@ -273,7 +273,7 @@ function sh(data){
     }
   });
   E.innerHTML=html;L=data;
-  var sb='sb_'+Date.now();E.insertAdjacentHTML('afterbegin','<div class="save-bar" id="'+sb+'"><span>💾</span><input id="si" placeholder="命名（可选）"><button class="btn-save" onclick="sH(\''+sb+'\')">保存查询</button><button class="btn-save" onclick="cpyQuote()" style="background:#059669;margin-left:4px">📋 复制报价单</button></div>');
+  var sb='sb_'+Date.now();E.insertAdjacentHTML('afterbegin','<div class="save-bar" id="'+sb+'"><span>💾</span><input id="si" placeholder="命名（可选）"><button class="btn-save" onclick="sH(\''+sb+'\')">保存查询</button><button class="btn-save" onclick="cpyQuote(0)" style="background:#059669;margin-left:4px">📋 我的成本</button><button class="btn-save" onclick="cpyQuote(1)" style="background:#2563eb;margin-left:2px">📤 发给买家</button></div>');
 }
 
 // 加购
@@ -290,8 +290,8 @@ function ba(){
   function nx(i){if(i>=is.length){btn.textContent='✅ '+ok+'/'+is.length+(ng?' ('+ng+'失败)':'');btn.style.background=ok>0?'#059669':'#dc2626';toast('已完成 '+ok+'/'+is.length);return}btn.textContent='⏳ '+(i+1)+'/'+is.length;fj('/api/addtocart?itemId='+is[i].cheapest.itemId+'&shopId='+is[i].cheapest.shopId).then(function(d){if(d.success)ok++;else ng++;setTimeout(function(){nx(i+1)},1200)}).catch(function(){ng++;setTimeout(function(){nx(i+1)},1200)})}nx(0)
 }
 
-// 复制报价单（含建议售价 125%）
-function cpyQuote(){
+// 复制报价单：forBuyer=1 精简版（给买家），否则详细版（自用）
+function cpyQuote(forBuyer){
   var ok=L.filter(function(r){return r.cheapest});
   if(!ok.length){toast('无有效数据');return}
   var lines=[], i=0, totalCost=0, totalSug=0;
@@ -299,15 +299,26 @@ function cpyQuote(){
     i++;
     var c=r.cheapest, p=c.price, s=c.shipping, t=p+s, sug=Math.round(t*1.25*100)/100;
     totalCost+=t; totalSug+=sug;
-    lines.push(i+'. '+(r.title||'无书名'));
-    lines.push('   ISBN: '+r.isbn);
-    lines.push('   最低进价: ¥'+p.toFixed(1)+'+¥'+s.toFixed(1)+'=¥'+t.toFixed(1));
-    lines.push('   建议售价: ¥'+sug.toFixed(1)+' (125%)');
+    if(forBuyer){
+      lines.push(i+'. '+(r.title||'无书名'));
+      lines.push('   ISBN: '+r.isbn);
+      lines.push('   ¥'+sug.toFixed(1));
+    }else{
+      lines.push(i+'. '+(r.title||'无书名'));
+      lines.push('   ISBN: '+r.isbn);
+      lines.push('   最低进价: ¥'+p.toFixed(1)+'+¥'+s.toFixed(1)+'=¥'+t.toFixed(1));
+      lines.push('   建议售价: ¥'+sug.toFixed(1)+' (125%)');
+    }
   });
   lines.push('');
   lines.push('合计: '+ok.length+' 本');
-  lines.push('总进价: ¥'+totalCost.toFixed(1)+'  总建议售价: ¥'+totalSug.toFixed(1));
-  doCopy(lines.join('\n'),function(){toast('✅ 已复制 '+ok.length+' 本书报价单，可直接转发')},function(){prompt('📋 报价单，复制后关闭：',lines.join('\n'))});
+  if(forBuyer){
+    lines.push('总价: ¥'+totalSug.toFixed(1));
+  }else{
+    lines.push('总进价: ¥'+totalCost.toFixed(1)+'  总建议售价: ¥'+totalSug.toFixed(1));
+  }
+  var label=forBuyer?'报价单已复制，可直接发给买家':'已复制成本报价单';
+  doCopy(lines.join('\n'),function(){toast('✅ '+label)},function(){prompt('📋 '+(forBuyer?'报价单':'成本单')+'，复制后关闭：',lines.join('\n'))});
 }
 
 // 复制异常书号（一键复制转发消息）
