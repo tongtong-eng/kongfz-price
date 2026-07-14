@@ -187,6 +187,7 @@ select{padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:.82r
   <button onclick="fold('cookie')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg><span>Cookie</span></button>
   <button onclick="fold('hist')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>历史</span></button>
   <button onclick="cleanupAddr()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg><span>清理地址</span></button>
+  <button onclick="selfCheck()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg><span>自检</span></button>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -439,6 +440,58 @@ id('btnClear').onclick=function(){I.value='';E.innerHTML='';N.style.display='blo
 setTimeout(function(){ckC();loadH()},500);
 // 启动时静默检查地址
 setTimeout(function(){cleanupAddr(true)},3000);
+
+// === 自检功能 ===
+function selfCheck(){
+  var btn = event && event.target;
+  if(btn){btn.disabled=1;btn.style.opacity='.5'}
+  var el = document.querySelector('.container');
+  var html='<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button onclick="loc()" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:.8rem;cursor:pointer">← 返回查价</button><strong style="font-size:.9rem">🔍 系统自检</strong></div>';
+  html+='<div class="card"><div class="card-title">⏳ 检测中...</div><div style="text-align:center;padding:20px;color:#94a3b8">正在检查各项功能...</div></div>';
+  el.innerHTML = html;
+
+  fj('/api/self_check').then(function(d){
+    if(!d){el.innerHTML='<div class="card">❌ 自检失败</div>';return}
+    var h='<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button onclick="loc()" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:.8rem;cursor:pointer">← 返回查价</button><strong style="font-size:.9rem">🔍 系统自检</strong><span style="font-size:.72rem;color:#94a3b8">'+d.time+'</span></div>';
+
+    h += '<div class="card"><div class="card-title">📌 版本</div><table><tbody>';
+    h += '<tr><td>Git 版本</td><td>'+esc(d.git_commit||'无')+'</td></tr>';
+    h += '<tr><td>远程版本</td><td>'+(d.git_remote?esc(d.git_remote):'<span style="color:#f59e0b">未部署</span>')+'</td></tr>';
+    var synced = d.git_commit && d.git_remote && d.git_commit.split(' ')[0] === d.git_remote.split(' ')[0];
+    h += '<tr><td>本地↔云端</td><td>'+(synced?'<span style="color:#10b981">✅ 一致</span>':'<span style="color:#ef4444">❌ 不一致</span>')+'</td></tr>';
+    if(d.git_dirty && d.git_dirty.length){
+      h += '<tr><td>未提交改动</td><td><span style="color:#f59e0b">'+d.git_dirty.length+' 个文件</span></td></tr>';
+    }
+    h += '</tbody></table></div>';
+
+    var cok = d.cookie||{};
+    h += '<div class="card"><div class="card-title">🍪 Cookie</div><table><tbody>';
+    h += '<tr><td>状态</td><td>'+(cok.valid?'<span style="color:#10b981">✅ 有效</span>':'<span style="color:#ef4444">❌ 无效</span>')+'</td></tr>';
+    h += '<tr><td>长度</td><td>'+cok.len+' 字符</td></tr>';
+    h += '</tbody></table></div>';
+
+    var aq = d.api_query||{}, ac = d.api_addtocart||{};
+    h += '<div class="card"><div class="card-title">📡 API 测试</div><table><tbody>';
+    h += '<tr><td>查价</td><td>'+(aq.ok?'<span style="color:#10b981">✅</span>':'<span style="color:#ef4444">❌</span>')+'</td><td style="font-size:.75rem;color:#64748b">'+esc(aq.detail||'')+'</td></tr>';
+    h += '<tr><td>加购</td><td>'+(ac.ok?'<span style="color:#10b981">✅</span>':'<span style="color:#ef4444">❌</span>')+'</td><td style="font-size:.75rem;color:#64748b">'+esc(ac.detail||'')+'</td></tr>';
+    h += '</tbody></table></div>';
+
+    h += '<div class="card"><div class="card-title">📄 关键文件</div><table><thead><tr><th>文件</th><th>修改时间</th><th>Hash</th></tr></thead><tbody>';
+    var files = d.files||{};
+    var fnames = Object.keys(files).sort();
+    fnames.forEach(function(fn){
+      var fi = files[fn];
+      h += '<tr><td style="font-family:monospace;font-size:.72rem">'+esc(fn)+'</td><td>'+(fi.mtime||'-')+'</td><td style="font-family:monospace;font-size:.72rem;color:#64748b">'+(fi.hash||'-')+'</td></tr>';
+    });
+    h += '</tbody></table></div>';
+
+    el.innerHTML = h;
+    if(btn){btn.disabled=0;btn.style.opacity='1'}
+  }).catch(function(){
+    el.innerHTML = '<div class="card">❌ 自检请求失败</div>';
+    if(btn){btn.disabled=0;btn.style.opacity='1'}
+  })
+}
 
 // === 库存管理 ===
 function markBuy(btn){

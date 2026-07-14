@@ -313,6 +313,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return
             delete_history_record(rid)
             self.send_json({"success": True})
+        elif path.startswith("/api/self_check"):
+            self._do_self_check()
         elif path.startswith("/api/"):
             self.send_json({"error": "未知接口"})
         else:
@@ -537,6 +539,94 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+
+    def _do_self_check(self):
+        import subprocess, hashlib
+        from datetime import datetime
+        result = {}
+
+        # Git 版本
+        try:
+            out = subprocess.run(["git", "log", "--oneline", "-1"],
+                                 capture_output=True, text=True, cwd=BASE_DIR, timeout=5)
+            result["git_commit"] = out.stdout.strip() or "无"
+            out2 = subprocess.run(["git", "status", "--short"],
+                                  capture_output=True, text=True, cwd=BASE_DIR, timeout=5)
+            dirty = [l for l in out2.stdout.strip().split("\n") if l.strip()]
+            result["git_dirty"] = dirty if dirty else []
+            out3 = subprocess.run(["git", "log", "--oneline", "origin/main", "-1"],
+                                  capture_output=True, text=True, cwd=BASE_DIR, timeout=5)
+            result["git_remote"] = out3.stdout.strip() or "无"
+        except Exception:
+            result["git_commit"] = "非 Git 目录"
+            result["git_dirty"] = []
+            result["git_remote"] = "未知"
+
+        # 关键文件
+        files = ["app.py", "index.html", "kongfz_query.py", "kongfz_cookie.py", "kongfz_inventory.py"]
+        file_info = {}
+        for fn in files:
+            fp = os.path.join(BASE_DIR, fn)
+            if os.path.exists(fp):
+                s = os.stat(fp)
+                with open(fp, "rb") as f:
+                    h = hashlib.md5(f.read(65536)).hexdigest()[:8]
+                file_info[fn] = {
+                    "mtime": datetime.fromtimestamp(s.st_mtime).strftime("%m-%d %H:%M"),
+                    "hash": h,
+                    "size": s.st_size,
+                }
+            else:
+                file_info[fn] = {"error": "不存在"}
+        result["files"] = file_info
+
+        # Cookie
+        cookie = load_cookie()
+        info = get_cookie_info()
+        result["cookie"] = {
+            "has": bool(cookie),
+            "valid": info.get("is_valid", False),
+            "len": len(cookie) if cookie else 0,
+        }
+
+        # API 查价测试
+        try:
+            from kongfz_query import query_isbn_simple
+            r = query_isbn_simple("9787020002207", cookie)
+            result["api_query"] = {
+                "ok": r.get("error") is None,
+                "detail": f"查到 {r.get('total_count',0)} 本, 最低¥{r.get('min_price','?')}" if r.get("error") is None else r.get("error"),
+            }
+        except Exception as e:
+            result["api_query"] = {"ok": False, "detail": str(e)[:40]}
+
+        # API 加购测试
+        if cookie:
+            from kongfz_query import query_isbn
+            try:
+                r2 = query_isbn("9787020002207", cookie)
+                c = r2.get("cheapest", {})
+                if c.get("itemId") and c.get("shopId"):
+                    import urllib.request, urllib.parse
+                    cart_url = "https://cart.kongfz.com/jsonp/add"
+                    cp = urllib.parse.urlencode({"itemId": c["itemId"], "shopId": c["shopId"], "numbers": "1", "callback": "cb"})
+                    req = urllib.request.Request(f"{cart_url}?{cp}", headers={**HEADERS, "Cookie": cookie})
+                    resp = urllib.request.urlopen(req, timeout=10)
+                    body = resp.read().decode("utf-8", errors="replace")
+                    if body.startswith("cb(") and body.endswith(")"):
+                        dd = json.loads(body[3:-1])
+                        result["api_addtocart"] = {"ok": dd.get("status") == 1, "detail": dd.get("errMessage", "成功")}
+                    else:
+                        result["api_addtocart"] = {"ok": False, "detail": "接口返回异常"}
+                else:
+                    result["api_addtocart"] = {"ok": False, "detail": "查价未返回商品ID"}
+            except Exception as e:
+                result["api_addtocart"] = {"ok": False, "detail": str(e)[:40]}
+        else:
+            result["api_addtocart"] = {"ok": False, "detail": "无 Cookie"}
+
+        result["time"] = datetime.now().strftime("%m-%d %H:%M:%S")
+        self.send_json(result)
 
     def log_message(self, fmt, *args):
         msg = fmt % args
