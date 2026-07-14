@@ -1,4 +1,5 @@
 # 用 Python 3.11+ 运行时
+ARG CACHEBUST=0
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -7,6 +8,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt || true
 
+ARG CACHEBUST2=0
 COPY . .
 
 # 数据目录
