@@ -100,16 +100,22 @@ def ocr_image(file_bytes, filename=""):
 
         isbns = set()
         for line in text.split("\n"):
-            # 先试纯数字提取（Vision 识别准确的场景）
-            digits = re.sub(r"[^0-9]", "", line.strip())
+            raw = line.strip()
+            digits = re.sub(r"[^0-9]", "", raw)
             if 10 <= len(digits) <= 13:
-                isbns.add(digits)
-            # 再试带字符替换的（Tesseract 易混淆场景）
-            alt = line.strip().replace("-", "").replace(" ", "").replace("　", "")
+                if len(digits) == 13 and (digits.startswith("978") or digits.startswith("979")):
+                    isbns.add(digits)
+                elif len(digits) == 10 and digits[0] != '0':
+                    isbns.add(digits)
+            # 带字符替换
+            alt = raw.replace("-", "").replace(" ", "").replace("　", "")
             alt = alt.replace("I", "1").replace("S", "5").replace("B", "8").replace("O", "0").replace("l", "1")
             alt_digits = re.sub(r"[^0-9]", "", alt)
-            if 10 <= len(alt_digits) <= 13:
-                isbns.add(alt_digits)
+            if 10 <= len(alt_digits) <= 13 and alt_digits not in isbns:
+                if len(alt_digits) == 13 and (alt_digits.startswith("978") or alt_digits.startswith("979")):
+                    isbns.add(alt_digits)
+                elif len(alt_digits) == 10 and alt_digits[0] != '0':
+                    isbns.add(alt_digits)
         return {"isbns": sorted(isbns), "raw_text": text.strip()[:500], "image_count": 1}
     except ImportError:
         return {"isbns": [], "raw_text": "", "error": "缺少 Tesseract"}
@@ -478,20 +484,29 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 boundary = content_type.split("boundary=")[1].strip()
                 if boundary.startswith('"') and boundary.endswith('"'):
                     boundary = boundary[1:-1]
+                bm = re.search(r'boundary=([^;\s]+)', content_type)
+                if not bm:
+                    self.send_json({"error": "无法解析 boundary"})
+                    return
+                boundary = bm.group(1).strip().strip('"').strip("'")
                 parts = body.split(("--" + boundary).encode())
                 for part in parts:
-                    if b'name="image"' in part:
-                        marker = b"\r\n\r\n"
-                        idx = part.find(marker)
-                        if idx > 0:
-                            img_data = part[idx + len(marker):]
-                            img_data = img_data.rstrip(b"\r\n-")
-                            if img_data:
-                                result = ocr_image(img_data)
-                                self.send_json(result)
-                                return
+                    if b'name="image"' not in part:
+                        continue
+                    marker = b"\r\n\r\n"
+                    idx = part.find(marker)
+                    if idx <= 0:
+                        continue
+                    img_data = part[idx + len(marker):]
+                    for sep in [b"\r\n--", b"\r\n"]:
+                        if img_data.endswith(sep):
+                            img_data = img_data[:-len(sep)]
+                            break
+                    if img_data:
+                        result = ocr_image(img_data)
+                        self.send_json(result)
+                        return
                 self.send_json({"error": "未找到图片数据"})
-                self.send_json(result)
             except Exception as e:
                 self.send_json({"error": str(e)[:60]})
         else:
