@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-孔夫子旧书网 · ISBN 查价云服务
+孔夫子旧书网 · ISBN 查价云服务 (v2)
 ============================
 启动：python app.py
 部署：Railway / Zeabur / Fly.io 等平台
