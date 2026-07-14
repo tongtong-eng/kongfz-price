@@ -1,5 +1,4 @@
 # 用 Python 3.11+ 运行时
-ARG CACHEBUST=0
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -8,7 +7,11 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt || true
 
-ARG CACHEBUST2=0
+# 缓存破坏层：每次构建强制复制最新文件
+# 每次构建唯一值，强制刷新缓存
+ARG BUILD_COMMIT=9369dd6_1784004498
+RUN echo "Build: $BUILD_COMMIT"
+
 COPY . .
 
 # 数据目录
