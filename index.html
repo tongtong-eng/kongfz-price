@@ -377,27 +377,33 @@ function cpyFail(){
   var txt='📋 以下 '+fail.length+' 本书号搜索不到：\n'+fail.join('\n');
   doCopy(txt,function(){toast('✅ 已复制 '+fail.length+' 个异常书号，可直接转发')},function(){prompt('📋 异常书号（'+fail.length+' 个），复制后关闭：',txt)})
 }
-// 弹出可复制的文本窗口（比 clipboard API 更可靠，手机端也好用）
-function showTextModal(title, txt){
-  var overlay=document.createElement('div');
-  overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+// 全功能复制弹窗
+function showCopyModal(txt){
+  var old=document.getElementById('cm');
+  if(old)old.remove();
+  var m=document.createElement('div');
+  m.id='cm';
+  m.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
+  m.onclick=function(){m.remove()};
   var box=document.createElement('div');
-  box.style.cssText='background:#fff;border-radius:12px;padding:16px;max-width:480px;width:100%;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 4px 20px rgba(0,0,0,.2)';
-  box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>'+title+'</strong><button onclick="this.closest(\'div[style*=\\"position:fixed\\"]\').remove()" style="border:none;background:transparent;font-size:1.2rem;cursor:pointer;color:#94a3b8">✕</button></div>'+
-    '<textarea id="cpyBox" style="width:100%;min-height:150px;flex:1;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:.82rem;font-family:monospace;outline:none;resize:vertical;white-space:pre;overflow:auto" readonly></textarea>'+
-    '<div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end"><button onclick="var t=document.getElementById(\'cpyBox\');t.select();t.setSelectionRange(0,t.value.length);document.execCommand(\'copy\');this.textContent=\'✅ 已复制\';setTimeout(function(){this.closest(\'div[style*=\\"position:fixed\\"]\').remove()}.bind(this),800)" style="padding:8px 20px;border-radius:8px;border:none;background:#2563eb;color:#fff;cursor:pointer;font-weight:500;font-size:.85rem">📋 一键复制</button><button onclick="this.closest(\'div[style*=\\"position:fixed\\"]\').remove()" style="padding:8px 16px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#64748b;cursor:pointer;font-size:.82rem">关闭</button></div>';
-  overlay.appendChild(box);
-  document.body.appendChild(overlay);
-  var ta=document.getElementById('cpyBox');
+  box.style.cssText='background:#fff;border-radius:12px;padding:16px;max-width:500px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 4px 20px rgba(0,0,0,.2)';
+  box.onclick=function(e){e.stopPropagation()};
+  var id='ct_'+Date.now();
+  box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>📋 复制给买家</strong><span onclick="document.getElementById(\'cm\').remove()" style="font-size:1.3rem;cursor:pointer;color:#94a3b8;padding:0 4px">✕</span></div>'+
+    '<textarea id="'+id+'" style="width:100%;min-height:180px;flex:1;padding:10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.85rem;font-family:monospace;outline:none;resize:vertical;white-space:pre;overflow:auto;line-height:1.5;background:#f8fafc" readonly></textarea>'+
+    '<div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;flex-wrap:wrap">'+
+      '<button onclick="var t=document.getElementById(\''+id+'\');t.select();t.setSelectionRange(0,t.value.length);document.execCommand(\'copy\');this.textContent=\'✅ 已复制\';setTimeout(function(){document.getElementById(\'cm\').remove()},600)" style="padding:8px 24px;border-radius:8px;border:none;background:#2563eb;color:#fff;cursor:pointer;font-weight:500;font-size:.9rem">📋 一键复制</button>'+
+      '<button onclick="document.getElementById(\'cm\').remove()" style="padding:8px 20px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#64748b;cursor:pointer;font-size:.85rem">关闭</button>'+
+    '</div>';
+  m.appendChild(box);
+  document.body.appendChild(m);
+  var ta=document.getElementById(id);
   ta.value=txt;
-  ta.focus();ta.select();
+  setTimeout(function(){ta.focus();ta.select();ta.setSelectionRange(0,txt.length)},50);
 }
 
 function doCopy(txt,onOk,onFail){
-  showTextModal('📋 复制内容', txt);
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt).then(onOk).catch(function(){})
-  }
+  showCopyModal(txt);
 }
 // 重查
 function rq(is){I.value=is;E.innerHTML='';N.style.display='none';scrollTo(0,0);setTimeout(function(){Q.click()},300)}
