@@ -265,7 +265,7 @@ function sh(data){
     html+='</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-primary" onclick="rqA()" style="background:#dc2626;font-size:.8rem">🔍 重查全部</button><button onclick="cpyFail()" style="padding:5px 10px;border-radius:6px;border:1px solid #94a3b8;background:transparent;color:#64748b;cursor:pointer;font-size:.78rem">📋 复制异常书号</button></div></div>';
   }
   html+='<div class="summary"><div class="s-card blue"><div class="n">'+data.length+'</div><div class="l">查询</div></div><div class="s-card green"><div class="n">'+ok.length+'</div><div class="l">查到</div></div><div class="s-card amber"><div class="n">'+(data.length-ok.length)+'</div><div class="l">异常</div></div>';
-  if(pd.length){var tot=0;pd.forEach(function(r){tot+=r.cheapest.total});html+='<div class="s-card green"><div class="n">¥'+tot.toFixed(1)+'</div><div class="l">最低总价</div></div><div class="s-card" style="background:#f0fdf4"><div class="n" style="color:#10b981;font-size:1.1rem">¥'+(Math.round(tot*1.25*100)/100).toFixed(1)+'</div><div class="l">建议售价</div></div><div style="grid-column:1/-1;text-align:center;margin-top:4px"><button onclick="ba()" style="padding:8px 24px;border-radius:8px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:600;font-size:1rem;box-shadow:0 2px 8px rgba(220,38,38,.3)">🛒 一键加购全部 '+pd.length+' 本</button></div>'}
+  if(pd.length){var tot=0;pd.forEach(function(r){tot+=r.cheapest.total});html+='<div class="s-card green"><div class="n">¥'+tot.toFixed(1)+'</div><div class="l">最低总价</div></div><div class="s-card" style="background:#f0fdf4"><div class="n" style="color:#10b981;font-size:1.1rem">¥'+(Math.round(tot*1.25*100)/100).toFixed(1)+'</div><div class="l">建议售价</div></div><div style="grid-column:1/-1;text-align:center;margin-top:4px"><button onclick="ba()" style="padding:8px 24px;border-radius:8px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:600;font-size:1rem;box-shadow:0 2px 8px rgba(220,38,38,.3)">🛒 一键加购全部 '+pd.length+' 本</button><button onclick="copyToBuyer()" style="padding:8px 24px;border-radius:8px;border:none;background:#2563eb;color:#fff;cursor:pointer;font-weight:600;font-size:1rem;box-shadow:0 2px 8px rgba(37,99,235,.3);margin-left:6px">📤 复制给买家</button></div>'}
   html+='</div>';
   data.forEach(function(r){
     if(r.error){html+='<div class="card" style="border-left:3px solid #ef4444"><div style="font-family:monospace;font-size:.75rem;color:#94a3b8">'+esc(r.isbn)+'</div><div style="color:#ef4444;font-size:.8rem;margin-top:2px">'+esc(r.error)+'</div></div>'}
@@ -302,6 +302,30 @@ function ba(){
   var is=L.filter(function(r){return r.cheapest&&r.cheapest.itemId&&r.cheapest.shopId});if(!is.length){toast('无商品');return}
   var btn=document.querySelector('[onclick="ba()"]');btn.disabled=1;btn.textContent='⏳ 0/'+is.length;var ok=0,ng=0;
   function nx(i){if(i>=is.length){btn.textContent='✅ '+ok+'/'+is.length+(ng?' ('+ng+'失败)':'');btn.style.background=ok>0?'#059669':'#dc2626';toast('已完成 '+ok+'/'+is.length);return}btn.textContent='⏳ '+(i+1)+'/'+is.length;fj('/api/addtocart?itemId='+is[i].cheapest.itemId+'&shopId='+is[i].cheapest.shopId).then(function(d){if(d.success)ok++;else ng++;setTimeout(function(){nx(i+1)},1200)}).catch(function(){ng++;setTimeout(function(){nx(i+1)},1200)})}nx(0)
+}
+
+// 复制给买家的消息：查到几本+总价，未查到哪几本
+function copyToBuyer(){
+  if(!L||!L.length){toast('无数据');return}
+  var ok=L.filter(function(r){return r.cheapest}), ng=L.filter(function(r){return r.error});
+  var lines=[];
+  if(ok.length){
+    lines.push('✅ 查到 '+ok.length+' 本：');
+    ok.forEach(function(r,i){
+      var c=r.cheapest, t=c.price+c.shipping, sug=Math.round(t*1.25*100)/100;
+      lines.push((i+1)+'. '+(r.title||'无书名')+'  ¥'+sug.toFixed(1));
+    });
+    var tot=0; ok.forEach(function(r){tot+=r.cheapest.price+r.cheapest.shipping});
+    var totalSug=Math.round(tot*1.25*100)/100;
+    lines.push('');
+    lines.push('💰 总计：¥'+totalSug.toFixed(1));
+  }
+  if(ng.length){
+    lines.push('');
+    lines.push('❌ 未查到 '+ng.length+' 本：');
+    ng.forEach(function(r){lines.push('  '+r.isbn)});
+  }
+  doCopy(lines.join('\n'),function(){toast('✅ 已复制，可直接发给买家')},function(){prompt('📋 复制给买家：',lines.join('\n'))});
 }
 
 // 复制报价单：forBuyer=1 精简版（给买家），否则详细版（自用）
