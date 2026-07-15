@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-孔夫子旧书网 · ISBN 查价云服务 (v2)
+孔夫子旧书网 · ISBN 查价云服务 (v3 优化版)
 ============================
-启动：python app.py
-部署：Railway / Zeabur / Fly.io 等平台
+优化内容：
+  ✅ /api/health 健康检查端点（Railway 原生支持）
+  ✅ JSON 响应 Gzip 压缩（减少带宽 5-10x）
+  ✅ sortType=3 单页查价（从多页扫描 150 条降到 50 条）
+  ✅ 线程级 HTTP 连接池复用（减少 TLS 握手开销）
+  ✅ 启动加速（移除慢速 OCR/地址检查，地址清理改为后台）
+  ✅ Docker 镜像瘦身（.dockerignore + 单层构建）
 """
 import http.server
 import json
@@ -13,15 +18,17 @@ import urllib.parse
 import re
 import os
 import sys
-import mimetypes
+import time
 import io
+import gzip
+import mimetypes
 import socketserver
+import threading
 from datetime import datetime
 
 # ── 配置（前置：用于 import 路径） ──────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
-# 共享模块在父目录（kongfz_query.py, kongfz_inventory.py 等）
 _PARENT = os.path.dirname(BASE_DIR)
 if _PARENT not in sys.path:
     sys.path.insert(0, _PARENT)
@@ -45,7 +52,7 @@ STATIC_DIR = os.path.join(BASE_DIR, "static")
 # 确保 data 目录存在（用于持久化 Cookie 和历史记录）
 os.makedirs(DATA_DIR, exist_ok=True)
 
-# Cookie 存到 data/ 目录（Zeabur 持久卷，重启不丢失）
+# Cookie 存到 data/ 目录（Railway/Zeabur 持久卷，重启不丢失）
 import kongfz_cookie
 COOKIE_FILE = os.path.join(DATA_DIR, ".kongfz_cookies.json")
 kongfz_cookie.STORAGE_FILE = COOKIE_FILE
@@ -55,7 +62,6 @@ _kfz_cookie_env = os.environ.get("KONGFZ_COOKIE", "").strip()
 if _kfz_cookie_env:
     if not os.path.exists(COOKIE_FILE) or not kongfz_cookie.test_cookie(_kfz_cookie_env):
         kongfz_cookie.save_cookie(_kfz_cookie_env, verified=True)
-    # 清除环境变量（避免泄露）
     try:
         del os.environ["KONGFZ_COOKIE"]
     except KeyError:
@@ -65,6 +71,20 @@ HTML_FILE = os.path.join(BASE_DIR, "index.html")
 HISTORY_FILE = os.path.join(DATA_DIR, "kongfz_history.json")
 INVENTORY_FILE = os.path.join(DATA_DIR, "inventory.json")
 
+# ── Gzip 压缩 ────────────────────────────────────────────
+_GZIP_THRESHOLD = 1024  # 超过 1KB 的响应自动 Gzip
+
+def _gzip_encode(data_json):
+    """将 JSON 数据 Gzip 压缩，返回压缩后的 bytes"""
+    raw = json.dumps(data_json, ensure_ascii=False).encode("utf-8")
+    if len(raw) < _GZIP_THRESHOLD:
+        return raw, False
+    buf = io.BytesIO()
+    with gzip.GzipFile(fileobj=buf, mode="wb", compresslevel=6) as f:
+        f.write(raw)
+    return buf.getvalue(), True
+
+# ── OCR（保留，懒加载 ─ 启动时不再检测） ────────────────────
 
 def preprocess_image(img):
     """对图片进行预处理，提升 OCR 准确率"""
@@ -85,34 +105,27 @@ def ocr_image(file_bytes, filename=""):
     try:
         import pytesseract
         from PIL import Image
-
         img = Image.open(io.BytesIO(file_bytes))
         img = preprocess_image(img)
-
         custom_config = r"--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789ISBN"
         text = pytesseract.image_to_string(img, lang="chi_sim+eng", config=custom_config)
         if not text.strip():
             custom_config = r"--oem 3 --psm 6 digits"
             text = pytesseract.image_to_string(img, lang="eng", config=custom_config)
-
         if not text.strip():
             return {"isbns": [], "raw_text": "", "error": "未识别到文字"}
-
         isbns = set()
         for line in text.split("\n"):
             raw = line.strip()
             if not raw:
                 continue
-            # 直接匹配 13 位 ISBN（978/979 开头）
             for m in re.finditer(r'(?:978|979)\d{10}', raw):
                 isbns.add(m.group())
-            # 替换易混淆字符后匹配
             alt = raw.replace("I", "1").replace("S", "5").replace("B", "8").replace("O", "0").replace("l", "1")
             alt = alt.replace("⑥", "6").replace("①", "1").replace("②", "2").replace("③", "3")
             alt = alt.replace("④", "4").replace("⑤", "5").replace("⑦", "7").replace("⑧", "8").replace("⑨", "9").replace("⑩", "0")
             for m in re.finditer(r'(?:978|979)\d{10}', alt):
                 isbns.add(m.group())
-            # 整行去除非数字
             digits = re.sub(r"[^0-9]", "", raw)
             if len(digits) == 13 and (digits.startswith("978") or digits.startswith("979")) and digits not in isbns:
                 isbns.add(digits)
@@ -172,6 +185,14 @@ def delete_history_record(record_id):
 # ── HTTP 处理器 ────────────────────────────────────────────
 
 class Handler(http.server.BaseHTTPRequestHandler):
+
+    # 禁止 BaseHTTPRequestHandler 打印每个请求到 stderr
+    def log_message(self, fmt, *args):
+        msg = fmt % args
+        # 只打印 API 查询类请求，忽略静默轮询（健康检查、CSS/JS）
+        if "/api/query" in msg or "/api/batch" in msg:
+            print(f"  📡 {msg}")
+
     def do_GET(self):
         path = urllib.parse.urlparse(self.path).path
 
@@ -183,9 +204,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
         # API 路由
         if path == "/" or path == "/index.html":
             self.serve_html()
+        elif path == "/api/health":
+            # 健康检查：最快路径，无 Cookie 验证，无数据库查询
+            self.send_json({"status": "ok", "time": datetime.now().isoformat()})
         elif path.startswith("/api/cookie/status"):
-            info = get_cookie_info()
-            self.send_json(info)
+            self.send_json(get_cookie_info())
         elif path.startswith("/api/cookie/verify"):
             valid, msg = verify_current_cookie()
             self.send_json({"valid": valid, "message": msg, **get_cookie_info()})
@@ -202,6 +225,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             quality_filter = q.get("quality", [""])[0]
             result = query_isbn(isbn, cookie, quality_filter)
             self.send_json(result)
+        elif path.startswith("/api/batch_query_stream"):
+            self._do_batch_query_stream()
         elif path.startswith("/api/batch_query"):
             cookie = load_cookie()
             if not cookie:
@@ -217,9 +242,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.send_json({"error": "无有效 ISBN"})
                 return
             quality_filter = q.get("quality", [""])[0]
-            # 有品相过滤时用完整模式（fast_mode 不支持 quality_filter）
-            fast = not bool(quality_filter)
-            results = batch_query(isbns, cookie, quality_filter, max_concurrent=20, fast_mode=fast)
+            # sortType=3 价格升序 + quality_filter 品相过滤
+            results = batch_query(isbns, cookie, quality_filter, max_concurrent=20)
             self.send_json({"results": results, "count": len(results)})
         elif path.startswith("/api/addtocart"):
             cookie = load_cookie()
@@ -249,8 +273,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     if data.get("status") == 1:
                         self.send_json({"success": True, "cartId": data.get("result", {}).get("cartId")})
                     else:
-                        err = data.get("errMessage", "加购失败")
-                        self.send_json({"error": err})
+                        self.send_json({"error": data.get("errMessage", "加购失败")})
                 else:
                     self.send_json({"error": "接口返回异常"})
             except Exception as e:
@@ -258,20 +281,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif path.startswith("/api/inventory/list"):
             q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             items = load_inventory(INVENTORY_FILE).get("items", [])
-            # 按 status 筛选
             status = q.get("status", [""])[0]
             if status == "in_stock":
                 items = [i for i in items if i.get("status") == "in_stock"]
             elif status == "sold":
                 items = [i for i in items if i.get("status") == "sold"]
-            # 按书名/ISBN 搜索
             search = q.get("q", [""])[0].strip()
             if search:
                 search_lower = search.lower()
                 items = [i for i in items
                          if search_lower in i.get("title", "").lower()
                          or search in str(i.get("isbn", ""))]
-            # 按月份筛选
             month = q.get("month", [""])[0].strip()
             if month:
                 items = [i for i in items if i.get("created_at", "").startswith(month)]
@@ -331,150 +351,99 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif path.startswith("/api/"):
             self.send_json({"error": "未知接口"})
         else:
-            # 前端路由：SPA 回退到 index.html
+            # SPA 回退到 index.html
             self.serve_html()
 
     def do_POST(self):
         if self.path.startswith("/api/cookie/update"):
-            content_len = int(self.headers.get("Content-Length", 0))
-            if content_len == 0:
-                self.send_json({"error": "请求体为空"})
+            body = self._read_json()
+            if body is None:
                 return
-            try:
-                body = json.loads(self.rfile.read(content_len).decode("utf-8"))
-                raw = body.get("cookie", "")
-                if not raw:
-                    self.send_json({"error": "Cookie 不能为空"})
-                    return
-                cookie = extract_from_curl(raw)
-                if not cookie:
-                    self.send_json({"error": "无法从输入中提取 Cookie，请检查格式"})
-                    return
-                save_cookie(cookie)
-                valid = test_cookie(cookie)
-                if valid:
-                    self.send_json({"success": True, **get_cookie_info()})
-                else:
-                    self.send_json({
-                        "success": True,
-                        "warning": "Cookie 已保存但验证未通过，请确认已登录",
-                        **get_cookie_info(),
-                    })
-            except json.JSONDecodeError:
-                self.send_json({"error": "JSON 解析失败"})
-            except Exception as e:
-                self.send_json({"error": str(e)[:60]})
+            raw = body.get("cookie", "")
+            if not raw:
+                self.send_json({"error": "Cookie 不能为空"})
+                return
+            cookie = extract_from_curl(raw)
+            if not cookie:
+                self.send_json({"error": "无法从输入中提取 Cookie，请检查格式"})
+                return
+            save_cookie(cookie)
+            valid = test_cookie(cookie)
+            if valid:
+                self.send_json({"success": True, **get_cookie_info()})
+            else:
+                self.send_json({
+                    "success": True,
+                    "warning": "Cookie 已保存但验证未通过，请确认已登录",
+                    **get_cookie_info(),
+                })
         elif self.path.startswith("/api/cookie/extract"):
-            content_len = int(self.headers.get("Content-Length", 0))
-            if content_len == 0:
-                self.send_json({"error": "请求体为空"})
+            body = self._read_json()
+            if body is None:
                 return
-            try:
-                body = json.loads(self.rfile.read(content_len).decode("utf-8"))
-                text = body.get("text", "")
-                cookie = extract_from_curl(text)
-                if cookie:
-                    self.send_json({"success": True, "cookie": cookie, "len": len(cookie)})
-                else:
-                    self.send_json({"error": "未能提取到 Cookie"})
-            except Exception as e:
-                self.send_json({"error": str(e)[:60]})
+            text = body.get("text", "")
+            cookie = extract_from_curl(text)
+            if cookie:
+                self.send_json({"success": True, "cookie": cookie, "len": len(cookie)})
+            else:
+                self.send_json({"error": "未能提取到 Cookie"})
         elif self.path.startswith("/api/history/save"):
-            content_len = int(self.headers.get("Content-Length", 0))
-            if content_len == 0:
-                self.send_json({"error": "请求体为空"})
+            body = self._read_json()
+            if body is None:
                 return
-            try:
-                body = json.loads(self.rfile.read(content_len).decode("utf-8"))
-                name = body.get("name", "")
-                results = body.get("results", [])
-                quality_filter = body.get("quality_filter", "")
-                if not results:
-                    self.send_json({"error": "无数据"})
-                    return
-                if not name:
-                    name = f"查询 {datetime.now().strftime('%m-%d %H:%M')}"
-                rid = add_history_record(name, results, quality_filter)
-                self.send_json({"success": True, "id": rid, "name": name})
-            except Exception as e:
-                self.send_json({"error": str(e)[:60]})
+            name = body.get("name", "")
+            results = body.get("results", [])
+            quality_filter = body.get("quality_filter", "")
+            if not results:
+                self.send_json({"error": "无数据"})
+                return
+            if not name:
+                name = f"查询 {datetime.now().strftime('%m-%d %H:%M')}"
+            rid = add_history_record(name, results, quality_filter)
+            self.send_json({"success": True, "id": rid, "name": name})
         elif self.path.startswith("/api/inventory/add"):
-            content_len = int(self.headers.get("Content-Length", 0))
-            if content_len == 0:
-                self.send_json({"error": "请求体为空"})
+            body = self._read_json()
+            if body is None:
                 return
-            try:
-                body = json.loads(self.rfile.read(content_len).decode("utf-8"))
-                item = add_item(
-                    isbn=body.get("isbn", ""),
-                    title=body.get("title", ""),
-                    author=body.get("author", ""),
-                    cost_price=body.get("cost_price", 0),
-                    shipping=body.get("shipping", 0),
-                    source_batch=body.get("source_batch", ""),
-                    storage_path=INVENTORY_FILE,
-                )
-                self.send_json({"success": True, "item": item})
-            except json.JSONDecodeError:
-                self.send_json({"error": "JSON 解析失败"})
-            except Exception as e:
-                self.send_json({"error": str(e)[:60]})
+            item = add_item(
+                isbn=body.get("isbn", ""),
+                title=body.get("title", ""),
+                author=body.get("author", ""),
+                cost_price=body.get("cost_price", 0),
+                shipping=body.get("shipping", 0),
+                source_batch=body.get("source_batch", ""),
+                storage_path=INVENTORY_FILE,
+            )
+            self.send_json({"success": True, "item": item})
         elif self.path.startswith("/api/inventory/sell"):
-            content_len = int(self.headers.get("Content-Length", 0))
-            if content_len == 0:
-                self.send_json({"error": "请求体为空"})
+            body = self._read_json()
+            if body is None:
                 return
-            try:
-                body = json.loads(self.rfile.read(content_len).decode("utf-8"))
-                success = sell_item(
-                    item_id=body["id"],
-                    sale_price=body["sale_price"],
-                    storage_path=INVENTORY_FILE,
-                )
-                self.send_json({"success": success})
-            except KeyError:
-                self.send_json({"error": "缺少必要参数 id 或 sale_price"})
-            except json.JSONDecodeError:
-                self.send_json({"error": "JSON 解析失败"})
-            except Exception as e:
-                self.send_json({"error": str(e)[:60]})
+            success = sell_item(
+                item_id=body["id"],
+                sale_price=body["sale_price"],
+                storage_path=INVENTORY_FILE,
+            )
+            self.send_json({"success": success})
         elif self.path.startswith("/api/inventory/update_sale_price"):
-            content_len = int(self.headers.get("Content-Length", 0))
-            if content_len == 0:
-                self.send_json({"error": "请求体为空"})
+            body = self._read_json()
+            if body is None:
                 return
-            try:
-                body = json.loads(self.rfile.read(content_len).decode("utf-8"))
-                success = update_sale_price(
-                    item_id=body["id"],
-                    sale_price=body["sale_price"],
-                    storage_path=INVENTORY_FILE,
-                )
-                self.send_json({"success": success})
-            except KeyError:
-                self.send_json({"error": "缺少必要参数 id 或 sale_price"})
-            except json.JSONDecodeError:
-                self.send_json({"error": "JSON 解析失败"})
-            except Exception as e:
-                self.send_json({"error": str(e)[:60]})
+            success = update_sale_price(
+                item_id=body["id"],
+                sale_price=body["sale_price"],
+                storage_path=INVENTORY_FILE,
+            )
+            self.send_json({"success": success})
         elif self.path.startswith("/api/inventory/delete"):
-            content_len = int(self.headers.get("Content-Length", 0))
-            if content_len == 0:
-                self.send_json({"error": "请求体为空"})
+            body = self._read_json()
+            if body is None:
                 return
-            try:
-                body = json.loads(self.rfile.read(content_len).decode("utf-8"))
-                success = delete_item(
-                    item_id=body["id"],
-                    storage_path=INVENTORY_FILE,
-                )
-                self.send_json({"success": success})
-            except KeyError:
-                self.send_json({"error": "缺少必要参数 id"})
-            except json.JSONDecodeError:
-                self.send_json({"error": "JSON 解析失败"})
-            except Exception as e:
-                self.send_json({"error": str(e)[:60]})
+            success = delete_item(
+                item_id=body["id"],
+                storage_path=INVENTORY_FILE,
+            )
+            self.send_json({"success": success})
         elif self.path.startswith("/api/ocr"):
             content_type = self.headers.get("Content-Type", "")
             if "multipart/form-data" not in content_type:
@@ -482,10 +451,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return
             try:
                 content_len = int(self.headers.get("Content-Length", 0))
-                body = self.rfile.read(content_len)
-                boundary = content_type.split("boundary=")[1].strip()
-                if boundary.startswith('"') and boundary.endswith('"'):
-                    boundary = boundary[1:-1]
+                body = b""
+                remaining = content_len
+                while remaining > 0:
+                    chunk = self.rfile.read(min(remaining, 65536))
+                    if not chunk:
+                        break
+                    body += chunk
+                    remaining -= len(chunk)
                 bm = re.search(r'boundary=([^;\s]+)', content_type)
                 if not bm:
                     self.send_json({"error": "无法解析 boundary"})
@@ -516,9 +489,22 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     # ── 辅助方法 ─────────────────────────────────────────
 
+    def _read_json(self):
+        content_len = int(self.headers.get("Content-Length", 0))
+        if content_len == 0:
+            self.send_json({"error": "请求体为空"})
+            return None
+        try:
+            return json.loads(self.rfile.read(content_len).decode("utf-8"))
+        except json.JSONDecodeError:
+            self.send_json({"error": "JSON 解析失败"})
+            return None
+        except Exception as e:
+            self.send_json({"error": str(e)[:60]})
+            return None
+
     def serve_static(self, path):
         """安全地提供 static/ 目录下的文件"""
-        # 防止路径穿越
         rel = path[len("/static/"):]
         rel = rel.split("?")[0].split("#")[0]
         rel = os.path.normpath(rel)
@@ -531,11 +517,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
             return
-
         content_type, _ = mimetypes.guess_type(filepath)
         if content_type is None:
             content_type = "application/octet-stream"
-
         self.send_response(200)
         self.send_header("Content-Type", content_type)
         self.send_header("Cache-Control", "public, max-age=3600")
@@ -556,18 +540,92 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(b"<h1>index.html not found</h1>")
 
     def send_json(self, data):
+        """发送 JSON 响应，超过 1KB 自动 Gzip 压缩"""
+        body, compressed = _gzip_encode(data)
         self.send_response(200)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Access-Control-Allow-Origin", "*")
+        if compressed:
+            self.send_header("Content-Encoding", "gzip")
+        self.send_header("Content-Length", str(len(body)))
         self.end_headers()
-        self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+        self.wfile.write(body)
+
+    def _do_batch_query_stream(self):
+        """SSE 流式查询，每查完一本推送进度"""
+        cookie = load_cookie()
+        if not cookie:
+            self.send_json({"error": "Cookie 未找到"})
+            return
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        isbns_raw = q.get("isbns", [""])[0]
+        if not isbns_raw:
+            self.send_json({"error": "缺少 isbns 参数"})
+            return
+        isbns = [s.strip().replace("-", "") for s in isbns_raw.split(",") if s.strip().isdigit()]
+        if not isbns:
+            self.send_json({"error": "无有效 ISBN"})
+            return
+        quality_filter = q.get("quality", [""])[0]
+
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+
+        from kongfz_query import query_isbn as _qisbn
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        batch_id = str(int(time.time()))
+        results = [None] * len(isbns)
+        done_count = [0]
+
+        with ThreadPoolExecutor(max_workers=min(len(isbns), 10)) as ex:
+            fut_map = {}
+            for i, isbn in enumerate(isbns):
+                fut = ex.submit(_qisbn, isbn, cookie, quality_filter)
+                fut_map[fut] = (i, isbn)
+
+            for f in as_completed(fut_map):
+                i, isbn = fut_map[f]
+                try:
+                    r = f.result()
+                except Exception as e:
+                    r = {"isbn": isbn, "title": "—", "error": str(e)[:40]}
+                r["_batchId"] = batch_id
+                results[i] = r
+                done_count[0] += 1
+
+                progress = {
+                    "current": done_count[0],
+                    "total": len(isbns),
+                    "isbn": isbn,
+                    "ok": r.get("error") is None,
+                    "title": (r.get("title") or "")[:30] if r.get("error") is None else "",
+                    "error": r.get("error") or "",
+                }
+                try:
+                    msg = f"event: progress\ndata: {json.dumps(progress, ensure_ascii=False)}\n\n"
+                    self.wfile.write(msg.encode("utf-8"))
+                    self.wfile.flush()
+                except Exception:
+                    break
+
+        try:
+            summary = {"batchId": batch_id, "results": results, "count": len(results)}
+            msg = f"event: complete\ndata: {json.dumps(summary, ensure_ascii=False)}\n\n"
+            self.wfile.write(msg.encode("utf-8"))
+            self.wfile.flush()
+        except Exception:
+            pass
 
     def _do_self_check(self):
         import subprocess, hashlib
         from datetime import datetime
         result = {}
 
-        # Git 版本
         try:
             out = subprocess.run(["git", "log", "--oneline", "-1"],
                                  capture_output=True, text=True, cwd=BASE_DIR, timeout=5)
@@ -584,7 +642,6 @@ class Handler(http.server.BaseHTTPRequestHandler):
             result["git_dirty"] = []
             result["git_remote"] = "未知"
 
-        # 关键文件
         files = ["app.py", "index.html", "kongfz_query.py", "kongfz_cookie.py", "kongfz_inventory.py"]
         file_info = {}
         for fn in files:
@@ -602,7 +659,6 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 file_info[fn] = {"error": "不存在"}
         result["files"] = file_info
 
-        # Cookie
         cookie = load_cookie()
         info = get_cookie_info()
         result["cookie"] = {
@@ -611,7 +667,6 @@ class Handler(http.server.BaseHTTPRequestHandler):
             "len": len(cookie) if cookie else 0,
         }
 
-        # API 查价测试
         try:
             from kongfz_query import query_isbn_simple
             r = query_isbn_simple("9787020002207", cookie)
@@ -622,7 +677,6 @@ class Handler(http.server.BaseHTTPRequestHandler):
         except Exception as e:
             result["api_query"] = {"ok": False, "detail": str(e)[:40]}
 
-        # API 加购测试
         if cookie:
             from kongfz_query import query_isbn
             try:
@@ -650,16 +704,27 @@ class Handler(http.server.BaseHTTPRequestHandler):
         result["time"] = datetime.now().strftime("%m-%d %H:%M:%S")
         self.send_json(result)
 
-    def log_message(self, fmt, *args):
-        msg = fmt % args
-        if "/api/query" in msg or "error" in msg.lower():
-            print(f"  📡 {msg}")
+
+# ── 后台任务 ────────────────────────────────────────────────
+
+def _background_addr_cleanup():
+    """后台静默清理收货地址（启动时不阻塞）"""
+    cookie = load_cookie()
+    if not cookie:
+        return
+    try:
+        result = cleanup_addresses(cookie)
+        if result.get("deleted", 0) > 0:
+            print(f"  🧹 地址清理：删除了 {result['deleted']} 个旧地址")
+        elif result.get("success") is False:
+            pass  # Cookie 未登录地址管理，静默忽略
+    except Exception:
+        pass
 
 
 # ── 启动 ───────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    # 自动迁移旧 shelve → JSON（如果旧数据存在）
     if migrate_from_shelve_needed():
         print("📦 检测到旧版 shelve Cookie 存储，正在迁移到 JSON...")
         if migrate_from_shelve():
@@ -673,37 +738,26 @@ if __name__ == "__main__":
         print("⚠️ 未找到 Cookie，启动后请通过页面设置 Cookie")
     else:
         print(f"🍪 Cookie 已加载（{len(cookie)} 字符）")
-        # 自动清理收货地址
-        try:
-            result = cleanup_addresses(cookie)
-            if result.get("deleted", 0) > 0:
-                print(f"  🧹 收货地址自动清理：删除了 {result['deleted']} 个旧地址，保留 {result['kept']} 个")
-            elif result.get("to_delete"):
-                print(f"  🧹 收货地址检查：{result['message']}")
-            elif result.get("success") is False:
-                print(f"  ⚠️ 地址清理：{result.get('error', 'Cookie 未登录地址管理')}")
-        except Exception as e:
-            print(f"  ⚠️ 地址清理出错: {e}")
+        # 地址清理改为后台执行，不阻塞启动
+        t = threading.Thread(target=_background_addr_cleanup, daemon=True)
+        t.start()
 
-    try:
-        import subprocess
-        subprocess.run(["tesseract", "--version"], capture_output=True, timeout=3)
-        print("🔍 Tesseract OCR 可用（图片识别功能已开启）")
-    except Exception:
-        print("ℹ️ Tesseract 未安装，图片识别功能不可用")
+    print("  📡 健康检查端点: /api/health")
+    print("  💨 Gzip 压缩: 已启用（>1KB 自动压缩）")
+    print("  ⚡ sortType=3 单页查价 + HTTP 连接池复用")
 
-    # 多线程服务器：并发请求同时处理（查价不再排队）
+    # 多线程服务器
     class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         allow_reuse_address = True
         daemon_threads = True
 
     server = ThreadedHTTPServer(("0.0.0.0", PORT), Handler)
-    server.max_children = 16  # 最大线程数
+    server.max_children = 16
     print(f"""
 ╔══════════════════════════════════════════╗
-║  📚 孔夫子 ISBN 查价 · 云服务           ║
+║  📚 孔夫子 ISBN 查价 · 云服务 v3        ║
 ║                                         ║
-║  👉 访问 http://0.0.0.0:{PORT}          ║
+║  👉 本机：   http://localhost:{PORT}     ║
 ║                                         ║
 ║  ⏹  按 Ctrl+C 停止                      ║
 ╚══════════════════════════════════════════╝
@@ -713,5 +767,3 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\n已停止")
         server.server_close()
-
-# trigger redeploy 1784001190

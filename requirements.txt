@@ -1,4 +1,4 @@
-# 零外部依赖 —— 全部使用 Python 标准库
-# 部署时 pip install 会为空运行
-pytesseract>=0.3.10
+# 孔夫子云服务依赖
+# pip install 后 Tesseract/Pillow 为可选（OCR 功能）
+# 运行时内核只依赖 Python 标准库
 Pillow>=10.0.0

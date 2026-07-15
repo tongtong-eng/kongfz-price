@@ -225,22 +225,36 @@ Q.onclick=function(){
   var ql=id('qualitySelect').value,st=Date.now();
   ss('⏳ 批量查询 '+is.length+' 本...','loading');
   E.innerHTML='<div class="summary"><div class="s-card blue"><div class="n">'+is.length+'</div><div class="l">查询中</div></div><div class="s-card green"><div class="n"><span id="batchSec">0</span>s</div><div class="l">已用时</div></div></div>';
-  var tmr=setInterval(function(){var el=id('batchSec');if(el)el.textContent=((Date.now()-st)/1000).toFixed(1)},500);
-  var u='/api/batch_query?isbns='+is.map(function(s){return encodeURIComponent(s)}).join(',');
+  var tm=setInterval(function(){var el=id('batchSec');if(el)el.textContent=((Date.now()-st)/1000).toFixed(1)},500);
+  var u='/api/batch_query_stream?isbns='+is.map(function(s){return encodeURIComponent(s)}).join(',');
   if(ql)u+='&quality='+encodeURIComponent(ql);
-  fj(u).then(function(d){
-    clearInterval(tmr);
-    if(d.error){ss('❌ '+d.error,'error');R=0;Q.disabled=0;return}
-    L=d.results;
-    var bid='b_'+Date.now();L.forEach(function(r){r._batchId=bid});
-    var ok=L.filter(function(r){return !r.error}),ng=L.filter(function(r){return r.error});
-    sh(L);
-    R=0;Q.disabled=0;
-    ss('✅ 完成！查到 '+ok.length+'/'+L.length+' 本 · 用时 '+((Date.now()-st)/1000).toFixed(1)+'s','done')
-  }).catch(function(e){
-    clearInterval(tmr);
-    ss('❌ 网络错误','error');R=0;Q.disabled=0
-  })
+  try{
+    var es=new EventSource(u);
+    es.addEventListener('progress',function(e){
+      var p=JSON.parse(e.data);
+      if(!p||!p.current)return;
+      ss('⏳ 查询 '+p.current+'/'+p.total+' 本...','loading');
+    });
+    es.addEventListener('complete',function(e){
+      es.close();
+      clearInterval(tm);
+      var d=JSON.parse(e.data);
+      L=d.results||[];
+      if(d.batchId)L.forEach(function(r){r._batchId=d.batchId});
+      var ok=L.filter(function(r){return !r.error}),ng=L.filter(function(r){return r.error});
+      sh(L);
+      R=0;Q.disabled=0;
+      ss('✅ 完成！查到 '+ok.length+'/'+L.length+' 本 · 用时 '+((Date.now()-st)/1000).toFixed(1)+'s','done')
+    });
+    es.onerror=function(){
+      es.close();
+      clearInterval(tm);
+      ss('❌ 查询异常','error');R=0;Q.disabled=0
+    };
+  }catch(err){
+    clearInterval(tm);
+    ss('❌ 浏览器不支持 SSE','error');R=0;Q.disabled=0
+  }
 };
 
 function sh(data){
@@ -263,7 +277,7 @@ function sh(data){
       if(r.cheapest.itemId&&r.cheapest.shopId){var c=r.cheapest;html+='<div style="margin:4px 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button onclick="ac('+c.itemId+','+c.shopId+',this)" style="padding:5px 14px;border-radius:6px;border:none;background:#059669;color:#fff;cursor:pointer;font-size:.82rem;font-weight:500">🛒 最低价 ¥'+c.total.toFixed(1)+'</button><span style="font-size:.7rem;color:#64748b">'+esc(c.shop)+' · '+esc(c.quality_text)+'</span></div>'}
       // 记账按钮
       var aun=r.author||''; var p=r.cheapest?r.cheapest.price:0; var sp=r.cheapest?r.cheapest.shipping:0;
-      html+='<div style="margin:2px 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button data-isbn="'+esc(r.isbn)+'" data-title="'+esc(r.title||'')+'" data-author="'+esc(aun)+'" data-price="'+p+'" data-shipping="'+sp+'" onclick="bookBuy(this)" style="padding:5px 14px;border-radius:6px;border:none;background:#f59e0b;color:#fff;cursor:pointer;font-size:.82rem;font-weight:500">📝 记一笔</button></div>';
+      html+='<div style="margin:2px 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button data-isbn="'+esc(r.isbn)+'" data-title="'+esc(r.title||'')+'" data-author="'+esc(aun)+'" data-price="'+p+'" data-shipping="'+sp+'" onclick="bookBuy(this)" style="padding:5px 14px;border-radius:6px;border:none;background:#f59e0b;color:#fff;cursor:pointer;font-size:.82rem;font-weight:500">📝 记一笔</button><button onclick="cpySingleQuote('+esc(r.isbn)+')" style="padding:5px 14px;border-radius:6px;border:none;background:#2563eb;color:#fff;cursor:pointer;font-size:.82rem;font-weight:500">📤 报价</button></div>';
       var items=r.top_cheapest||[r.cheapest];
       html+='<table><thead><tr><th>#</th><th>店铺</th><th>品相</th><th style="text-align:right">书价</th><th style="text-align:right">运费</th><th style="text-align:right;color:#dc2626">总价</th><th></th></tr></thead><tbody>';
       items.forEach(function(it,j){
@@ -321,12 +335,22 @@ function cpyQuote(forBuyer){
   doCopy(lines.join('\n'),function(){toast('✅ '+label)},function(){prompt('📋 '+(forBuyer?'报价单':'成本单')+'，复制后关闭：',lines.join('\n'))});
 }
 
+// 单本报价（发给买家）
+function cpySingleQuote(isbn){
+  var r=null;
+  for(var i=0;i<L.length;i++){if(L[i].isbn===isbn){r=L[i];break}}
+  if(!r||!r.cheapest){toast('无数据');return}
+  var c=r.cheapest, t=c.price+c.shipping, sug=Math.round(t*1.25*100)/100;
+  var txt=r.title+'\nISBN: '+r.isbn+'\n¥'+sug.toFixed(1);
+  doCopy(txt,function(){toast('✅ 已复制报价，可发给买家')},function(){prompt('📋 报价：',txt)});
+}
+
 // 复制异常书号（一键复制转发消息）
 function cpyFail(){
   var fail=[];
   document.querySelectorAll('.fail-chip').forEach(function(el){var m=(el.textContent||'').match(/\d{8,13}/);if(m)fail.push(m[0])});
   if(!fail.length){toast('无异常书号');return}
-  var txt='📋 以下书号暂未查到结果，请确认：\n'+fail.join('\n');
+  var txt='📋 以下 '+fail.length+' 本书号搜索不到：\n'+fail.join('\n');
   doCopy(txt,function(){toast('✅ 已复制 '+fail.length+' 个异常书号，可直接转发')},function(){prompt('📋 异常书号（'+fail.length+' 个），复制后关闭：',txt)})
 }
 function doCopy(txt,onOk,onFail){
