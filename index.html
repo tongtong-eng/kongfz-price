@@ -313,7 +313,7 @@ function copyToBuyer(){
     lines.push('✅ 查到 '+ok.length+' 本：');
     ok.forEach(function(r,i){
       var c=r.cheapest, t=c.price+c.shipping, sug=Math.round(t*1.25*100)/100;
-      lines.push((i+1)+'. '+(r.title||'无书名')+'  ¥'+sug.toFixed(1));
+      lines.push((i+1)+'. '+(r.title||'无书名')+'  ('+r.isbn+')  ¥'+sug.toFixed(1));
     });
     var tot=0; ok.forEach(function(r){tot+=r.cheapest.price+r.cheapest.shipping});
     var totalSug=Math.round(tot*1.25*100)/100;
