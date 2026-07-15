@@ -390,7 +390,7 @@ function showCopyModal(txt){
   box.onclick=function(e){e.stopPropagation()};
   var id='ct_'+Date.now();
   box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>📋 复制给买家</strong><span onclick="document.getElementById(\'cm\').remove()" style="font-size:1.3rem;cursor:pointer;color:#94a3b8;padding:0 4px">✕</span></div>'+
-    '<textarea id="'+id+'" style="width:100%;min-height:180px;flex:1;padding:10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.85rem;font-family:monospace;outline:none;resize:vertical;white-space:pre;overflow:auto;line-height:1.5;background:#f8fafc" readonly></textarea>'+
+    '<textarea id="'+id+'" style="width:100%;min-height:180px;flex:1;padding:10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.85rem;font-family:monospace;outline:none;resize:vertical;white-space:pre;overflow:auto;line-height:1.5;background:#fff;color:#000;-webkit-text-fill-color:#000" onclick="this.select();this.setSelectionRange(0,this.value.length)"></textarea>'+
     '<div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;flex-wrap:wrap">'+
       '<button onclick="var t=document.getElementById(\''+id+'\');t.select();t.setSelectionRange(0,t.value.length);document.execCommand(\'copy\');this.textContent=\'✅ 已复制\';setTimeout(function(){document.getElementById(\'cm\').remove()},600)" style="padding:8px 24px;border-radius:8px;border:none;background:#2563eb;color:#fff;cursor:pointer;font-weight:500;font-size:.9rem">📋 一键复制</button>'+
       '<button onclick="document.getElementById(\'cm\').remove()" style="padding:8px 20px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#64748b;cursor:pointer;font-size:.85rem">关闭</button>'+
