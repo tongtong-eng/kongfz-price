@@ -124,12 +124,18 @@ def _build_result(isbn, items, total_found=0):
     """
     从 API 返回的商品列表构建统一结果。
     本地按总价（含运费）重新排序，确保最低总价准确无误。
+    自动排除休假中店铺的商品。
     """
     cheap_items = []
     all_prices = []
     book_title = book_author = book_press = None
+    holiday_skipped = 0  # 因店铺休假被跳过的商品数
 
     for item in items:
+        # 跳过休假店铺的商品
+        if item.get("shopIsHoliday"):
+            holiday_skipped += 1
+            continue
         r = _parse_item(item)
         if r is None:
             continue
@@ -151,6 +157,10 @@ def _build_result(isbn, items, total_found=0):
                     break
 
     if not cheap_items:
+        if holiday_skipped > 0:
+            return {"isbn": isbn, "title": book_title or "—",
+                    "error": f"所有 {holiday_skipped} 个在售商品店铺均在休假中",
+                    "holiday_shop_count": holiday_skipped}
         return {"isbn": isbn, "title": book_title or "—", "error": "未解析到价格"}
 
     # 按总价（含运费）排序 → 真实最低价
@@ -177,6 +187,7 @@ def _build_result(isbn, items, total_found=0):
         "min_price": cheap_items[0]["price"],
         "max_price": max(all_prices),
         "avg_price": round(sum(all_prices) / len(all_prices), 1),
+        "holiday_shop_count": holiday_skipped,
     }
 
     # simple 版如果全都没价格，报错
