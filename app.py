@@ -44,6 +44,7 @@ from kongfz_inventory import (
     load_inventory, add_item, sell_item, update_sale_price,
     delete_item, get_stats,
 )
+from kongfz_order import search_by_phone
 
 # ── 配置 ──────────────────────────────────────────────────
 PORT = int(os.environ.get("PORT", 5000))
@@ -311,6 +312,19 @@ class Handler(http.server.BaseHTTPRequestHandler):
             dry_run = q.get("dry_run", [""])[0] in ("1", "true", "yes")
             max_count = int(q.get("max", [MAX_ADDRESSES])[0])
             result = cleanup_addresses(cookie, max_count=max_count, dry_run=dry_run)
+            self.send_json(result)
+        elif path.startswith("/api/order/search"):
+            cookie = load_cookie()
+            if not cookie:
+                self.send_json({"error": "Cookie 未找到，请先设置 Cookie"})
+                return
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            phone = q.get("phone", [""])[0].strip()
+            if not phone or not re.match(r'^1\d{10}$', phone):
+                self.send_json({"error": "请输入有效的11位手机号"})
+                return
+            page = int(q.get("page", ["1"])[0])
+            result = search_by_phone(cookie, phone, page=page)
             self.send_json(result)
         elif path.startswith("/api/history/list"):
             data = load_history()

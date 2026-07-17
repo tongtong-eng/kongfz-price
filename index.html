@@ -105,6 +105,27 @@ select{padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:.82r
 .inv-item .i-act{flex-shrink:0;display:flex;gap:4px}
 .inv-item .i-act button{padding:4px 10px;border-radius:6px;border:none;cursor:pointer;font-size:.72rem;font-weight:500}
 .btn-g{background:#059669;color:#fff}.btn-b{background:#3b82f6;color:#fff}.btn-r{background:#dc2626;color:#fff}.btn-ghost{background:transparent;border:1px solid #e2e8f0!important;color:#94a3b8}
+/* 快递查号 */
+.tk-bar{display:flex;gap:6px;margin-bottom:12px}
+.tk-bar input{flex:1;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.9rem;outline:none}
+.tk-bar input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px #dbeafe}
+.tk-bar button{padding:10px 20px;border-radius:8px;border:none;background:#3b82f6;color:#fff;font-weight:600;font-size:.9rem;cursor:pointer}
+.tk-bar button:disabled{opacity:.5;cursor:not-allowed}
+.tk-order{border:1px solid #e2e8f0;border-radius:10px;margin-bottom:10px;overflow:hidden}
+.tk-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;cursor:pointer}
+.tk-head .tk-status{font-size:.72rem;padding:2px 8px;border-radius:10px;font-weight:500}
+.tk-status.sent{background:#dbeafe;color:#1d4ed8}
+.tk-status.received{background:#d1fae5;color:#065f46}
+.tk-status.pending{background:#fef3c7;color:#92400e}
+.tk-status.done{background:#e2e8f0;color:#475569}
+.tk-body{padding:10px 12px;font-size:.82rem;line-height:1.6}
+.tk-body .tk-row{display:flex;gap:4px;margin:3px 0}
+.tk-body .tk-label{color:#64748b;min-width:60px;flex-shrink:0}
+.tk-body .tk-val{flex:1}
+.tk-body .tk-track{margin-top:6px;border-left:2px solid #dbeafe;padding-left:10px}
+.tk-body .tk-track .tk-pt{font-size:.75rem;color:#64748b;margin:4px 0}
+.tk-body .tk-book{background:#f8fafc;border-radius:6px;padding:6px 8px;margin-top:4px}
+.tk-body .tk-book .tk-bi{font-size:.78rem}
 .stats-card{background:linear-gradient(135deg,#065f46,#059669);color:#fff;border-radius:10px;padding:14px;margin-bottom:10px}
 .stats-card .sg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-bottom:10px}
 .stats-card .sg .n{font-size:1.3rem;font-weight:700}.stats-card .sg .l{font-size:.7rem;opacity:.8;margin-top:1px}
@@ -184,6 +205,7 @@ select{padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:.82r
 <div class="bottom-nav">
   <button onclick="scrollTo(0,0)"><svg viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg><span>顶部</span></button>
   <button onclick="showInv()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg><span>📒 账本</span></button>
+  <button onclick="showTrack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg><span>📦 快递</span></button>
   <button onclick="fold('cookie')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg><span>Cookie</span></button>
   <button onclick="fold('hist')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>历史</span></button>
   <button onclick="cleanupAddr()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg><span>清理地址</span></button>
@@ -630,6 +652,129 @@ function showInv(period){
 }
 
 function loc(){location.reload()}
+
+// === 快递查号 ===
+function showTrack(){
+  var cont=document.querySelector('.container');
+  var h='<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button onclick="loc()" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:.8rem;cursor:pointer">← 返回查价</button><strong style="font-size:.9rem">📦 快递查号</strong></div>';
+  h+='<div class="card"><div class="card-title">📱 搜手机号查快递</div>';
+  h+='<div class="tk-bar"><input id="tkPhone" type="tel" placeholder="输入买家手机号" maxlength="11" onkeydown="if(event.key==\'Enter\')tkSearch()"><button id="tkBtn" onclick="tkSearch()">🔍 查询</button></div>';
+  h+='<div id="tkHint" style="font-size:.75rem;color:#94a3b8;margin-top:-4px">输入手机号查询历史订单和物流状态</div>';
+  h+='</div><div id="tkRes"></div>';
+  cont.innerHTML=h;
+  setTimeout(function(){id('tkPhone').focus()},100);
+}
+
+var _tkOrders=[],_tkPage=1,_tkPhone='';
+
+function tkSearch(page){
+  var p=id('tkPhone'),btn=id('tkBtn');
+  if(!p||!btn)return;
+  var phone=p.value.trim();
+  if(!phone||!/^1\d{10}$/.test(phone)){toast('请输入正确的11位手机号');return}
+  if(page===undefined||page===null)page=1;
+  btn.disabled=1;btn.textContent='⏳ 查询中...';
+  _tkPhone=phone;_tkPage=page;
+  var el=id('tkRes');if(!el)return;
+  el.innerHTML='<div style="text-align:center;padding:20px;color:#94a3b8">⏳ 查询中...</div>';
+
+  fetch('/api/order/search?phone='+encodeURIComponent(phone)+'&page='+page)
+    .then(function(r){return r.json()})
+    .then(function(d){
+      btn.disabled=0;btn.textContent='🔍 查询';
+      if(d.error){el.innerHTML='<div style="color:#ef4444;text-align:center;padding:14px;background:#fef2f2;border-radius:8px">❌ '+d.error+'</div>';return}
+      _tkOrders=d.orders||[];
+      if(!_tkOrders.length){
+        el.innerHTML='<div class="empty-state" style="padding:30px">📭 没有找到这个手机号的订单</div>';
+        return;
+      }
+      renderTkOrders(el, d);
+    })
+    .catch(function(){
+      btn.disabled=0;btn.textContent='🔍 查询';
+      el.innerHTML='<div style="color:#ef4444;text-align:center;padding:14px;background:#fef2f2;border-radius:8px">❌ 网络错误</div>';
+    });
+}
+
+function renderTkOrders(el, d){
+  var orders=d.orders||[];
+  var h='<div style="font-size:.78rem;color:#64748b;margin-bottom:8px">共找到 <strong>'+d.total+'</strong> 条订单</div>';
+
+  orders.forEach(function(o,i){
+    var sc='pending',sn='待处理';
+    if(o.status.indexOf('收货')>=0||o.status.indexOf('收到')>=0||o.status.indexOf('已完成')>=0||o.status==='Received'){sc='received';sn='✅ 已收货'}
+    else if(o.status.indexOf('发货')>=0||o.status.indexOf('配送')>=0||o.status.indexOf('运输')>=0||o.status.indexOf('派送')>=0||o.status==='ShippedToReceipt'){sc='sent';sn='📦 运输中'}
+    else if(o.status.indexOf('关闭')>=0||o.status.indexOf('取消')>=0||o.status==='Closed'){sc='done';sn='❌ 已关闭'}
+    else if(o.status.indexOf('退款')>=0||o.status.indexOf('退货')>=0||o.status==='Refund'){sc='done';sn='💰 已退款'}
+
+    var items=o.items||[];
+    var hasTrack=o.shipment_num&&o.shipment_num.length>0;
+    var logistic=o.logistic||[];
+
+    h+='<div class="tk-order" id="tko_'+i+'">';
+    h+='<div class="tk-head" onclick="foldTk('+i+')">';
+    h+='<div><strong style="font-size:.85rem">'+(o.shop_name||'店铺')+'</strong><span style="font-size:.7rem;color:#94a3b8;margin-left:6px">订单#'+(o.order_id||'').toString().slice(-6)+'</span></div>';
+    h+='<span class="tk-status '+sc+'">'+sn+'</span></div>';
+
+    h+='<div class="tk-body" id="tkb_'+i+'">';
+
+    if(o.receiver_name||o.mobile){
+      h+='<div class="tk-row"><span class="tk-label">收货人</span><span class="tk-val">'+(o.receiver_name||'')+' '+(o.mobile||'')+'</span></div>';
+    }
+
+    if(hasTrack){
+      h+='<div class="tk-row"><span class="tk-label">快递</span><span class="tk-val"><strong>'+(o.shipping_company||'')+'</strong> <span style="font-family:monospace;font-size:.78rem;color:#2563eb">'+(o.shipment_num||'')+'</span></span></div>';
+    }else{
+      h+='<div class="tk-row"><span class="tk-label">快递</span><span class="tk-val" style="color:#94a3b8">尚未发货</span></div>';
+    }
+
+    if(o.address){
+      h+='<div class="tk-row"><span class="tk-label">地址</span><span class="tk-val" style="font-size:.75rem;color:#64748b">'+(o.address||'')+'</span></div>';
+    }
+
+    if(items.length){
+      h+='<div class="tk-book">';
+      items.forEach(function(it){
+        var isbn=it.isbn||'';
+        h+='<div class="tk-bi">📖 '+(it.name||'?')+(isbn?' <span style="color:#94a3b8;font-size:.7rem">'+isbn+'</span>':'')+'</div>';
+      });
+      h+='</div>';
+    }
+
+    if(logistic.length){
+      h+='<div class="tk-track">';
+      logistic.slice(0,5).forEach(function(l){
+        var icon='📦';
+        if(l.status&&l.status.indexOf('签收')>=0)icon='✅';
+        else if(l.status&&(l.status.indexOf('派送')>=0))icon='🚚';
+        else if(l.status&&(l.status.indexOf('运输')>=0))icon='🚛';
+        else if(l.status&&(l.status.indexOf('揽收')>=0))icon='📨';
+        h+='<div class="tk-pt">'+icon+' <strong>'+(l.status||'')+'</strong> '+(l.location||'')+' <span style="color:#94a3b8">'+(l.ftime||l.time||'')+'</span></div>';
+        if(l.context)h+='<div style="font-size:.68rem;color:#94a3b8;margin:-2px 0 4px 4px">'+(l.context||'')+'</div>';
+      });
+      if(logistic.length>5)h+='<div style="font-size:.7rem;color:#94a3b8;margin-top:4px">等 '+logistic.length+' 条物流记录...</div>';
+      h+='</div>';
+    }
+
+    h+='</div></div>';
+  });
+
+  var more=d.total>d.page*d.page_size;
+  if(more){
+    h+='<div style="text-align:center;margin:10px 0"><button onclick="tkSearch('+(_tkPage+1)+')" style="padding:8px 24px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-size:.85rem;cursor:pointer">📄 下一页</button></div>';
+  }
+
+  el.innerHTML=h;
+  if(orders.length)foldTk(0);
+}
+
+function foldTk(i){
+  var b=id('tkb_'+i);
+  if(!b)return;
+  b.style.maxHeight=b.style.maxHeight==='none'?'0px':'none';
+  b.style.overflow=b.style.overflow==='visible'?'hidden':'visible';
+  b.style.padding=b.style.padding==='10px 12px'?'0 12px':'10px 12px';
+}
 function invTab(btn){
   document.querySelectorAll('#invTabs button').forEach(function(b){b.classList.remove('on')});
   btn.classList.add('on'); invFilter()
