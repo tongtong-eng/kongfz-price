@@ -8,7 +8,7 @@
   ✅ JSON 响应 Gzip 压缩（减少带宽 5-10x）
   ✅ sortType=3 单页查价（从多页扫描 150 条降到 50 条）
   ✅ 线程级 HTTP 连接池复用（减少 TLS 握手开销）
-  ✅ 启动加速（移除慢速 OCR/地址检查，地址清理改为后台）
+  ✅ 启动加速（地址清理改为后台）
   ✅ Docker 镜像瘦身（.dockerignore + 单层构建）
 """
 import http.server
@@ -40,10 +40,6 @@ from kongfz_cookie import (
 )
 from kongfz_query import query_isbn, batch_query, HEADERS
 from kongfz_address import cleanup_addresses, MAX_ADDRESSES
-from kongfz_inventory import (
-    load_inventory, add_item, sell_item, update_sale_price,
-    delete_item, get_stats,
-)
 from kongfz_order import search_by_phone
 
 # ── 配置 ──────────────────────────────────────────────────
@@ -70,8 +66,6 @@ if _kfz_cookie_env:
 
 HTML_FILE = os.path.join(BASE_DIR, "index.html")
 HISTORY_FILE = os.path.join(DATA_DIR, "kongfz_history.json")
-INVENTORY_FILE = os.path.join(DATA_DIR, "inventory.json")
-
 # ── Gzip 压缩 ────────────────────────────────────────────
 _GZIP_THRESHOLD = 1024  # 超过 1KB 的响应自动 Gzip
 
@@ -84,59 +78,6 @@ def _gzip_encode(data_json):
     with gzip.GzipFile(fileobj=buf, mode="wb", compresslevel=6) as f:
         f.write(raw)
     return buf.getvalue(), True
-
-# ── OCR（保留，懒加载 ─ 启动时不再检测） ────────────────────
-
-def preprocess_image(img):
-    """对图片进行预处理，提升 OCR 准确率"""
-    from PIL import ImageFilter, ImageOps
-    img = img.convert("L")
-    img = ImageOps.autocontrast(img, cutoff=5)
-    w, h = img.size
-    if w < 800 or h < 200:
-        scale = max(800 / w, 200 / h, 2)
-        img = img.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
-    img = img.filter(ImageFilter.SHARPEN)
-    img = img.point(lambda x: 0 if x < 180 else 255)
-    return img
-
-
-def ocr_image(file_bytes, filename=""):
-    """OCR 识别图片中的文字，提取 ISBN（Tesseract，懒加载）"""
-    try:
-        import pytesseract
-        from PIL import Image
-        img = Image.open(io.BytesIO(file_bytes))
-        img = preprocess_image(img)
-        custom_config = r"--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789ISBN"
-        text = pytesseract.image_to_string(img, lang="chi_sim+eng", config=custom_config)
-        if not text.strip():
-            custom_config = r"--oem 3 --psm 6 digits"
-            text = pytesseract.image_to_string(img, lang="eng", config=custom_config)
-        if not text.strip():
-            return {"isbns": [], "raw_text": "", "error": "未识别到文字"}
-        isbns = set()
-        for line in text.split("\n"):
-            raw = line.strip()
-            if not raw:
-                continue
-            for m in re.finditer(r'(?:978|979)\d{10}', raw):
-                isbns.add(m.group())
-            alt = raw.replace("I", "1").replace("S", "5").replace("B", "8").replace("O", "0").replace("l", "1")
-            alt = alt.replace("⑥", "6").replace("①", "1").replace("②", "2").replace("③", "3")
-            alt = alt.replace("④", "4").replace("⑤", "5").replace("⑦", "7").replace("⑧", "8").replace("⑨", "9").replace("⑩", "0")
-            for m in re.finditer(r'(?:978|979)\d{10}', alt):
-                isbns.add(m.group())
-            digits = re.sub(r"[^0-9]", "", raw)
-            if len(digits) == 13 and (digits.startswith("978") or digits.startswith("979")) and digits not in isbns:
-                isbns.add(digits)
-            if len(digits) == 10 and digits[0] != '0' and digits not in isbns:
-                isbns.add(digits)
-        return {"isbns": sorted(isbns), "raw_text": text.strip()[:500], "image_count": 1}
-    except ImportError:
-        return {"isbns": [], "raw_text": "", "error": "缺少 Tesseract"}
-    except Exception as e:
-        return {"isbns": [], "raw_text": "", "error": str(e)[:60]}
 
 
 # ── 历史记录 ───────────────────────────────────────────────
@@ -279,30 +220,6 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     self.send_json({"error": "接口返回异常"})
             except Exception as e:
                 self.send_json({"error": str(e)[:40]})
-        elif path.startswith("/api/inventory/list"):
-            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
-            items = load_inventory(INVENTORY_FILE).get("items", [])
-            status = q.get("status", [""])[0]
-            if status == "in_stock":
-                items = [i for i in items if i.get("status") == "in_stock"]
-            elif status == "sold":
-                items = [i for i in items if i.get("status") == "sold"]
-            search = q.get("q", [""])[0].strip()
-            if search:
-                search_lower = search.lower()
-                items = [i for i in items
-                         if search_lower in i.get("title", "").lower()
-                         or search in str(i.get("isbn", ""))]
-            month = q.get("month", [""])[0].strip()
-            if month:
-                items = [i for i in items if i.get("created_at", "").startswith(month)]
-            self.send_json({"items": items, "total": len(items)})
-        elif path.startswith("/api/inventory/stats"):
-            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
-            period = q.get("period", [""])[0] or None
-            items = load_inventory(INVENTORY_FILE).get("items", [])
-            stats = get_stats(items, period)
-            self.send_json(stats)
         elif path.startswith("/api/address/cleanup"):
             cookie = load_cookie()
             if not cookie:
@@ -415,89 +332,6 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 name = f"查询 {datetime.now().strftime('%m-%d %H:%M')}"
             rid = add_history_record(name, results, quality_filter)
             self.send_json({"success": True, "id": rid, "name": name})
-        elif self.path.startswith("/api/inventory/add"):
-            body = self._read_json()
-            if body is None:
-                return
-            item = add_item(
-                isbn=body.get("isbn", ""),
-                title=body.get("title", ""),
-                author=body.get("author", ""),
-                cost_price=body.get("cost_price", 0),
-                shipping=body.get("shipping", 0),
-                source_batch=body.get("source_batch", ""),
-                storage_path=INVENTORY_FILE,
-            )
-            self.send_json({"success": True, "item": item})
-        elif self.path.startswith("/api/inventory/sell"):
-            body = self._read_json()
-            if body is None:
-                return
-            success = sell_item(
-                item_id=body["id"],
-                sale_price=body["sale_price"],
-                storage_path=INVENTORY_FILE,
-            )
-            self.send_json({"success": success})
-        elif self.path.startswith("/api/inventory/update_sale_price"):
-            body = self._read_json()
-            if body is None:
-                return
-            success = update_sale_price(
-                item_id=body["id"],
-                sale_price=body["sale_price"],
-                storage_path=INVENTORY_FILE,
-            )
-            self.send_json({"success": success})
-        elif self.path.startswith("/api/inventory/delete"):
-            body = self._read_json()
-            if body is None:
-                return
-            success = delete_item(
-                item_id=body["id"],
-                storage_path=INVENTORY_FILE,
-            )
-            self.send_json({"success": success})
-        elif self.path.startswith("/api/ocr"):
-            content_type = self.headers.get("Content-Type", "")
-            if "multipart/form-data" not in content_type:
-                self.send_json({"error": "需要 multipart/form-data"})
-                return
-            try:
-                content_len = int(self.headers.get("Content-Length", 0))
-                body = b""
-                remaining = content_len
-                while remaining > 0:
-                    chunk = self.rfile.read(min(remaining, 65536))
-                    if not chunk:
-                        break
-                    body += chunk
-                    remaining -= len(chunk)
-                bm = re.search(r'boundary=([^;\s]+)', content_type)
-                if not bm:
-                    self.send_json({"error": "无法解析 boundary"})
-                    return
-                boundary = bm.group(1).strip().strip('"').strip("'")
-                parts = body.split(("--" + boundary).encode())
-                for part in parts:
-                    if b'name="image"' not in part:
-                        continue
-                    marker = b"\r\n\r\n"
-                    idx = part.find(marker)
-                    if idx <= 0:
-                        continue
-                    img_data = part[idx + len(marker):]
-                    for sep in [b"\r\n--", b"\r\n"]:
-                        if img_data.endswith(sep):
-                            img_data = img_data[:-len(sep)]
-                            break
-                    if img_data:
-                        result = ocr_image(img_data)
-                        self.send_json(result)
-                        return
-                self.send_json({"error": "未找到图片数据"})
-            except Exception as e:
-                self.send_json({"error": str(e)[:60]})
         else:
             self.send_json({"error": "未知接口"})
 
@@ -656,7 +490,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             result["git_dirty"] = []
             result["git_remote"] = "未知"
 
-        files = ["app.py", "index.html", "kongfz_query.py", "kongfz_cookie.py", "kongfz_inventory.py"]
+        files = ["app.py", "index.html", "kongfz_query.py", "kongfz_cookie.py"]
         file_info = {}
         for fn in files:
             fp = os.path.join(BASE_DIR, fn)

@@ -90,56 +90,6 @@ select{padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:.82r
   .card{padding:10px;margin-bottom:8px}
   .result-box{padding:10px}
 }
-/* 库存 */
-.inv-bar{display:flex;gap:8px;overflow-x:auto;padding:6px 0;margin-bottom:8px}
-.inv-bar .c{flex:1;min-width:60px;text-align:center;padding:8px 4px;border-radius:8px;background:#f8fafc}
-.inv-bar .c .n{font-size:1rem;font-weight:700;color:#1e293b}
-.inv-bar .c .l{font-size:.65rem;color:#64748b;margin-top:1px}
-.inv-tabs{display:flex;gap:4px;margin:6px 0;overflow-x:auto}
-.inv-tabs button{padding:4px 12px;border-radius:14px;border:1px solid #e2e8f0;background:#fff;font-size:.78rem;white-space:nowrap;cursor:pointer;color:#64748b}
-.inv-tabs button.on{background:#3b82f6;color:#fff;border-color:#3b82f6}
-.inv-item{display:flex;padding:10px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:6px;gap:8px;align-items:center}
-.inv-item .i-info{flex:1;min-width:0}
-.inv-item .i-t{font-weight:500;font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.inv-item .i-m{font-size:.7rem;color:#64748b;margin-top:2px}
-.inv-item .i-act{flex-shrink:0;display:flex;gap:4px}
-.inv-item .i-act button{padding:4px 10px;border-radius:6px;border:none;cursor:pointer;font-size:.72rem;font-weight:500}
-.btn-g{background:#059669;color:#fff}.btn-b{background:#3b82f6;color:#fff}.btn-r{background:#dc2626;color:#fff}.btn-ghost{background:transparent;border:1px solid #e2e8f0!important;color:#94a3b8}
-/* 快递查号 */
-.tk-bar{display:flex;gap:6px;margin-bottom:12px}
-.tk-bar input{flex:1;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.9rem;outline:none}
-.tk-bar input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px #dbeafe}
-.tk-bar button{padding:10px 20px;border-radius:8px;border:none;background:#3b82f6;color:#fff;font-weight:600;font-size:.9rem;cursor:pointer}
-.tk-bar button:disabled{opacity:.5;cursor:not-allowed}
-.tk-order{border:1px solid #e2e8f0;border-radius:10px;margin-bottom:10px;overflow:hidden}
-.tk-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;cursor:pointer}
-.tk-head .tk-status{font-size:.72rem;padding:2px 8px;border-radius:10px;font-weight:500}
-.tk-status.sent{background:#dbeafe;color:#1d4ed8}
-.tk-status.received{background:#d1fae5;color:#065f46}
-.tk-status.pending{background:#fef3c7;color:#92400e}
-.tk-status.done{background:#e2e8f0;color:#475569}
-.tk-body{padding:10px 12px;font-size:.82rem;line-height:1.6}
-.tk-body .tk-row{display:flex;gap:4px;margin:3px 0}
-.tk-body .tk-label{color:#64748b;min-width:60px;flex-shrink:0}
-.tk-body .tk-val{flex:1}
-.tk-body .tk-track{margin-top:6px;border-left:2px solid #dbeafe;padding-left:10px}
-.tk-body .tk-track .tk-pt{font-size:.75rem;color:#64748b;margin:4px 0}
-.tk-body .tk-book{background:#f8fafc;border-radius:6px;padding:6px 8px;margin-top:4px}
-.tk-body .tk-book .tk-bi{font-size:.78rem}
-.stats-card{background:linear-gradient(135deg,#065f46,#059669);color:#fff;border-radius:10px;padding:14px;margin-bottom:10px}
-.stats-card .sg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-bottom:10px}
-.stats-card .sg .n{font-size:1.3rem;font-weight:700}.stats-card .sg .l{font-size:.7rem;opacity:.8;margin-top:1px}
-.stats-card .se{display:flex;justify-content:space-between;font-size:.8rem;padding:4px 0;border-top:1px solid rgba(255,255,255,.2)}
-.per-btn{background:rgba(255,255,255,.15);color:#fff;border:none;padding:3px 10px;border-radius:10px;font-size:.72rem;cursor:pointer}
-.per-btn.on{background:rgba(255,255,255,.35)}
-.inv-empty{text-align:center;color:#94a3b8;padding:30px 10px;font-size:.82rem}
-.inv-empty .big{font-size:2rem;margin-bottom:6px}
-</style>
-</head>
-<body>
-<div class="container">
-  <h1>📚 孔夫子进货查价</h1>
-  <p class="subtitle">输入 ISBN 查最低进货价+运费</p>
 
   <div class="card">
     <div class="card-title">📖 ISBN（每行一个）</div>
@@ -155,12 +105,6 @@ select{padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:.82r
       <button class="btn btn-outline" id="btnClear">清空</button>
       <span id="status">就绪</span>
     </div>
-    <div style="margin-top:8px;padding:8px;border:1px dashed #cbd5e1;border-radius:8px;text-align:center;font-size:.75rem;color:#94a3b8;cursor:pointer" onclick="document.getElementById('ocrInp').click()">
-      📷 上传截图自动识别 ISBN
-      <input type="file" id="ocrInp" accept="image/*" multiple style="display:none" onchange="doOcr(this.files)">
-    </div>
-    <div id="ocrSt" style="display:none;margin-top:4px;font-size:.78rem"></div>
-  </div>
 
   <!-- Cookie 状态条 -->
   <div id="cookieBar" onclick="fold('cookie')">
@@ -204,7 +148,6 @@ select{padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:.82r
 
 <div class="bottom-nav">
   <button onclick="scrollTo(0,0)"><svg viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg><span>顶部</span></button>
-  <button onclick="showInv()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg><span>📒 账本</span></button>
   <button onclick="showTrack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg><span>📦 快递</span></button>
   <button onclick="fold('cookie')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg><span>Cookie</span></button>
   <button onclick="fold('hist')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>历史</span></button>
@@ -302,7 +245,6 @@ function sh(data){
       if(r.cheapest.itemId&&r.cheapest.shopId){var c=r.cheapest;html+='<div style="margin:4px 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button onclick="ac('+c.itemId+','+c.shopId+',this)" style="padding:5px 14px;border-radius:6px;border:none;background:#059669;color:#fff;cursor:pointer;font-size:.82rem;font-weight:500">🛒 最低价 ¥'+c.total.toFixed(1)+'</button><span style="font-size:.7rem;color:#64748b">'+esc(c.shop)+' · '+esc(c.quality_text)+'</span></div>'}
       // 记账按钮
       var aun=r.author||''; var p=r.cheapest?r.cheapest.price:0; var sp=r.cheapest?r.cheapest.shipping:0;
-      html+='<div style="margin:2px 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button data-isbn="'+esc(r.isbn)+'" data-title="'+esc(r.title||'')+'" data-author="'+esc(aun)+'" data-price="'+p+'" data-shipping="'+sp+'" onclick="bookBuy(this)" style="padding:5px 14px;border-radius:6px;border:none;background:#f59e0b;color:#fff;cursor:pointer;font-size:.82rem;font-weight:500">📝 记一笔</button><button onclick="cpySingleQuote('+esc(r.isbn)+')" style="padding:5px 14px;border-radius:6px;border:none;background:#2563eb;color:#fff;cursor:pointer;font-size:.82rem;font-weight:500">📤 报价</button></div>';
       var items=r.top_cheapest||[r.cheapest];
       html+='<table><thead><tr><th>#</th><th>店铺</th><th>品相</th><th style="text-align:right">书价</th><th style="text-align:right">运费</th><th style="text-align:right;color:#dc2626">总价</th><th></th></tr></thead><tbody>';
       items.forEach(function(it,j){
@@ -496,25 +438,6 @@ function saveCookie(){
   }).catch(function(){msg.textContent='❌ 网络错误';msg.style.color='#ef4444'})
 }
 
-// OCR
-function doOcr(files){
-  var st=id('ocrSt');st.style.display='block';st.innerHTML='⏳ 识别 '+files.length+' 张...';st.style.color='#3b82f6';
-  var all=[];
-  function p(i){
-    if(i>=files.length){
-      if(all.length){st.innerHTML='✅ 识别到 <strong>'+all.length+'</strong> 个 ISBN';st.style.color='#059669';I.value=(I.value.trim()?I.value.trim()+'\n':'')+all.join('\n')}
-      else{st.innerHTML='⚠️ 未识别到 ISBN';st.style.color='#d97706'}
-      return
-    }
-    if(!files[i].type.startsWith('image/')){p(i+1);return}
-    var fd=new FormData();fd.append('image',files[i]);
-    fetch('/api/ocr',{method:'POST',body:fd}).then(function(r){return r.json()}).then(function(d){
-      if(d.isbns&&d.isbns.length)d.isbns.forEach(function(v){if(all.indexOf(v)===-1)all.push(v)});st.innerHTML='⏳ 已提取 '+all.length+' 个';p(i+1)
-    }).catch(function(){p(i+1)})
-  }
-  p(0)
-}
-
 function toast(t){var el=id('toast');el.textContent=t;el.style.display='block';clearTimeout(el._t);el._t=setTimeout(function(){el.style.display='none'},2000)}
 
 // 地址清理
@@ -610,46 +533,7 @@ function selfCheck(){
 }
 
 // 一键记账（不弹窗，自动用最低总价）
-function bookBuy(btn){
-  var isbn=btn.dataset.isbn, title=btn.dataset.title, author=btn.dataset.author;
-  var price=parseFloat(btn.dataset.price), shipping=parseFloat(btn.dataset.shipping);
-  if(isNaN(price))price=0; if(isNaN(shipping))shipping=0;
-  var cost=price+shipping;
-  btn.disabled=1;btn.textContent='⏳';
-  fj('/api/inventory/add',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({isbn:isbn,title:title,author:author,cost_price:cost,shipping:shipping,source_batch:''})
-  }).then(function(d){
-    if(d.success){btn.textContent='✅ 已记账';btn.style.background='#10b981';toast('📝 已记录进货 ¥'+cost.toFixed(1))}
-    else{btn.textContent='❌';setTimeout(function(){btn.textContent='📝 记一笔';btn.disabled=0;btn.style.background='#f59e0b'},1500)}
-  }).catch(function(){btn.textContent='❌';setTimeout(function(){btn.textContent='📝 记一笔';btn.disabled=0;btn.style.background='#f59e0b'},1500)})
-}
 
-function showInv(period){
-  var cont=document.querySelector('.container');
-  var html='<div class="stats-card" id="invStats">';
-  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
-  html+='<span style="font-weight:600;font-size:.95rem">📊 盈亏看板</span>';
-  var d=new Date(),ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-  d.setMonth(d.getMonth()-1); var lm=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-  html+='<div style="display:flex;gap:4px">';
-  html+='<button class="per-btn'+(period===''||period===undefined?' on':'')+'" onclick="showInv(\'\')">全部</button>';
-  html+='<button class="per-btn'+(period===ym?' on':'')+'" onclick="showInv(\''+ym+'\')">本月</button>';
-  html+='<button class="per-btn'+(period===lm?' on':'')+'" onclick="showInv(\''+lm+'\')">上月</button>';
-  html+='</div></div><div id="invStatsBody"><div class="sg"><div><div class="n">—</div><div class="l">收入</div></div><div><div class="n">—</div><div class="l">成本</div></div><div><div class="n">—</div><div class="l">利润</div></div></div></div></div>';
-
-  html+='<div style="display:flex;gap:6px;margin-bottom:6px">';
-  html+='<input id="invQ" placeholder="🔍 搜书名/ISBN" style="flex:1;padding:6px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.82rem;outline:none" oninput="invFilter()">';
-  html+='</div>';
-  html+='<div class="inv-tabs" id="invTabs">';
-  html+='<button class="on" data-s="" onclick="invTab(this)">全部</button>';
-  html+='<button data-s="in_stock" onclick="invTab(this)">📦 在库</button>';
-  html+='<button data-s="sold" onclick="invTab(this)">💰 已售</button>';
-  html+='</div><div id="invList"><div class="inv-empty"><div class="big">📦</div>加载中...</div></div>';
-
-  cont.insertAdjacentHTML('afterbegin','<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button onclick="loc()" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:.8rem;cursor:pointer">← 返回查价</button><strong style="font-size:.9rem">📒 账本</strong></div>');
-  cont.innerHTML=html;
-  setTimeout(function(){invFilter();loadStats(period||'')}, 100);
-}
 
 function loc(){location.reload()}
 
@@ -775,72 +659,6 @@ function foldTk(i){
   b.style.overflow=b.style.overflow==='visible'?'hidden':'visible';
   b.style.padding=b.style.padding==='10px 12px'?'0 12px':'10px 12px';
 }
-function invTab(btn){
-  document.querySelectorAll('#invTabs button').forEach(function(b){b.classList.remove('on')});
-  btn.classList.add('on'); invFilter()
-}
-function invFilter(){
-  var el=document.getElementById('invQ'); var q=el?el.value.trim().toLowerCase():'';
-  var sel=document.querySelector('#invTabs .on'); var s=sel?sel.dataset.s:'';
-  var u='/api/inventory/list?'; if(s)u+='status='+s+'&'; if(q)u+='q='+encodeURIComponent(q);
-  fetch(u).then(function(r){return r.json()}).then(function(d){renderInv(d.items||[])}).catch(function(){})
-}
-function renderInv(items){
-  var el=document.getElementById('invList'); if(!el)return;
-  if(!items.length){el.innerHTML='<div class="inv-empty"><div class="big">📦</div>还没有记录<br>查价后点「标记已买」开始记录</div>'; return}
-  el.innerHTML=items.map(function(i){
-    var act='';
-    if(i.status==='in_stock'){
-      act='<button class="btn-g" onclick="sellInv('+i.id+')">💰 卖出</button><button class="btn-ghost" onclick="delInv('+i.id+')">✕</button>';
-    }else{
-      var pf=((i.sale_price||0)-i.total_cost).toFixed(1);
-      act='<span style="font-weight:600;color:'+(pf>=0?'#059669':'#dc2626')+'">¥'+pf+'</span>';
-      act+='<button class="btn-ghost" onclick="modPrice('+i.id+','+(i.sale_price||0)+')">✏️</button>';
-    }
-    var info=esc(i.title||'')+' <span style="color:#94a3b8;font-size:.7rem">'+(i.isbn||'')+'</span>';
-    var meta='成本 ¥'+(i.total_cost||0).toFixed(1);
-    if(i.status==='sold'&&i.sale_price)meta+=' → 卖 ¥'+(i.sale_price||0).toFixed(1);
-    meta+=' · '+i.buy_date; if(i.sale_date)meta+=' → '+i.sale_date;
-    return '<div class="inv-item"><div class="i-info"><div class="i-t">'+info+'</div><div class="i-m">'+meta+'</div></div><div class="i-act">'+act+'</div></div>'
-  }).join('')
-}
-function sellInv(id){
-  var p=prompt('💰 卖了多少钱？','');
-  if(p===null)return; p=parseFloat(p); if(isNaN(p)||p<=0){toast('无效价格');return}
-  fj('/api/inventory/sell',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,sale_price:p})}).then(function(d){
-    if(d.success){toast('✅ 已记录');invFilter();loadStats()}
-    else{toast('❌ 保存失败')}
-  }).catch(function(){toast('❌ 网络错误')})
-}
-function modPrice(id,old){
-  var p=prompt('✏️ 修改售价：',old.toFixed(1));
-  if(p===null)return; p=parseFloat(p); if(isNaN(p)||p<=0){toast('无效价格');return}
-  fj('/api/inventory/update_sale_price',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,sale_price:p})}).then(function(d){
-    if(d.success){toast('✅ 已更新');invFilter();loadStats()}
-    else{toast('❌ 保存失败')}
-  }).catch(function(){toast('❌ 网络错误')})
-}
-function delInv(id){
-  if(!confirm('删除这条记录？'))return;
-  fj('/api/inventory/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id})}).then(function(d){
-    if(d.success){toast('已删除');invFilter();loadStats()}
-  }).catch(function(){})
-}
-function loadStats(period){
-  var u='/api/inventory/stats'; if(period)u+='?period='+encodeURIComponent(period);
-  fetch(u).then(function(r){return r.json()}).then(function(d){
-    var el=document.getElementById('invStatsBody'); if(!el)return;
-    var c=d.profit>=0?'#86efac':'#fca5a5';
-    var h='<div class="sg"><div><div class="n">¥'+(d.total_revenue||0).toFixed(1)+'</div><div class="l">收入</div></div>';
-    h+='<div><div class="n">¥'+(d.total_cost||0).toFixed(1)+'</div><div class="l">成本</div></div>';
-    h+='<div><div class="n" style="color:'+c+'">¥'+(d.profit||0).toFixed(1)+'</div><div class="l">利润</div></div></div>';
-    h+='<div class="se"><span>毛利率</span><span>'+(d.margin||0)+'%</span></div>';
-    h+='<div class="se"><span>已售</span><span>'+d.sold_count+' 本</span></div>';
-    h+='<div class="se"><span>在库</span><span>'+d.in_stock_count+' 本</span></div>';
-    if(d.best_book)h+='<div class="se"><span>最赚的书</span><span>'+esc(d.best_book.title)+'  +¥'+d.best_book.profit.toFixed(1)+'</span></div>';
-    el.innerHTML=h;
-  }).catch(function(){}
-)}
 </script>
 </body>
 </html>

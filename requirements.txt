@@ -1,4 +1,2 @@
 # 孔夫子云服务依赖
-# pip install 后 Tesseract/Pillow 为可选（OCR 功能）
-# 运行时内核只依赖 Python 标准库
-Pillow>=10.0.0
+# 运行时只依赖 Python 标准库
