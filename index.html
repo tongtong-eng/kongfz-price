@@ -547,7 +547,7 @@ function showTrack(){
   var h='<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button onclick="loc()" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:.8rem;cursor:pointer">← 返回查价</button><strong style="font-size:.9rem">📦 快递查号</strong></div>';
   h+='<div class="card"><div class="card-title">📱 搜手机号查快递</div>';
   h+='<div class="tk-bar"><input id="tkPhone" type="tel" placeholder="输入买家手机号" maxlength="11" onkeydown="if(event.key==\'Enter\')tkSearch()"><button id="tkBtn" onclick="tkSearch()">🔍 查询</button></div>';
-  h+='<div id="tkHint" style="font-size:.75rem;color:#94a3b8;margin-top:-4px">输入手机号查询历史订单和物流状态</div>';
+  h+='<div id="tkHint" style="font-size:.75rem;color:#94a3b8;margin-top:-4px">输入手机号查询快递单号、收件人和书籍</div>';
   h+='</div><div id="tkRes"></div>';
   cont.innerHTML=h;
   setTimeout(function(){id('tkPhone').focus()},100);
@@ -589,62 +589,32 @@ function renderTkOrders(el, d){
   var h='<div style="font-size:.78rem;color:#64748b;margin-bottom:8px">共找到 <strong>'+d.total+'</strong> 条订单</div>';
 
   orders.forEach(function(o,i){
-    var sc='pending',sn='待处理';
-    if(o.status.indexOf('收货')>=0||o.status.indexOf('收到')>=0||o.status.indexOf('已完成')>=0||o.status==='Received'){sc='received';sn='✅ 已收货'}
-    else if(o.status.indexOf('发货')>=0||o.status.indexOf('配送')>=0||o.status.indexOf('运输')>=0||o.status.indexOf('派送')>=0||o.status==='ShippedToReceipt'){sc='sent';sn='📦 运输中'}
-    else if(o.status.indexOf('关闭')>=0||o.status.indexOf('取消')>=0||o.status==='Closed'){sc='done';sn='❌ 已关闭'}
-    else if(o.status.indexOf('退款')>=0||o.status.indexOf('退货')>=0||o.status==='Refund'){sc='done';sn='💰 已退款'}
-
     var items=o.items||[];
     var hasTrack=o.shipment_num&&o.shipment_num.length>0;
-    var logistic=o.logistic||[];
 
-    h+='<div class="tk-order" id="tko_'+i+'">';
-    h+='<div class="tk-head" onclick="foldTk('+i+')">';
-    h+='<div><strong style="font-size:.85rem">'+(o.shop_name||'店铺')+'</strong><span style="font-size:.7rem;color:#94a3b8;margin-left:6px">订单#'+(o.order_id||'').toString().slice(-6)+'</span></div>';
-    h+='<span class="tk-status '+sc+'">'+sn+'</span></div>';
+    h+='<div class="tk-order" id="tko_'+i+'" style="margin-bottom:8px;border:1px solid #e2e8f0;border-radius:8px;padding:10px;background:#fff">';
 
-    h+='<div class="tk-body" id="tkb_'+i+'">';
-
-    if(o.receiver_name||o.mobile){
-      h+='<div class="tk-row"><span class="tk-label">收货人</span><span class="tk-val">'+(o.receiver_name||'')+' '+(o.mobile||'')+'</span></div>';
-    }
-
+    // 快递单号 + 收件人
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:6px">';
     if(hasTrack){
-      h+='<div class="tk-row"><span class="tk-label">快递</span><span class="tk-val"><strong>'+(o.shipping_company||'')+'</strong> <span style="font-family:monospace;font-size:.78rem;color:#2563eb">'+(o.shipment_num||'')+'</span></span></div>';
+      h+='<span style="font-family:monospace;font-size:.85rem;color:#2563eb;font-weight:600">📮 '+(o.shipment_num||'')+'</span>';
     }else{
-      h+='<div class="tk-row"><span class="tk-label">快递</span><span class="tk-val" style="color:#94a3b8">尚未发货</span></div>';
+      h+='<span style="font-size:.82rem;color:#64748b">📮 尚未发货</span>';
     }
+    h+='<span style="font-size:.85rem;font-weight:500">👤 '+(o.receiver_name||'收件人')+'</span>';
+    h+='</div>';
 
-    if(o.address){
-      h+='<div class="tk-row"><span class="tk-label">地址</span><span class="tk-val" style="font-size:.75rem;color:#64748b">'+(o.address||'')+'</span></div>';
-    }
-
+    // 书籍
     if(items.length){
-      h+='<div class="tk-book">';
+      h+='<div style="margin-top:4px">';
       items.forEach(function(it){
         var isbn=it.isbn||'';
-        h+='<div class="tk-bi">📖 '+(it.name||'?')+(isbn?' <span style="color:#94a3b8;font-size:.7rem">'+isbn+'</span>':'')+'</div>';
+        h+='<div style="padding:3px 0;border-bottom:1px solid #f1f5f9;font-size:.82rem">📖 '+(it.name||'?')+(isbn?' <span style="color:#94a3b8;font-size:.72rem">'+isbn+'</span>':'')+'</div>';
       });
       h+='</div>';
     }
 
-    if(logistic.length){
-      h+='<div class="tk-track">';
-      logistic.slice(0,5).forEach(function(l){
-        var icon='📦';
-        if(l.status&&l.status.indexOf('签收')>=0)icon='✅';
-        else if(l.status&&(l.status.indexOf('派送')>=0))icon='🚚';
-        else if(l.status&&(l.status.indexOf('运输')>=0))icon='🚛';
-        else if(l.status&&(l.status.indexOf('揽收')>=0))icon='📨';
-        h+='<div class="tk-pt">'+icon+' <strong>'+(l.status||'')+'</strong> '+(l.location||'')+' <span style="color:#94a3b8">'+(l.ftime||l.time||'')+'</span></div>';
-        if(l.context)h+='<div style="font-size:.68rem;color:#94a3b8;margin:-2px 0 4px 4px">'+(l.context||'')+'</div>';
-      });
-      if(logistic.length>5)h+='<div style="font-size:.7rem;color:#94a3b8;margin-top:4px">等 '+logistic.length+' 条物流记录...</div>';
-      h+='</div>';
-    }
-
-    h+='</div></div>';
+    h+='</div>';
   });
 
   var more=d.total>d.page*d.page_size;
@@ -653,7 +623,6 @@ function renderTkOrders(el, d){
   }
 
   el.innerHTML=h;
-  if(orders.length)foldTk(0);
 }
 
 function foldTk(i){
