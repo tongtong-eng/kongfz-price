@@ -20,7 +20,7 @@ h1{font-size:1.2rem;background:linear-gradient(135deg,#2563eb,#1d4ed8);-webkit-b
 .card-title{font-size:.92rem;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
 textarea,.field{width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.85rem;outline:none;font-family:inherit}
 textarea:focus,.field:focus{border-color:#3b82f6;box-shadow:0 0 0 3px #dbeafe}
-textarea{min-height:80px;line-height:1.5;resize:vertical}
+textarea{min-height:120px;line-height:1.5;resize:vertical}
 .row{display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap}
 .btn{padding:8px 18px;border-radius:8px;border:none;font-weight:500;cursor:pointer;font-size:.82rem;transition:opacity .15s}
 .btn:disabled{opacity:.5;cursor:not-allowed}
@@ -597,7 +597,7 @@ function renderTkOrders(el, d){
     // 快递单号 + 收件人
     h+='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:6px">';
     if(hasTrack){
-      h+='<span style="font-family:monospace;font-size:.85rem;color:#2563eb;font-weight:600">📮 '+(o.shipment_num||'')+'</span>';
+      h+='<span style="font-family:monospace;font-size:.85rem;color:#2563eb;font-weight:600">📮 '+(o.shipping_company?o.shipping_company+' ':'')+(o.shipment_num||'')+'</span>';
     }else{
       h+='<span style="font-size:.82rem;color:#64748b">📮 尚未发货</span>';
     }
