@@ -187,6 +187,71 @@ class Handler(http.server.BaseHTTPRequestHandler):
             # sortType=3 价格升序 + quality_filter 品相过滤
             results = batch_query(isbns, cookie, quality_filter, max_concurrent=20)
             self.send_json({"results": results, "count": len(results)})
+        elif path.startswith("/api/clearcart"):
+            cookie = load_cookie()
+            if not cookie:
+                self.send_json({"error": "未登录"})
+                return
+            cart_url = "https://cart.kongfz.com/jsonp/listcart"
+            cart_params = urllib.parse.urlencode({"callback": "cb", "_": int(time.time())})
+            try:
+                req = urllib.request.Request(
+                    f"{cart_url}?{cart_params}",
+                    headers={**HEADERS, "Cookie": cookie},
+                )
+                resp = urllib.request.urlopen(req, timeout=10)
+                body = resp.read().decode("utf-8", errors="replace")
+                if body.startswith("cb(") and body.endswith(")"):
+                    data = json.loads(body[3:-1])
+                    if data.get("status") != 1:
+                        self.send_json({"error": data.get("result", {}).get("errMessage", "获取购物车失败")})
+                        return
+                    items = data.get("result", {}).get("data", [])
+                    if not items:
+                        self.send_json({"success": True, "deleted": 0, "total": 0, "message": "购物车已空"})
+                        return
+                    from concurrent.futures import ThreadPoolExecutor, as_completed
+                    total = len(items)
+                    deleted = [0]
+                    failed = []
+                    def del_one(it):
+                        cart_id = it.get("cartId") or it.get("id")
+                        item_id = it.get("itemId")
+                        item_name = (it.get("itemName") or "")[:30]
+                        del_url = "https://cart.kongfz.com/jsonp/delCartItem?callback=cb&" + \
+                            urllib.parse.urlencode({
+                                f"carts[0][cartId]": cart_id,
+                                f"carts[0][itemId]": item_id,
+                            })
+                        try:
+                            dreq = urllib.request.Request(del_url, headers={**HEADERS, "Cookie": cookie})
+                            dresp = urllib.request.urlopen(dreq, timeout=10)
+                            dbody = dresp.read().decode("utf-8", errors="replace")
+                            if dbody.startswith("cb(") and dbody.endswith(")"):
+                                ddata = json.loads(dbody[3:-1])
+                                if ddata.get("status") == 1:
+                                    deleted[0] += 1
+                                    return True
+                            failed.append(item_name or str(cart_id))
+                            return False
+                        except Exception:
+                            failed.append(item_name or str(cart_id))
+                            return False
+                    with ThreadPoolExecutor(max_workers=min(total, 8)) as ex:
+                        futs = [ex.submit(del_one, it) for it in items]
+                        for f in as_completed(futs):
+                            f.result()
+                    self.send_json({
+                        "success": True,
+                        "deleted": deleted[0],
+                        "total": total,
+                        "failed": failed[:10],
+                        "message": f"已清空 {deleted[0]}/{total} 件" + (f"，{len(failed)} 件失败" if failed else ""),
+                    })
+                else:
+                    self.send_json({"error": "购物车接口返回异常"})
+            except Exception as e:
+                self.send_json({"error": str(e)[:60]})
         elif path.startswith("/api/addtocart"):
             cookie = load_cookie()
             if not cookie:
