@@ -616,7 +616,8 @@ function renderTkOrders(el, d){
     // 快递单号 + 收件人
     h+='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:6px">';
     if(hasTrack){
-      h+='<span style="font-family:monospace;font-size:.85rem;color:#2563eb;font-weight:600">📮 '+(o.shipping_company?o.shipping_company+' ':'')+(o.shipment_num||'')+'</span>';
+      var tn = o.shipment_num||'';
+      h+='<span style="font-family:monospace;font-size:.85rem;color:#2563eb;font-weight:600">📮 '+(o.shipping_company?o.shipping_company+' ':'')+tn+' <span onclick="copyTkNum(\''+tn+'\')" style="padding:2px 8px;border-radius:4px;background:#dbeafe;color:#2563eb;font-size:.72rem;cursor:pointer;font-weight:400;margin-left:2px">📋 复制</span></span>';
     }else{
       h+='<span style="font-size:.82rem;color:#64748b">📮 尚未发货</span>';
     }
@@ -642,6 +643,12 @@ function renderTkOrders(el, d){
   }
 
   el.innerHTML=h;
+}
+
+function copyTkNum(tn){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(tn).then(function(){toast('✅ 已复制: '+tn)}).catch(function(){prompt('📋 复制快递单号：',tn)})
+  }else{prompt('📋 复制快递单号：',tn)}
 }
 
 function foldTk(i){
