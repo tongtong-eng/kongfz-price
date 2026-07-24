@@ -294,26 +294,18 @@ function clearAllCart(){
   })
 }
 
-// 复制给买家的消息：查到几本+总价，未查到哪几本
+// 复制给买家：简短汇总话术
 function copyToBuyer(){
   if(!L||!L.length){toast('无数据');return}
   var ok=L.filter(function(r){return r.cheapest}), ng=L.filter(function(r){return r.error});
   var lines=[];
   if(ok.length){
-    lines.push('✅ 查到 '+ok.length+' 本：');
-    ok.forEach(function(r,i){
-      var c=r.cheapest, t=c.price+c.shipping, sug=Math.round(t*1.25*100)/100;
-      lines.push((i+1)+'. '+(r.title||'无书名')+'  ('+r.isbn+')  ¥'+sug.toFixed(1));
-    });
     var tot=0; ok.forEach(function(r){tot+=r.cheapest.price+r.cheapest.shipping});
     var totalSug=Math.round(tot*1.25*100)/100;
-    lines.push('');
-    lines.push('💰 总计：¥'+totalSug.toFixed(1));
+    lines.push('查到 '+ok.length+' 本 📚 总建议售价 ¥'+totalSug.toFixed(1));
   }
   if(ng.length){
-    lines.push('');
-    lines.push('❌ 未查到 '+ng.length+' 本：');
-    ng.forEach(function(r){lines.push('  '+r.isbn)});
+    lines.push('以下 '+ng.length+' 本搜索不到：'+ng.map(function(r){return r.isbn}).join('、'));
   }
   doCopy(lines.join('\n'),function(){toast('✅ 已复制，可直接发给买家')},function(){prompt('📋 复制给买家：',lines.join('\n'))});
 }
