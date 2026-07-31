@@ -91,7 +91,7 @@ def search_by_phone(cookie_str, phone, page=1, page_size=50):
             "order_status": o.get("orderStatus", ""),
             "receiver_name": o.get("receiverName", ""),
             "mobile": o.get("mobile", ""),
-            "address": o.get("provName", "") + o.get("cityName", "") + o.get("areaName", "") + o.get("address", ""),
+            "address": (o.get("provName") or "") + (o.get("cityName") or "") + (o.get("areaName") or "") + (o.get("address") or ""),
             "shipping_company": o.get("shippingCom", ""),
             "shipment_num": o.get("shipmentNum", ""),
             "shipping_status": o.get("shippingStatus", ""),
