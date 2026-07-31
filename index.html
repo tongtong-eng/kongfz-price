@@ -684,13 +684,13 @@ function copyTrack(i){
 function copyAllTrack(){
   var has=_tkOrders.filter(function(o){return o.shipment_num});
   if(!has.length){toast('无物流可复制');return}
-  var lines=['📦 共 '+has.length+' 个物流：',''];
+  var lines=['这是您的所有物流哈，一共 '+has.length+' 个包裹',''];
   has.forEach(function(o,i){
     var st=trackStatus(o);
-    lines.push((i+1)+'. '+(o.shipping_company||'')+' '+o.shipment_num+'【'+st.text+'】');
-    if(o.receiver_name)lines.push('   收件人:'+o.receiver_name);
+    lines.push('包裹'+(i+1)+'：'+(o.shipping_company||'')+' '+o.shipment_num);
+    lines.push('物流状态：'+st.text);
     var items=o.items||[];
-    if(items.length)lines.push('   书:'+items.map(function(it){return it.name||''}).join('、').substring(0,60));
+    if(items.length)lines.push('书籍：'+items.map(function(it){return it.name||''}).join('、').substring(0,60));
     lines.push('');
   });
   var txt=lines.join('\n').replace(/\n\n$/, '\n');
