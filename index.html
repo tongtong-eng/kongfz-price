@@ -597,7 +597,12 @@ function tkSearch(page){
 
 function renderTkOrders(el, d){
   var orders=d.orders||[];
-  var h='<div style="font-size:.78rem;color:#64748b;margin-bottom:8px">共找到 <strong>'+d.total+'</strong> 条订单</div>';
+  var hasTrackCount=orders.filter(function(o){return o.shipment_num}).length;
+  var h='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px"><span style="font-size:.78rem;color:#64748b">共找到 <strong>'+d.total+'</strong> 条订单 · <strong>'+hasTrackCount+'</strong> 条有物流</span>';
+  if(hasTrackCount){
+    h+='<button onclick="copyAllTrack()" style="padding:7px 14px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-weight:600;font-size:.8rem;cursor:pointer">📋 一键复制全部物流</button>';
+  }
+  h+='</div>';
 
   orders.forEach(function(o,i){
     var items=o.items||[];
@@ -649,7 +654,7 @@ function copyTkNum(tn){
   }else{prompt('📋 复制快递单号：',tn)}
 }
 
-// 物流状态判断：未发货 / 在途 / 派送中 / 待领取 / 已签收
+// 物流状态判断：未发货 / 已揽收 / 运输中 / 派送中 / 待领取 / 已签收
 function trackStatus(o){
   if(!o.shipment_num) return {text:'未发货',cls:'#94a3b8'};
   var lg=o.logistic||[];
@@ -659,10 +664,12 @@ function trackStatus(o){
   if(c===3||s.indexOf('签收')>=0) return {text:'已签收',cls:'#10b981'};
   if(c===412||s.indexOf('待取')>=0||s.indexOf('超时')>=0||s.indexOf('暂存')>=0||s.indexOf('驿站')>=0) return {text:'待领取',cls:'#f59e0b'};
   if(c===5||s.indexOf('派送')>=0) return {text:'派送中',cls:'#f59e0b'};
+  if(c===1||s.indexOf('揽收')>=0) return {text:'已揽收',cls:'#2563eb'};
+  if(c===0||s.indexOf('运输')>=0||s.indexOf('转运')>=0) return {text:'运输中',cls:'#2563eb'};
   return {text:'在途',cls:'#2563eb'};
 }
 
-// 一键复制物流：公司 + 单号 + 状态
+// 一键复制单条物流：公司 + 单号 + 状态
 function copyTrack(i){
   var o=_tkOrders[i];
   if(!o)return;
@@ -671,6 +678,25 @@ function copyTrack(i){
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(function(){toast('✅ 已复制物流信息')}).catch(function(){prompt('📋 复制物流信息：',txt)})
   }else{prompt('📋 复制物流信息：',txt)}
+}
+
+// 一键复制全部物流：汇总所有有单号的订单
+function copyAllTrack(){
+  var has=_tkOrders.filter(function(o){return o.shipment_num});
+  if(!has.length){toast('无物流可复制');return}
+  var lines=['📦 共 '+has.length+' 个物流：',''];
+  has.forEach(function(o,i){
+    var st=trackStatus(o);
+    lines.push((i+1)+'. '+(o.shipping_company||'')+' '+o.shipment_num+'【'+st.text+'】');
+    if(o.receiver_name)lines.push('   收件人:'+o.receiver_name);
+    var items=o.items||[];
+    if(items.length)lines.push('   书:'+items.map(function(it){return it.name||''}).join('、').substring(0,60));
+    lines.push('');
+  });
+  var txt=lines.join('\n').replace(/\n\n$/, '\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){toast('✅ 已复制 '+has.length+' 个物流')}).catch(function(){prompt('📋 物流汇总：',txt)})
+  }else{prompt('📋 物流汇总：',txt)}
 }
 
 function foldTk(i){
