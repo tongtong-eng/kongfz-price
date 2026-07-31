@@ -557,7 +557,7 @@ function showTrack(){
   var cont=document.querySelector('.container');
   var h='<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button onclick="loc()" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:.8rem;cursor:pointer">← 返回查价</button><strong style="font-size:.9rem">📦 快递查号</strong></div>';
   h+='<div class="card"><div class="card-title">📱 搜手机号查快递</div>';
-  h+='<div class="tk-bar"><input id="tkPhone" type="tel" placeholder="输入买家手机号" maxlength="11" onkeydown="if(event.key==\'Enter\')tkSearch()"><button id="tkBtn" onclick="tkSearch()">🔍 查询</button></div>';
+  h+='<div style="display:flex;gap:8px"><input id="tkPhone" type="tel" placeholder="输入买家手机号" maxlength="11" onkeydown="if(event.key==\'Enter\')tkSearch()" style="flex:1;padding:13px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:1rem;outline:none"><button id="tkBtn" onclick="tkSearch()" style="padding:13px 22px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-weight:600;font-size:1rem;cursor:pointer">🔍 查询</button></div>';
   h+='<div id="tkHint" style="font-size:.75rem;color:#94a3b8;margin-top:-4px">输入手机号查询快递单号、收件人和书籍</div>';
   h+='</div><div id="tkRes"></div>';
   cont.innerHTML=h;
@@ -602,6 +602,7 @@ function renderTkOrders(el, d){
   orders.forEach(function(o,i){
     var items=o.items||[];
     var hasTrack=o.shipment_num&&o.shipment_num.length>0;
+    var st=trackStatus(o);
 
     h+='<div class="tk-order" id="tko_'+i+'" style="margin-bottom:8px;border:1px solid #e2e8f0;border-radius:8px;padding:10px;background:#fff">';
 
@@ -609,9 +610,14 @@ function renderTkOrders(el, d){
     h+='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:6px">';
     if(hasTrack){
       var tn = o.shipment_num||'';
-      h+='<span style="font-family:monospace;font-size:.85rem;color:#2563eb;font-weight:600">📮 '+(o.shipping_company?o.shipping_company+' ':'')+tn+' <span onclick="copyTkNum(\''+tn+'\')" style="padding:2px 8px;border-radius:4px;background:#dbeafe;color:#2563eb;font-size:.72rem;cursor:pointer;font-weight:400;margin-left:2px">📋 复制</span></span>';
+      h+='<div style="flex:1;min-width:150px"><div style="font-family:monospace;font-size:.9rem;color:#2563eb;font-weight:600">📮 '+(o.shipping_company?o.shipping_company+' ':'')+tn+'</div>';
+      h+='<div style="margin-top:5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
+      h+='<span style="font-size:.72rem;padding:2px 8px;border-radius:10px;color:#fff;background:'+st.cls+'">'+st.text+'</span>';
+      h+='<span onclick="copyTrack('+i+')" style="padding:4px 10px;border-radius:6px;background:#2563eb;color:#fff;font-size:.75rem;cursor:pointer;font-weight:500">📋 复制物流</span>';
+      h+='</div></div>';
     }else{
-      h+='<span style="font-size:.82rem;color:#64748b">📮 尚未发货</span>';
+      h+='<div style="flex:1;min-width:150px"><span style="font-size:.85rem;color:#94a3b8">📮 尚未发货</span>';
+      h+='<div style="margin-top:5px"><span style="font-size:.72rem;padding:2px 8px;border-radius:10px;color:#fff;background:#94a3b8">未发货</span></div></div>';
     }
     h+='<span style="font-size:.85rem;font-weight:500">👤 '+(o.receiver_name||'收件人')+'</span>';
     h+='</div>';
@@ -641,6 +647,30 @@ function copyTkNum(tn){
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(tn).then(function(){toast('✅ 已复制: '+tn)}).catch(function(){prompt('📋 复制快递单号：',tn)})
   }else{prompt('📋 复制快递单号：',tn)}
+}
+
+// 物流状态判断：未发货 / 在途 / 派送中 / 待领取 / 已签收
+function trackStatus(o){
+  if(!o.shipment_num) return {text:'未发货',cls:'#94a3b8'};
+  var lg=o.logistic||[];
+  if(!lg.length) return {text:'在途',cls:'#2563eb'};
+  var last=lg[lg.length-1];
+  var s=(last.status||''),c=last.code;
+  if(c===3||s.indexOf('签收')>=0) return {text:'已签收',cls:'#10b981'};
+  if(c===412||s.indexOf('待取')>=0||s.indexOf('超时')>=0||s.indexOf('暂存')>=0||s.indexOf('驿站')>=0) return {text:'待领取',cls:'#f59e0b'};
+  if(c===5||s.indexOf('派送')>=0) return {text:'派送中',cls:'#f59e0b'};
+  return {text:'在途',cls:'#2563eb'};
+}
+
+// 一键复制物流：公司 + 单号 + 状态
+function copyTrack(i){
+  var o=_tkOrders[i];
+  if(!o)return;
+  var st=trackStatus(o);
+  var txt='物流：'+(o.shipping_company||'')+'\n单号：'+(o.shipment_num||'')+'\n状态：'+st.text;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){toast('✅ 已复制物流信息')}).catch(function(){prompt('📋 复制物流信息：',txt)})
+  }else{prompt('📋 复制物流信息：',txt)}
 }
 
 function foldTk(i){
