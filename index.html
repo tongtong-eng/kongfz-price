@@ -133,6 +133,11 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
       <button class="btn btn-outline" id="btnClear">清空</button>
       <span id="status">就绪</span>
     </div>
+    <div style="margin-top:10px;padding:10px 12px;border:2px dashed #f9a8d4;border-radius:12px;text-align:center;font-size:.8rem;color:#f472b6;background:#fffafc;cursor:pointer;font-weight:600" onclick="document.getElementById('ocrInp').click()">
+      📷 上传截图识别 ISBN
+      <input type="file" id="ocrInp" accept="image/*" multiple style="display:none" onchange="doOcr(this.files)">
+    </div>
+    <div id="ocrSt" style="display:none;margin-top:6px;font-size:.78rem"></div>
 
   <!-- Cookie 状态条 -->
   <div id="cookieBar" onclick="fold('cookie')">
@@ -205,6 +210,53 @@ function fold(n){
 var pt;I.addEventListener('paste',function(){clearTimeout(pt);pt=setTimeout(function(){var is=[],v={};I.value.split(/[\s,，、\n\r]+/).forEach(function(s){s=s.trim().replace(/-/g,'').replace(/ /g,'');if(/^\d{10,13}$/.test(s)&&!v[s]){v[s]=1;is.push(s)}});if(is.length){var b=id('pc');if(!b){b=document.createElement('div');b.className='pc-bar';b.id='pc';b.innerHTML='📋 识别到 <strong id="pcN"></strong> 个 ISBN <button onclick="cp()" style="padding:5px 12px;border-radius:6px;border:none;background:#a855f7;color:#fff;font-weight:600;cursor:pointer;font-size:.8rem">🔍 查价</button><button onclick="document.getElementById(\'pc\').remove()" style="padding:4px;border:none;background:transparent;color:#c4b5d0;cursor:pointer">✕</button>';I.closest('.card').appendChild(b)}id('pcN').textContent=is.length}},150)});
 I.addEventListener('keydown',function(e){if((e.metaKey||e.ctrlKey)&&e.key==='Enter')Q.click()});
 function cp(){var b=id('pc');if(b)b.remove();Q.click()}
+
+// === 图片识别 ISBN ===
+function doOcr(files){
+  var st=id('ocrSt');
+  if(!files||!files.length)return;
+  st.style.display='block';st.style.color='#f472b6';
+  st.innerHTML='⏳ 正在识别 '+files.length+' 张图片...';
+  var all=[];
+  function next(i){
+    if(i>=files.length){
+      if(all.length){
+        st.innerHTML='✅ 识别到 <strong>'+all.length+'</strong> 个 ISBN，已填入输入框';
+        st.style.color='#10b981';
+        var cur=I.value.trim();
+        I.value=(cur?cur+'\n':'')+all.join('\n');
+      }else{
+        st.innerHTML='⚠️ 未识别到 ISBN，请确认图片清晰';
+        st.style.color='#f59e0b';
+      }
+      return;
+    }
+    if(!files[i].type.startsWith('image/')){
+      next(i+1);return;
+    }
+    var fd=new FormData();
+    fd.append('image',files[i]);
+    fetch('/api/ocr',{method:'POST',body:fd})
+      .then(function(r){return r.json()})
+      .then(function(d){
+        if(d.error){
+          st.innerHTML='❌ '+d.error;
+          st.style.color='#ef4444';
+          return;
+        }
+        if(d.isbns&&d.isbns.length){
+          d.isbns.forEach(function(v){if(all.indexOf(v)===-1)all.push(v)});
+          st.innerHTML='⏳ 已识别 '+all.length+' 个 ISBN...';
+        }
+        next(i+1);
+      })
+      .catch(function(){
+        st.innerHTML='❌ 识别请求失败';
+        st.style.color='#ef4444';
+      });
+  }
+  next(0);
+}
 
 // 查价（批量 API — 一次请求查所有 ISBN，服务器端并行处理）
 Q.onclick=function(){
