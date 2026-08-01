@@ -692,30 +692,40 @@ function renderTkOrders(el, d){
     var hasTrack=o.shipment_num&&o.shipment_num.length>0;
     var st=trackStatus(o);
 
-    h+='<div class="tk-order" id="tko_'+i+'" style="margin-bottom:8px;border:1px solid #e2e8f0;border-radius:8px;padding:10px;background:#fff">';
+    h+='<div class="tk-order" id="tko_'+i+'" style="margin-bottom:10px;border:1px solid #ffe4f0;border-radius:14px;padding:12px 14px;background:#fff">';
 
-    // 快递单号 + 收件人
-    h+='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:6px">';
+    // 第一行：快递单号（左侧）+ 收件人（右侧）
+    h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">';
     if(hasTrack){
       var tn = o.shipment_num||'';
-      h+='<div style="flex:1;min-width:150px"><div style="font-family:monospace;font-size:.9rem;color:#a855f7;font-weight:600">📮 '+(o.shipping_company?o.shipping_company+' ':'')+tn+'</div>';
-      h+='<div style="margin-top:5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
-      h+='<span style="font-size:.72rem;padding:2px 8px;border-radius:10px;color:#fff;background:'+st.cls+'">'+st.text+'</span>';
-      h+='<span onclick="copyTrack('+i+')" style="padding:4px 10px;border-radius:6px;background:#a855f7;color:#fff;font-size:.75rem;cursor:pointer;font-weight:500">📋 复制物流</span>';
-      h+='</div></div>';
+      h+='<div style="flex:1;min-width:160px;line-height:1.4">';
+      h+='<div style="font-family:monospace;font-size:.9rem;color:#f472b6;font-weight:700;word-break:break-all">📮 '+(o.shipping_company?o.shipping_company+' ':'')+tn+'</div>';
+      h+='</div>';
     }else{
-      h+='<div style="flex:1;min-width:150px"><span style="font-size:.85rem;color:#c4b5d0">📮 尚未发货</span>';
-      h+='<div style="margin-top:5px"><span style="font-size:.72rem;padding:2px 8px;border-radius:10px;color:#fff;background:#c4b5d0">未发货</span></div></div>';
+      h+='<div style="flex:1;min-width:160px;line-height:1.4"><span style="font-size:.85rem;color:#e0a8c2">📮 尚未发货</span></div>';
     }
-    h+='<span style="font-size:.85rem;font-weight:500">👤 '+(o.receiver_name||'收件人')+'</span>';
+    h+='<span style="font-size:.85rem;font-weight:600;color:#a9446f;white-space:nowrap;padding-top:2px">👤 '+(o.receiver_name||'收件人')+'</span>';
     h+='</div>';
 
-    // 书籍
+    // 第二行：物流状态标签 + 复制按钮（间距拉开）
+    h+='<div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">';
+    if(hasTrack){
+      h+='<span style="font-size:.72rem;padding:3px 10px;border-radius:12px;color:#fff;background:'+st.cls+'">'+st.text+'</span>';
+      h+='<span onclick="copyTrack('+i+')" style="padding:5px 12px;border-radius:8px;background:#f9a8d4;color:#fff;font-size:.75rem;cursor:pointer;font-weight:600">📋 复制物流</span>';
+    }else{
+      h+='<span style="font-size:.72rem;padding:3px 10px;border-radius:12px;color:#fff;background:#e0a8c2">未发货</span>';
+    }
+    h+='</div>';
+
+    // 第三行：书籍（行间距拉开，长书名自动换行）
     if(items.length){
-      h+='<div style="margin-top:4px">';
+      h+='<div style="margin-top:12px;border-top:1px dashed #ffe4f0;padding-top:10px">';
       items.forEach(function(it){
         var isbn=it.isbn||'';
-        h+='<div style="padding:3px 0;border-bottom:1px solid #f1f5f9;font-size:.82rem">📖 '+(it.name||'?')+(isbn?' <span style="color:#c4b5d0;font-size:.72rem">'+isbn+'</span>':'')+'</div>';
+        h+='<div style="padding:5px 0;font-size:.84rem;line-height:1.5;word-break:break-all">';
+        h+='<span style="color:#a9446f">📖 '+(it.name||'?')+'</span>';
+        if(isbn)h+='<span style="color:#d48aa9;font-size:.72rem">  '+isbn+'</span>';
+        h+='</div>';
       });
       h+='</div>';
     }
