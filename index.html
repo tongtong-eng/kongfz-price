@@ -14,6 +14,15 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:linear-gradient(160deg,#fdf2f8 0%,#f5f3ff 45%,#fef3c7 100%);color:#4a3f5a;padding:16px 10px 76px;min-height:100vh;-webkit-tap-highlight-color:transparent}
 .container{max-width:960px;margin:0 auto}
+/* 顶部标题区 */
+.hero{margin-bottom:14px}
+.hero-title{font-size:1.4rem;font-weight:700;background:linear-gradient(135deg,#ec4899,#a855f7,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:2px}
+.hero-date{color:#9d8bb0;font-size:.78rem;margin-bottom:10px}
+.hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.h-stat{background:#fff;border-radius:16px;padding:10px 6px;text-align:center;cursor:pointer;box-shadow:0 3px 12px rgba(168,85,247,.08);border:1px solid rgba(244,114,182,.10);transition:transform .12s}
+.h-stat:active{transform:scale(.96)}
+.hs-n{font-size:1.05rem;font-weight:700;color:#a855f7}
+.hs-l{font-size:.64rem;color:#9d8bb0;margin-top:2px}
 h1{font-size:1.25rem;background:linear-gradient(135deg,#ec4899,#a855f7,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:2px}
 .subtitle{color:#9d8bb0;font-size:.78rem;margin-bottom:14px}
 .card{background:#fff;border-radius:18px;padding:15px;box-shadow:0 4px 20px rgba(168,85,247,.08),0 1px 3px rgba(168,85,247,.05);margin-bottom:12px;border:1px solid rgba(244,114,182,.12)}
@@ -95,6 +104,19 @@ select{padding:5px 8px;border:1px solid #f3e8ff;border-radius:8px;font-size:.82r
 </head>
 <body>
 <div class="container">
+  <!-- 顶部标题区 -->
+  <div class="hero">
+    <div class="hero-title">📚 孔夫子查价</div>
+    <div class="hero-date" id="heroDate"></div>
+    <div class="hero-stats">
+      <div class="h-stat" onclick="scrollTo(0,0)"><div class="hs-n" id="statToday">0</div><div class="hs-l">今日查价</div></div>
+      <div class="h-stat" onclick="showTrack()"><div class="hs-n">📦</div><div class="hs-l">快递追踪</div></div>
+      <div class="h-stat" onclick="fold('hist')"><div class="hs-n" id="statHist">0</div><div class="hs-l">历史记录</div></div>
+      <div class="h-stat" onclick="cleanupAddr()"><div class="hs-n">🧹</div><div class="hs-l">清理地址</div></div>
+    </div>
+  </div>
+
+  <!-- 查价主操作区 -->
   <div class="card">
     <div class="card-title">📖 ISBN（每行一个）</div>
     <textarea id="inputArea" placeholder="9787108009821&#10;9787020002207&#10;可批量粘贴，自动识别 ISBN"></textarea>
@@ -212,6 +234,7 @@ Q.onclick=function(){
       if(d.batchId)L.forEach(function(r){r._batchId=d.batchId});
       var ok=L.filter(function(r){return !r.error}),ng=L.filter(function(r){return r.error});
       sh(L);
+      addToday();
       R=0;Q.disabled=0;
       ss('✅ 完成！查到 '+ok.length+'/'+L.length+' 本 · 用时 '+((Date.now()-st)/1000).toFixed(1)+'s','done')
     });
@@ -494,6 +517,39 @@ id('btnClear').onclick=function(){I.value='';E.innerHTML='';N.style.display='blo
 setTimeout(function(){ckC();loadH()},500);
 // 启动时静默检查地址
 setTimeout(function(){cleanupAddr(true)},3000);
+
+// === 顶部概览 ===
+// 今日查价次数（localStorage 按日期记录）
+function todayKey(){return 'kfz_today_'+new Date().toISOString().slice(0,10)}
+function getToday(){var k=todayKey();var n=parseInt(localStorage.getItem(k)||'0',10);return isNaN(n)?0:n}
+function addToday(){var n=getToday()+1;localStorage.setItem(todayKey(),String(n));var el=id('statToday');if(el)el.textContent=n}
+// 日期 + 已用天数
+function initHero(){
+  var d=new Date();
+  var wd=['日','一','二','三','四','五','六'][d.getDay()];
+  var el=id('heroDate');
+  if(el)el.textContent=(d.getMonth()+1)+'月'+d.getDate()+'日 · 星期'+wd+' · 已连续使用 '+getStreak()+' 天';
+  var st=id('statToday');if(st)st.textContent=getToday();
+  // 历史记录数
+  fj('/api/history/list').then(function(dd){
+    if(dd&&dd.records){var h=id('statHist');if(h)h.textContent=dd.records.length}
+  }).catch(function(){});
+}
+// 连续使用天数（localStorage）
+function getStreak(){
+  var KEY='kfz_streak';
+  var last=localStorage.getItem(KEY+'_last');
+  var count=parseInt(localStorage.getItem(KEY)||'0',10);
+  var today=new Date().toISOString().slice(0,10);
+  if(!last||isNaN(count)){localStorage.setItem(KEY,'1');localStorage.setItem(KEY+'_last',today);return 1}
+  var yest=new Date(Date.now()-86400000).toISOString().slice(0,10);
+  if(last===today)return count;
+  if(last===yest){count++;localStorage.setItem(KEY,String(count))}
+  else{count=1;localStorage.setItem(KEY,'1')}
+  localStorage.setItem(KEY+'_last',today);
+  return count;
+}
+setTimeout(function(){initHero()},300);
 
 // === 自检功能 ===
 function selfCheck(){
