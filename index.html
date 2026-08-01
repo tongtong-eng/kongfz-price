@@ -641,7 +641,7 @@ function showTrack(){
   var h='<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button onclick="loc()" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:.8rem;cursor:pointer">← 返回查价</button><strong style="font-size:.9rem">📦 快递查号</strong></div>';
   h+='<div class="card"><div class="card-title">📱 搜手机号查快递</div>';
   h+='<div style="display:flex;gap:8px"><input id="tkPhone" type="tel" placeholder="输入买家手机号" maxlength="11" onkeydown="if(event.key==\'Enter\')tkSearch()" style="flex:1;padding:13px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:1rem;outline:none"><button id="tkBtn" onclick="tkSearch()" style="padding:13px 22px;border-radius:8px;border:none;background:#a855f7;color:#fff;font-weight:600;font-size:1rem;cursor:pointer">🔍 查询</button></div>';
-  h+='<div id="tkHint" style="font-size:.75rem;color:#c4b5d0;margin-top:-4px">输入手机号查询快递单号、收件人和书籍</div>';
+  h+='<div id="tkHint" style="font-size:.78rem;color:#c4b5d0;margin-top:10px;line-height:1.5">输入手机号，查询快递单号、收件人和书籍</div>';
   h+='</div><div id="tkRes"></div>';
   cont.innerHTML=h;
   setTimeout(function(){id('tkPhone').focus()},100);
