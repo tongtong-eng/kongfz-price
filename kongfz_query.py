@@ -20,17 +20,17 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ── 自适应并发数（检测到失败自动降速） ──────────
-_RATE = {"consecutive_fails": 0, "max_workers": 10}
+_RATE = {"consecutive_fails": 0, "max_workers": 3}
 
 def _get_max_workers():
     """根据失败率动态调整批量并发数"""
     fails = _RATE["consecutive_fails"]
     if fails >= 5:
-        return 3
+        return 1
     elif fails >= 3:
-        return 5
+        return 2
     elif fails >= 1:
-        return 7
+        return 2
     return _RATE["max_workers"]
 
 def _record_fail():
@@ -38,6 +38,23 @@ def _record_fail():
 
 def _record_success():
     _RATE["consecutive_fails"] = max(0, _RATE["consecutive_fails"] - 1)
+
+# ── 请求节流（降低触发孔夫子限流概率） ──────────
+_THROTTLE_LOCK = threading.Lock()
+_LAST_REQUEST_TS = [0.0]
+_REQUEST_INTERVAL = 0.3  # 每次请求间隔 300ms
+
+def _throttle():
+    """全局节流：每个请求间隔至少 300ms"""
+    with _THROTTLE_LOCK:
+        now = time.monotonic()
+        wait = _LAST_REQUEST_TS[0] + _REQUEST_INTERVAL - now
+        if wait > 0:
+            time.sleep(wait)
+        _LAST_REQUEST_TS[0] = time.monotonic()
+
+# 限流关键词
+_RATE_LIMIT_HINTS = ("请求过于频繁", "访问频次", "频繁", "frequency", "too many")
 
 # ── 线程级 HTTP 连接池（复用 TLS 连接，减少握手开销） ──
 _CONN_LOCK = threading.Lock()
@@ -212,7 +229,7 @@ def _build_result(isbn, items, total_found=0):
 
 def _query_api(isbn, cookie_str, quality_filter=""):
     """
-    执行 API 请求：sortType=3 价格升序，仅第 1 页。
+    执行 API 请求：sortType=5 总价升序，仅第 1 页。
     复用线程级 HTTPS 连接减少 TLS 握手开销。
     返回 (items_list, total_count) 或 (None, error_msg)。
     """
@@ -224,27 +241,44 @@ def _query_api(isbn, cookie_str, quality_filter=""):
         params["quality"] = quality_filter
     url = f"{API_PATH}?{urllib.parse.urlencode(params)}"
 
-    try:
-        conn = _get_conn()
-        conn.request("GET", url, headers={**HEADERS, "Cookie": cookie_str})
-        resp = conn.getresponse()
-        body = resp.read()
-        data = json.loads(body.decode("utf-8"))
-    except (http.client.RemoteDisconnected, ConnectionError, BrokenPipeError):
-        # 连接断开，重建后重试一次
-        _close_conn()
+    def _do_request():
+        """单次请求，返回 (data, error_msg)"""
         try:
             conn = _get_conn()
             conn.request("GET", url, headers={**HEADERS, "Cookie": cookie_str})
             resp = conn.getresponse()
             body = resp.read()
-            data = json.loads(body.decode("utf-8"))
+            return json.loads(body.decode("utf-8")), None
+        except (http.client.RemoteDisconnected, ConnectionError, BrokenPipeError):
+            # 连接断开，重建后重试一次
+            _close_conn()
+            try:
+                conn = _get_conn()
+                conn.request("GET", url, headers={**HEADERS, "Cookie": cookie_str})
+                resp = conn.getresponse()
+                body = resp.read()
+                return json.loads(body.decode("utf-8")), None
+            except Exception as e:
+                return None, str(e)[:40]
         except Exception as e:
-            _record_fail()
             return None, str(e)[:40]
-    except Exception as e:
+
+    # 节流：每个请求间隔至少 300ms
+    _throttle()
+
+    data, err = _do_request()
+
+    # 限流检测：遇到"请求过于频繁"等待 2 秒重试一次
+    if data and data.get("status") != 1:
+        msg = str(data.get("message", ""))
+        if any(hint in msg for hint in _RATE_LIMIT_HINTS):
+            _record_fail()
+            time.sleep(2.0)
+            data, err = _do_request()
+
+    if err:
         _record_fail()
-        return None, str(e)[:40]
+        return None, err
 
     if data.get("status") != 1:
         msg = data.get("message", "查询失败")
@@ -323,7 +357,7 @@ def batch_query(isbns, cookie_str, quality_filter="", max_concurrent=10, fast_mo
         uniq_indices.setdefault(key, []).append(i)
     uniq_isbns = list(uniq_indices.keys())
 
-    actual_conc = min(max_concurrent, _get_max_workers() + 2)
+    actual_conc = min(max_concurrent, _get_max_workers())
     uniq_results = {}
 
     with ThreadPoolExecutor(max_workers=actual_conc) as ex:
