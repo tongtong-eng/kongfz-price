@@ -16,7 +16,6 @@ import json
 import urllib.request
 import urllib.parse
 import re
-import base64
 import os
 import sys
 import time
@@ -352,9 +351,6 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.serve_html()
 
     def do_POST(self):
-        if self.path.startswith("/api/ocr"):
-            self._do_ocr()
-            return
         if self.path.startswith("/api/cookie/update"):
             body = self._read_json()
             if body is None:
@@ -405,114 +401,6 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.send_json({"error": "未知接口"})
 
     # ── 辅助方法 ─────────────────────────────────────────
-
-    def _do_ocr(self):
-        """图片识别 ISBN：接收图片 → 调阿里云百炼 qwen VL → 返回 isbns"""
-        api_key = os.environ.get("DASHSCOPE_API_KEY", "").strip()
-        if not api_key:
-            self.send_json({"error": "服务器未配置 DASHSCOPE_API_KEY"})
-            return
-
-        # 读取请求体（原始 multipart 或 raw 图片字节）
-        content_type = self.headers.get("Content-Type", "")
-        content_len = int(self.headers.get("Content-Length", 0))
-        if content_len == 0:
-            self.send_json({"error": "请求体为空"})
-            return
-        body = self.rfile.read(content_len)
-
-        # 解析 multipart/form-data（含文件字段）
-        import re
-        img_data = None
-        img_mime = "image/jpeg"
-        if "multipart/form-data" in content_type:
-            boundary_match = re.search(r'boundary=(?:"([^"]+)"|([^;]+))', content_type)
-            if boundary_match:
-                boundary = boundary_match.group(1) or boundary_match.group(2)
-                # 找到文件内容的起始和结束
-                parts = body.split(b"--" + boundary.encode())
-                for part in parts:
-                    if b"filename=" in part and b"Content-Type:" in part:
-                        # 提取 Content-Type
-                        mime_m = re.search(rb'Content-Type:\s*([^\r\n]+)', part)
-                        if mime_m:
-                            img_mime = mime_m.group(1).decode().strip()
-                        # 提取内容（第一个空行之后）
-                        header_end = part.find(b"\r\n\r\n")
-                        if header_end >= 0:
-                            img_data = part[header_end + 4:]
-                            break
-            if img_data is None:
-                # 兼容 JSON {image_base64}
-                try:
-                    parsed = json.loads(body.decode("utf-8"))
-                    img_data = base64.b64decode(parsed.get("image_base64", ""))
-                    img_mime = parsed.get("mime", "image/jpeg")
-                except Exception:
-                    pass
-        else:
-            # raw 图片字节
-            img_data = body
-
-        if not img_data:
-            self.send_json({"error": "未获取到图片数据"})
-            return
-
-        # base64 编码
-        img_b64 = base64.b64encode(img_data).decode("utf-8")
-        data_url = f"data:{img_mime};base64,{img_b64}"
-
-        # 调阿里云百炼 qwen VL
-        model = os.environ.get("VISION_MODEL", "qwen3.5-omni-plus")
-        api_base = os.environ.get("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1").rstrip("/")
-        prompt = (
-            "这是一张包含书籍 ISBN 的截图。请仔细识别图中所有 ISBN 编号"
-            "（通常是 10 或 13 位数字，可能以 ISBN 字样开头，可能带横杠）。"
-            "只输出识别到的 ISBN，每个一行，不要输出其他任何文字。"
-            "如果没识别到，输出：无"
-        )
-        payload = {
-            "model": model,
-            "messages": [{
-                "role": "user",
-                "content": [
-                    {"type": "image_url", "image_url": {"url": data_url}},
-                    {"type": "text", "text": prompt},
-                ],
-            }],
-            "stream": False,
-            "max_tokens": 2048,
-        }
-        try:
-            import urllib.request
-            req = urllib.request.Request(
-                f"{api_base}/chat/completions",
-                data=json.dumps(payload).encode("utf-8"),
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                },
-                method="POST",
-            )
-            resp = urllib.request.urlopen(req, timeout=60)
-            resp_data = json.loads(resp.read().decode("utf-8"))
-            content = resp_data.get("choices", [{}])[0].get("message", {}).get("content", "")
-
-            # 提取 ISBN：13 位或 10 位数字（带或不带横杠）
-            isbns = []
-            for raw in content.split("\n"):
-                m = re.search(r'(\d[\d\- ]{8,17}\d)', raw)
-                if m:
-                    cleaned = re.sub(r'[\- ]', '', m.group(1))
-                    if re.fullmatch(r'\d{10}', cleaned) or re.fullmatch(r'\d{13}', cleaned):
-                        if cleaned not in isbns:
-                            isbns.append(cleaned)
-            if not isbns:
-                self.send_json({"isbns": [], "raw": content[:200], "error": "未识别到 ISBN"})
-            else:
-                self.send_json({"isbns": isbns, "count": len(isbns)})
-        except Exception as e:
-            self.send_json({"error": f"识别失败: {str(e)[:80]}"})
 
     def _read_json(self):
         content_len = int(self.headers.get("Content-Length", 0))
