@@ -12,51 +12,51 @@
 <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background-color:#ffeef5;background-image:radial-gradient(circle,#ffc2dc 1.5px,transparent 1.5px),radial-gradient(circle,#ffd9e9 1.5px,transparent 1.5px);background-size:22px 22px;background-position:0 0,11px 11px;color:#a9446f;padding:16px 10px 76px;min-height:100vh;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background-color:#ffeef5;background-image:radial-gradient(circle,#ffd3e6 1.5px,transparent 1.5px),radial-gradient(circle,#ffe4f0 1.5px,transparent 1.5px);background-size:22px 22px;background-position:0 0,11px 11px;color:#b0567f;padding:16px 10px 76px;min-height:100vh;-webkit-tap-highlight-color:transparent}
 .container{max-width:960px;margin:0 auto}
 /* 顶部标题区 */
 .hero{margin-bottom:14px;text-align:center;position:relative}
 .hero-bow{font-size:1.3rem;letter-spacing:2px}
-.hero-title{font-size:1.5rem;font-weight:800;color:#f472b6;text-shadow:1px 1px 0 #fff,2px 2px 0 #ffc2dc;margin-bottom:2px}
+.hero-title{font-size:1.5rem;font-weight:800;color:#f9a8d4;text-shadow:1px 1px 0 #fff,2px 2px 0 #ffd3e6;margin-bottom:2px}
 .hero-date{color:#d48aa9;font-size:.78rem;margin-bottom:10px}
 .hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.h-stat{background:#fff;border-radius:18px;padding:11px 6px;text-align:center;cursor:pointer;box-shadow:0 4px 14px rgba(244,114,182,.15);border:2px solid #ffd9e9;transition:transform .12s}
+.h-stat{background:#fff;border-radius:18px;padding:11px 6px;text-align:center;cursor:pointer;box-shadow:0 4px 14px rgba(244,114,182,.15);border:2px solid #ffe4f0;transition:transform .12s}
 .h-stat:active{transform:scale(.96)}
-.hs-n{font-size:1.1rem;font-weight:800;color:#f472b6}
+.hs-n{font-size:1.1rem;font-weight:800;color:#f9a8d4}
 .hs-l{font-size:.64rem;color:#d48aa9;margin-top:2px}
 h1{font-size:1.25rem;background:linear-gradient(135deg,#ec4899,#a855f7,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:2px}
 .subtitle{color:#d48aa9;font-size:.78rem;margin-bottom:14px}
 .card{background:#fff;border-radius:20px;padding:15px;box-shadow:0 4px 18px rgba(244,114,182,.15);margin-bottom:12px;border:2px solid #ffe4f0}
-.card-title{font-size:.92rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;color:#f472b6}
-textarea,.field{width:100%;padding:10px 12px;border:2px solid #ffd9e9;border-radius:14px;font-size:.85rem;outline:none;font-family:inherit;background:#fffafc}
+.card-title{font-size:.92rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;color:#f9a8d4}
+textarea,.field{width:100%;padding:10px 12px;border:2px solid #ffe4f0;border-radius:14px;font-size:.85rem;outline:none;font-family:inherit;background:#fffafc}
 textarea:focus,.field:focus{border-color:#f9a8d4;box-shadow:0 0 0 3px #ffe4f0}
 textarea{min-height:120px;line-height:1.5;resize:vertical}
 .row{display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap}
 .btn{padding:8px 18px;border-radius:12px;border:none;font-weight:600;cursor:pointer;font-size:.82rem;transition:opacity .15s}
 .btn:disabled{opacity:.5;cursor:not-allowed}
-.btn-primary{background:linear-gradient(135deg,#ff7ab8,#ff5c8a);color:#fff;box-shadow:0 3px 12px rgba(255,92,138,.3)}
-.btn-primary:hover:not(:disabled){background:linear-gradient(135deg,#ff5c8a,#f43f6e);box-shadow:0 4px 16px rgba(255,92,138,.4)}
-.btn-outline{background:#fff;border:2px solid #ffd9e9;color:#f472b6}
+.btn-primary{background:linear-gradient(135deg,#f9a8d4,#fb7185);color:#fff;box-shadow:0 3px 12px rgba(251,113,133,.25)}
+.btn-primary:hover:not(:disabled){background:linear-gradient(135deg,#fb7185,#fb7185);box-shadow:0 4px 16px rgba(251,113,133,.3)}
+.btn-outline{background:#fff;border:2px solid #ffe4f0;color:#f9a8d4}
 .btn-outline:hover{background:#fff0f7}
 #status{font-size:.8rem;color:#d48aa9}
-#status.loading{color:#f472b6}
-#status.done{color:#f43f6e}
+#status.loading{color:#f9a8d4}
+#status.done{color:#fb7185}
 #status.error{color:#ef4444}
 table{width:100%;border-collapse:collapse;font-size:.78rem;margin-top:4px}
 thead{background:#fff0f7}
-th{padding:5px;text-align:left;font-weight:700;white-space:nowrap;border-bottom:2px solid #ffd9e9;color:#f472b6}
+th{padding:5px;text-align:left;font-weight:700;white-space:nowrap;border-bottom:2px solid #ffe4f0;color:#f9a8d4}
 td{padding:5px;border-bottom:1px solid #ffe4f0}
 tr:hover td{background:#fff7fb}
 .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:6px;margin-bottom:10px}
-.s-card{text-align:center;padding:9px;border-radius:16px;background:#fff;box-shadow:0 3px 12px rgba(244,114,182,.12);border:1px solid #ffd9e9}
+.s-card{text-align:center;padding:9px;border-radius:16px;background:#fff;box-shadow:0 3px 12px rgba(244,114,182,.12);border:1px solid #ffe4f0}
 .s-card .n{font-size:1.1rem;font-weight:800}
 .s-card .l{font-size:.68rem;color:#d48aa9;margin-top:2px}
-.blue .n{color:#f472b6}.green .n{color:#f43f6e}.amber .n{color:#f59e0b}
+.blue .n{color:#f9a8d4}.green .n{color:#fb7185}.amber .n{color:#f59e0b}
 .result-box{border:2px solid #f9a8d4;border-radius:20px;padding:12px 14px;margin-bottom:10px;background:linear-gradient(135deg,#fff0f7,#ffe4f0)}
-.result-box .book-title{font-size:.95rem;font-weight:800;color:#f43f6e}
+.result-box .book-title{font-size:.95rem;font-weight:800;color:#fb7185}
 .result-box .meta{font-size:.7rem;color:#d48aa9;margin-top:2px}
 .empty-state{text-align:center;color:#e0a8c2;padding:20px;font-size:.82rem}
-select{padding:5px 8px;border:2px solid #ffd9e9;border-radius:10px;font-size:.82rem;background:#fffafc;outline:none;color:#f472b6}
+select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82rem;background:#fffafc;outline:none;color:#f9a8d4}
 
 /* 折叠 */
 .fold-header{display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
@@ -66,32 +66,32 @@ select{padding:5px 8px;border:2px solid #ffd9e9;border-radius:10px;font-size:.82
 .fold-body.open{max-height:2000px}
 
 /* 历史记录 */
-.h-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:2px solid #ffd9e9;border-radius:14px;margin-top:6px;gap:6px;flex-wrap:wrap;background:#fffafc}
+.h-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:2px solid #ffe4f0;border-radius:14px;margin-top:6px;gap:6px;flex-wrap:wrap;background:#fffafc}
 .h-item .info{flex:1;min-width:120px}
-.h-item .name{font-weight:600;font-size:.82rem;color:#a9446f}
+.h-item .name{font-weight:600;font-size:.82rem;color:#b0567f}
 .h-item .meta{font-size:.7rem;color:#d48aa9;margin-top:2px}
 .h-item .actions{display:flex;gap:4px}
 .h-item .actions button{padding:5px 10px;border-radius:10px;border:none;cursor:pointer;font-size:.72rem;font-weight:600}
-.btn-h-q{background:linear-gradient(135deg,#ff7ab8,#ff5c8a);color:#fff}
+.btn-h-q{background:linear-gradient(135deg,#f9a8d4,#fb7185);color:#fff}
 .btn-h-c{background:#f9a8d4;color:#fff}
-.btn-h-d{background:transparent;border:2px solid #ffd9e9!important;color:#e0a8c2}
+.btn-h-d{background:transparent;border:2px solid #ffe4f0!important;color:#e0a8c2}
 
 /* Cookie 条 */
-#cookieBar{padding:8px 12px;border-radius:14px;cursor:pointer;display:none;margin-bottom:10px;font-size:.82rem;border:2px solid #ffd9e9}
+#cookieBar{padding:8px 12px;border-radius:14px;cursor:pointer;display:none;margin-bottom:10px;font-size:.82rem;border:2px solid #ffe4f0}
 #cookieBar.valid{border-color:#f9a8d4;background:#fff0f7}
 #cookieBar.invalid{border-color:#fca5a5;background:#fef2f2}
 #cookieBar.warning{border-color:#fde68a;background:#fffbeb}
-.fail-chip{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border:2px solid #fca5a5;border-radius:16px;font-size:.72rem;font-family:monospace;background:#fff;cursor:pointer;color:#f43f6e}
+.fail-chip{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border:2px solid #fca5a5;border-radius:16px;font-size:.72rem;font-family:monospace;background:#fff;cursor:pointer;color:#fb7185}
 .save-bar{display:flex;gap:6px;align-items:center;justify-content:center;margin-bottom:10px;padding:8px;background:#fff0f7;border:2px solid #f9a8d4;border-radius:14px;flex-wrap:wrap}
-.save-bar input{max-width:200px;padding:5px 8px;border:2px solid #ffd9e9;border-radius:10px;font-size:.8rem;outline:none;background:#fffafc}
-.btn-save{background:linear-gradient(135deg,#ff7ab8,#ff5c8a);color:#fff;padding:5px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:600;font-size:.8rem}
-.pc-bar{display:flex;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;background:#fff0f7;border:2px solid #ffd9e9;border-radius:14px;font-size:.8rem}
+.save-bar input{max-width:200px;padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.8rem;outline:none;background:#fffafc}
+.btn-save{background:linear-gradient(135deg,#f9a8d4,#fb7185);color:#fff;padding:5px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:600;font-size:.8rem}
+.pc-bar{display:flex;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;background:#fff0f7;border:2px solid #ffe4f0;border-radius:14px;font-size:.8rem}
 
 /* 底部导航 */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.95);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:2px solid #ffd9e9;display:flex;justify-content:space-around;padding:6px 0 env(safe-area-inset-bottom,6px);z-index:100}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.95);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:2px solid #ffe4f0;display:flex;justify-content:space-around;padding:6px 0 env(safe-area-inset-bottom,6px);z-index:100}
 .bottom-nav button{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:#d48aa9;font-size:.65rem;cursor:pointer;padding:4px 16px}
 .bottom-nav button svg{width:22px;height:22px;stroke:currentColor;stroke-width:2;fill:none}
-.bottom-nav button:active{color:#f472b6}
+.bottom-nav button:active{color:#f9a8d4}
 .toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.75);color:#fff;padding:10px 20px;border-radius:8px;font-size:.85rem;z-index:999;display:none;max-width:80vw;text-align:center;pointer-events:none}
 
 /* 手机专用 */
@@ -255,12 +255,12 @@ function sh(data){
   var ok=data.filter(function(r){return !r.error}),pd=ok.filter(function(r){return r.cheapest}),fl=data.filter(function(r){return r.error}),html='';
   var hc=0,so=0;data.forEach(function(r){hc+=r.holiday_shop_count||0;so+=r.sold_out_skipped||0});
   if(fl.length){
-    html+='<div class="card" style="border:2px solid #ef4444;background:#fef2f2;margin-bottom:10px"><div class="card-title" style="color:#f43f5e">⚠️ 异常 '+fl.length+' 个</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">';
+    html+='<div class="card" style="border:2px solid #ef4444;background:#fef2f2;margin-bottom:10px"><div class="card-title" style="color:#fb7185">⚠️ 异常 '+fl.length+' 个</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">';
     fl.forEach(function(f){html+='<span class="fail-chip" onclick="rq(\''+f.isbn+'\')">🔍 '+f.isbn+' <span style="color:#fca5a5">('+esc(f.error||'')+')</span></span>'});
-    html+='</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-primary" onclick="rqA()" style="background:#f43f5e;font-size:.8rem">🔍 重查全部</button><button onclick="cpyFail()" style="padding:5px 10px;border-radius:6px;border:1px solid #c4b5d0;background:transparent;color:#9d8bb0;cursor:pointer;font-size:.78rem">📋 复制异常书号</button></div></div>';
+    html+='</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-primary" onclick="rqA()" style="background:#fb7185;font-size:.8rem">🔍 重查全部</button><button onclick="cpyFail()" style="padding:5px 10px;border-radius:6px;border:1px solid #c4b5d0;background:transparent;color:#9d8bb0;cursor:pointer;font-size:.78rem">📋 复制异常书号</button></div></div>';
   }
   html+='<div class="summary"><div class="s-card blue"><div class="n">'+data.length+'</div><div class="l">查询</div></div><div class="s-card green"><div class="n">'+ok.length+'</div><div class="l">查到</div></div><div class="s-card amber"><div class="n">'+(data.length-ok.length)+'</div><div class="l">异常</div></div>';
-  if(pd.length){var tot=0;pd.forEach(function(r){tot+=r.cheapest.total});html+='<div class="s-card green"><div class="n">¥'+tot.toFixed(1)+'</div><div class="l">最低总价</div></div><div class="s-card" style="background:#f0fdf4"><div class="n" style="color:#10b981;font-size:1.1rem">¥'+(Math.round(tot*1.27*100)/100).toFixed(1)+'</div><div class="l">建议售价</div></div>'+(hc>0?'<div style="grid-column:1/-1;font-size:.7rem;color:#c4b5d0;text-align:center;margin-top:-2px">🛌 已自动排除 '+hc+' 个休假中店铺的商品</div>':'')+(so>0?'<div style="grid-column:1/-1;font-size:.7rem;color:#c4b5d0;text-align:center;margin-top:-2px">已自动排除 '+so+' 个已售罄商品</div>':'')+'<div style="grid-column:1/-1;text-align:center;margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center"><button onclick="ba()" style="padding:8px 24px;border-radius:8px;border:none;background:#f43f5e;color:#fff;cursor:pointer;font-weight:600;font-size:1rem;box-shadow:0 2px 8px rgba(220,38,38,.3)">🛒 一键加购全部 '+pd.length+' 本</button><button onclick="clearAllCart()" style="padding:8px 24px;border-radius:8px;border:none;background:#9d8bb0;color:#fff;cursor:pointer;font-weight:500;font-size:1rem">🗑️ 清空购物车</button><button onclick="copyToBuyer()" style="padding:8px 24px;border-radius:8px;border:none;background:#a855f7;color:#fff;cursor:pointer;font-weight:600;font-size:1rem;box-shadow:0 2px 8px rgba(37,99,235,.3)">📤 复制给买家</button></div>'}
+  if(pd.length){var tot=0;pd.forEach(function(r){tot+=r.cheapest.total});html+='<div class="s-card green"><div class="n">¥'+tot.toFixed(1)+'</div><div class="l">最低总价</div></div><div class="s-card" style="background:#f0fdf4"><div class="n" style="color:#10b981;font-size:1.1rem">¥'+(Math.round(tot*1.27*100)/100).toFixed(1)+'</div><div class="l">建议售价</div></div>'+(hc>0?'<div style="grid-column:1/-1;font-size:.7rem;color:#c4b5d0;text-align:center;margin-top:-2px">🛌 已自动排除 '+hc+' 个休假中店铺的商品</div>':'')+(so>0?'<div style="grid-column:1/-1;font-size:.7rem;color:#c4b5d0;text-align:center;margin-top:-2px">已自动排除 '+so+' 个已售罄商品</div>':'')+'<div style="grid-column:1/-1;text-align:center;margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center"><button onclick="ba()" style="padding:8px 24px;border-radius:8px;border:none;background:#fb7185;color:#fff;cursor:pointer;font-weight:600;font-size:1rem;box-shadow:0 2px 8px rgba(220,38,38,.3)">🛒 一键加购全部 '+pd.length+' 本</button><button onclick="clearAllCart()" style="padding:8px 24px;border-radius:8px;border:none;background:#9d8bb0;color:#fff;cursor:pointer;font-weight:500;font-size:1rem">🗑️ 清空购物车</button><button onclick="copyToBuyer()" style="padding:8px 24px;border-radius:8px;border:none;background:#a855f7;color:#fff;cursor:pointer;font-weight:600;font-size:1rem;box-shadow:0 2px 8px rgba(37,99,235,.3)">📤 复制给买家</button></div>'}
   html+='</div>';
   data.forEach(function(r){
     if(r.error){html+='<div class="card" style="border-left:3px solid #ef4444"><div style="font-family:monospace;font-size:.75rem;color:#c4b5d0">'+esc(r.isbn)+'</div><div style="color:#ef4444;font-size:.8rem;margin-top:2px">'+esc(r.error)+'</div></div>'}
@@ -270,14 +270,14 @@ function sh(data){
       // 价格参考行：最低总价(含运费)、均价、最高价
       var pr=r.price_range||{},prmin=pr.min||0,pravg=pr.avg||0,prmax=pr.max||0;
       var cheapTotal=r.cheapest?r.cheapest.total:prmin;
-      html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin:3px 0 6px;padding:4px 8px;background:#f8fafc;border-radius:6px;font-size:.72rem;text-align:center"><div><div style="font-size:.6rem;color:#c4b5d0">最低总价(含运费)</div><strong style="color:#f43f5e;font-size:.85rem">¥'+cheapTotal.toFixed(1)+'</strong></div><div><div style="font-size:.6rem;color:#c4b5d0">均价</div><strong style="font-size:.85rem">¥'+pravg.toFixed(1)+'</strong></div><div><div style="font-size:.6rem;color:#c4b5d0">最高</div><strong style="color:#c4b5d0;font-size:.85rem">¥'+prmax.toFixed(1)+'</strong></div></div><div style="font-size:.65rem;color:#c4b5d0;margin:-3px 0 2px;text-align:center">在售 '+r.total_count+' 本 · 书价最低¥'+prmin.toFixed(1)+'</div>';
+      html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin:3px 0 6px;padding:4px 8px;background:#f8fafc;border-radius:6px;font-size:.72rem;text-align:center"><div><div style="font-size:.6rem;color:#c4b5d0">最低总价(含运费)</div><strong style="color:#fb7185;font-size:.85rem">¥'+cheapTotal.toFixed(1)+'</strong></div><div><div style="font-size:.6rem;color:#c4b5d0">均价</div><strong style="font-size:.85rem">¥'+pravg.toFixed(1)+'</strong></div><div><div style="font-size:.6rem;color:#c4b5d0">最高</div><strong style="color:#c4b5d0;font-size:.85rem">¥'+prmax.toFixed(1)+'</strong></div></div><div style="font-size:.65rem;color:#c4b5d0;margin:-3px 0 2px;text-align:center">在售 '+r.total_count+' 本 · 书价最低¥'+prmin.toFixed(1)+'</div>';
       if(r.cheapest.itemId&&r.cheapest.shopId){var c=r.cheapest;html+='<div style="margin:4px 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button onclick="ac('+c.itemId+','+c.shopId+',this)" style="padding:5px 14px;border-radius:6px;border:none;background:#059669;color:#fff;cursor:pointer;font-size:.82rem;font-weight:500">🛒 最低价 ¥'+c.total.toFixed(1)+'</button><span style="font-size:.7rem;color:#9d8bb0">'+esc(c.shop)+' · '+esc(c.quality_text)+'</span></div>'}
       // 记账按钮
       var aun=r.author||''; var p=r.cheapest?r.cheapest.price:0; var sp=r.cheapest?r.cheapest.shipping:0;
       var items=r.top_cheapest||[r.cheapest];
-      html+='<table><thead><tr><th>#</th><th>店铺</th><th>品相</th><th style="text-align:right">书价</th><th style="text-align:right">运费</th><th style="text-align:right;color:#f43f5e">总价</th><th></th></tr></thead><tbody>';
+      html+='<table><thead><tr><th>#</th><th>店铺</th><th>品相</th><th style="text-align:right">书价</th><th style="text-align:right">运费</th><th style="text-align:right;color:#fb7185">总价</th><th></th></tr></thead><tbody>';
       items.forEach(function(it,j){
-        html+='<tr><td>'+(j+1)+'</td><td>'+esc(it.shop)+(it.area?'<div class="meta">'+esc(it.area)+'</div>':'')+'</td><td>'+esc(it.quality_text||'—')+'</td><td style="text-align:right">¥'+it.price.toFixed(2)+'</td><td style="text-align:right">¥'+it.shipping.toFixed(1)+'</td><td style="text-align:right'+(j===0?';font-weight:700;color:#f43f5e':'')+'">¥'+it.total.toFixed(1)+'</td><td style="text-align:center">'+(it.itemId&&it.shopId?'<button onclick="ac('+it.itemId+','+it.shopId+',this)" style="padding:2px 6px;border-radius:4px;border:1px solid #a855f7;background:transparent;color:#a855f7;cursor:pointer;font-size:.72rem">🛒</button>':'')+'</td></tr>'
+        html+='<tr><td>'+(j+1)+'</td><td>'+esc(it.shop)+(it.area?'<div class="meta">'+esc(it.area)+'</div>':'')+'</td><td>'+esc(it.quality_text||'—')+'</td><td style="text-align:right">¥'+it.price.toFixed(2)+'</td><td style="text-align:right">¥'+it.shipping.toFixed(1)+'</td><td style="text-align:right'+(j===0?';font-weight:700;color:#fb7185':'')+'">¥'+it.total.toFixed(1)+'</td><td style="text-align:center">'+(it.itemId&&it.shopId?'<button onclick="ac('+it.itemId+','+it.shopId+',this)" style="padding:2px 6px;border-radius:4px;border:1px solid #a855f7;background:transparent;color:#a855f7;cursor:pointer;font-size:.72rem">🛒</button>':'')+'</td></tr>'
       });
       html+='</tbody></table><div style="font-size:.65rem;color:#c4b5d0;margin-top:3px">扫描'+(r.pages_scanned||1)+'页 · 在售'+r.total_count+'本'+(r.holiday_shop_count?' · 🛌 排除'+r.holiday_shop_count+'个休假店铺':'')+(r.sold_out_skipped?' · 已售罄'+r.sold_out_skipped+'本':'')+'</div></div>'
     }
@@ -297,7 +297,7 @@ function ac(iid,sid,btn){
 function ba(){
   var is=L.filter(function(r){return r.cheapest&&r.cheapest.itemId&&r.cheapest.shopId});if(!is.length){toast('无商品');return}
   var btn=document.querySelector('[onclick="ba()"]');btn.disabled=1;btn.textContent='⏳ 0/'+is.length;var ok=0,ng=0;
-  function nx(i){if(i>=is.length){btn.textContent='✅ '+ok+'/'+is.length+(ng?' ('+ng+'失败)':'');btn.style.background=ok>0?'#059669':'#f43f5e';toast('已完成 '+ok+'/'+is.length);return}btn.textContent='⏳ '+(i+1)+'/'+is.length;fj('/api/addtocart?itemId='+is[i].cheapest.itemId+'&shopId='+is[i].cheapest.shopId).then(function(d){if(d.success)ok++;else ng++;setTimeout(function(){nx(i+1)},1200)}).catch(function(){ng++;setTimeout(function(){nx(i+1)},1200)})}nx(0)
+  function nx(i){if(i>=is.length){btn.textContent='✅ '+ok+'/'+is.length+(ng?' ('+ng+'失败)':'');btn.style.background=ok>0?'#059669':'#fb7185';toast('已完成 '+ok+'/'+is.length);return}btn.textContent='⏳ '+(i+1)+'/'+is.length;fj('/api/addtocart?itemId='+is[i].cheapest.itemId+'&shopId='+is[i].cheapest.shopId).then(function(d){if(d.success)ok++;else ng++;setTimeout(function(){nx(i+1)},1200)}).catch(function(){ng++;setTimeout(function(){nx(i+1)},1200)})}nx(0)
 }
 
 // 一键清空所有购物车
@@ -449,7 +449,7 @@ function cH(id){
     if(!is.length){toast('无商品');return}
     var btn=event&&event.target;if(btn){btn.disabled=1;btn.textContent='⏳ 0/'+is.length}
     var ok=0,ng=0;
-    function nx(i){if(i>=is.length){if(btn){btn.textContent='✅ '+ok+'/'+is.length+(ng?' ('+ng+'失败)':'');btn.style.background=ok>0?'#059669':'#f43f5e';setTimeout(function(){btn.disabled=0},2000)}return}if(btn)btn.textContent='⏳ '+(i+1)+'/'+is.length;fj('/api/addtocart?itemId='+encodeURIComponent(is[i].cheapest.itemId)+'&shopId='+encodeURIComponent(is[i].cheapest.shopId)).then(function(d){if(d.success)ok++;else ng++;setTimeout(function(){nx(i+1)},1200)}).catch(function(){ng++;setTimeout(function(){nx(i+1)},1200)})}nx(0)
+    function nx(i){if(i>=is.length){if(btn){btn.textContent='✅ '+ok+'/'+is.length+(ng?' ('+ng+'失败)':'');btn.style.background=ok>0?'#059669':'#fb7185';setTimeout(function(){btn.disabled=0},2000)}return}if(btn)btn.textContent='⏳ '+(i+1)+'/'+is.length;fj('/api/addtocart?itemId='+encodeURIComponent(is[i].cheapest.itemId)+'&shopId='+encodeURIComponent(is[i].cheapest.shopId)).then(function(d){if(d.success)ok++;else ng++;setTimeout(function(){nx(i+1)},1200)}).catch(function(){ng++;setTimeout(function(){nx(i+1)},1200)})}nx(0)
   }).catch(function(){toast('获取记录失败')})
 }
 function dH(id){
@@ -488,7 +488,7 @@ function cleanupAddr(isAuto){
     if(d.success===false){
       if(!isAuto){
         var el=id('results');
-        el.innerHTML='<div class="card" style="border:2px solid #fca5a5;background:#fef2f2;margin-bottom:10px"><div class="card-title" style="color:#f43f5e">🧹 地址清理</div><div style="font-size:.8rem;color:#9d8bb0">'+(d.error||'Cookie 未登录地址管理')+'<br><br>请先在浏览器登录 <strong>kongfz.com</strong>，然后更新 Cookie。</div></div>'+el.innerHTML;
+        el.innerHTML='<div class="card" style="border:2px solid #fca5a5;background:#fef2f2;margin-bottom:10px"><div class="card-title" style="color:#fb7185">🧹 地址清理</div><div style="font-size:.8rem;color:#9d8bb0">'+(d.error||'Cookie 未登录地址管理')+'<br><br>请先在浏览器登录 <strong>kongfz.com</strong>，然后更新 Cookie。</div></div>'+el.innerHTML;
       }
       return;
     }
@@ -500,7 +500,7 @@ function cleanupAddr(isAuto){
         if(r2.success===false){toast('⚠️ '+(r2.error||'失败'));return}
         toast('🧹 已删除 '+r2.deleted+' 个旧地址，保留 '+r2.kept+' 个');
         if(isAuto)return;
-        var h='<div class="card" style="border:2px solid #10b981;background:#f0fdf4;margin-bottom:10px"><div class="card-title" style="color:#be185d">🧹 地址清理结果</div><div style="font-size:.8rem">共 <strong>'+d.total+'</strong> 个地址（上限 '+d.max_count+'），默认 <strong>'+d.default_count+'</strong> 个</div>';
+        var h='<div class="card" style="border:2px solid #10b981;background:#f0fdf4;margin-bottom:10px"><div class="card-title" style="color:#f472b6">🧹 地址清理结果</div><div style="font-size:.8rem">共 <strong>'+d.total+'</strong> 个地址（上限 '+d.max_count+'），默认 <strong>'+d.default_count+'</strong> 个</div>';
         if(r2.deleted>0)h+='<div style="font-size:.78rem;color:#9d8bb0;margin-top:4px">已删除 '+r2.deleted+' 个旧地址</div>';
         h+='</div>';
         var el=id('results');
