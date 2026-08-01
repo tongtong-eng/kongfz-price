@@ -235,7 +235,7 @@ function sh(data){
     html+='</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-primary" onclick="rqA()" style="background:#dc2626;font-size:.8rem">🔍 重查全部</button><button onclick="cpyFail()" style="padding:5px 10px;border-radius:6px;border:1px solid #94a3b8;background:transparent;color:#64748b;cursor:pointer;font-size:.78rem">📋 复制异常书号</button></div></div>';
   }
   html+='<div class="summary"><div class="s-card blue"><div class="n">'+data.length+'</div><div class="l">查询</div></div><div class="s-card green"><div class="n">'+ok.length+'</div><div class="l">查到</div></div><div class="s-card amber"><div class="n">'+(data.length-ok.length)+'</div><div class="l">异常</div></div>';
-  if(pd.length){var tot=0;pd.forEach(function(r){tot+=r.cheapest.total});html+='<div class="s-card green"><div class="n">¥'+tot.toFixed(1)+'</div><div class="l">最低总价</div></div><div class="s-card" style="background:#f0fdf4"><div class="n" style="color:#10b981;font-size:1.1rem">¥'+(Math.round(tot*1.25*100)/100).toFixed(1)+'</div><div class="l">建议售价</div></div>'+(hc>0?'<div style="grid-column:1/-1;font-size:.7rem;color:#94a3b8;text-align:center;margin-top:-2px">🛌 已自动排除 '+hc+' 个休假中店铺的商品</div>':'')+(so>0?'<div style="grid-column:1/-1;font-size:.7rem;color:#94a3b8;text-align:center;margin-top:-2px">已自动排除 '+so+' 个已售罄商品</div>':'')+'<div style="grid-column:1/-1;text-align:center;margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center"><button onclick="ba()" style="padding:8px 24px;border-radius:8px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:600;font-size:1rem;box-shadow:0 2px 8px rgba(220,38,38,.3)">🛒 一键加购全部 '+pd.length+' 本</button><button onclick="clearAllCart()" style="padding:8px 24px;border-radius:8px;border:none;background:#64748b;color:#fff;cursor:pointer;font-weight:500;font-size:1rem">🗑️ 清空购物车</button><button onclick="copyToBuyer()" style="padding:8px 24px;border-radius:8px;border:none;background:#2563eb;color:#fff;cursor:pointer;font-weight:600;font-size:1rem;box-shadow:0 2px 8px rgba(37,99,235,.3)">📤 复制给买家</button></div>'}
+  if(pd.length){var tot=0;pd.forEach(function(r){tot+=r.cheapest.total});html+='<div class="s-card green"><div class="n">¥'+tot.toFixed(1)+'</div><div class="l">最低总价</div></div><div class="s-card" style="background:#f0fdf4"><div class="n" style="color:#10b981;font-size:1.1rem">¥'+(Math.round(tot*1.22*100)/100).toFixed(1)+'</div><div class="l">建议售价</div></div>'+(hc>0?'<div style="grid-column:1/-1;font-size:.7rem;color:#94a3b8;text-align:center;margin-top:-2px">🛌 已自动排除 '+hc+' 个休假中店铺的商品</div>':'')+(so>0?'<div style="grid-column:1/-1;font-size:.7rem;color:#94a3b8;text-align:center;margin-top:-2px">已自动排除 '+so+' 个已售罄商品</div>':'')+'<div style="grid-column:1/-1;text-align:center;margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center"><button onclick="ba()" style="padding:8px 24px;border-radius:8px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:600;font-size:1rem;box-shadow:0 2px 8px rgba(220,38,38,.3)">🛒 一键加购全部 '+pd.length+' 本</button><button onclick="clearAllCart()" style="padding:8px 24px;border-radius:8px;border:none;background:#64748b;color:#fff;cursor:pointer;font-weight:500;font-size:1rem">🗑️ 清空购物车</button><button onclick="copyToBuyer()" style="padding:8px 24px;border-radius:8px;border:none;background:#2563eb;color:#fff;cursor:pointer;font-weight:600;font-size:1rem;box-shadow:0 2px 8px rgba(37,99,235,.3)">📤 复制给买家</button></div>'}
   html+='</div>';
   data.forEach(function(r){
     if(r.error){html+='<div class="card" style="border-left:3px solid #ef4444"><div style="font-family:monospace;font-size:.75rem;color:#94a3b8">'+esc(r.isbn)+'</div><div style="color:#ef4444;font-size:.8rem;margin-top:2px">'+esc(r.error)+'</div></div>'}
@@ -301,7 +301,7 @@ function copyToBuyer(){
   var lines=[];
   if(ok.length){
     var tot=0; ok.forEach(function(r){tot+=r.cheapest.price+r.cheapest.shipping});
-    var totalSug=Math.round(tot*1.25*100)/100;
+    var totalSug=Math.round(tot*1.22*100)/100;
     lines.push('查到 '+ok.length+' 本 📚 总价 ¥'+totalSug.toFixed(1));
   }
   if(ng.length){
@@ -317,7 +317,7 @@ function cpyQuote(forBuyer){
   var lines=[], i=0, totalCost=0, totalSug=0;
   ok.forEach(function(r){
     i++;
-    var c=r.cheapest, p=c.price, s=c.shipping, t=p+s, sug=Math.round(t*1.25*100)/100;
+    var c=r.cheapest, p=c.price, s=c.shipping, t=p+s, sug=Math.round(t*1.22*100)/100;
     totalCost+=t; totalSug+=sug;
     if(forBuyer){
       lines.push(i+'. '+(r.title||'无书名'));
@@ -327,7 +327,7 @@ function cpyQuote(forBuyer){
       lines.push(i+'. '+(r.title||'无书名'));
       lines.push('   ISBN: '+r.isbn);
       lines.push('   最低进价: ¥'+p.toFixed(1)+'+¥'+s.toFixed(1)+'=¥'+t.toFixed(1));
-      lines.push('   建议售价: ¥'+sug.toFixed(1)+' (125%)');
+      lines.push('   建议售价: ¥'+sug.toFixed(1)+' (122%)');
     }
   });
   lines.push('');
@@ -346,7 +346,7 @@ function cpySingleQuote(isbn){
   var r=null;
   for(var i=0;i<L.length;i++){if(L[i].isbn===isbn){r=L[i];break}}
   if(!r||!r.cheapest){toast('无数据');return}
-  var c=r.cheapest, t=c.price+c.shipping, sug=Math.round(t*1.25*100)/100;
+  var c=r.cheapest, t=c.price+c.shipping, sug=Math.round(t*1.22*100)/100;
   var txt=r.title+'\nISBN: '+r.isbn+'\n¥'+sug.toFixed(1);
   doCopy(txt,function(){toast('✅ 已复制报价，可发给买家')},function(){prompt('📋 报价：',txt)});
 }
