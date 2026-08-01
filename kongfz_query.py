@@ -20,7 +20,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ── 自适应并发数（检测到失败自动降速） ──────────
-_RATE = {"consecutive_fails": 0, "max_workers": 3}
+_RATE = {"consecutive_fails": 0, "max_workers": 1}
 
 def _get_max_workers():
     """根据失败率动态调整批量并发数"""
@@ -28,9 +28,9 @@ def _get_max_workers():
     if fails >= 5:
         return 1
     elif fails >= 3:
-        return 2
+        return 1
     elif fails >= 1:
-        return 2
+        return 1
     return _RATE["max_workers"]
 
 def _record_fail():
@@ -42,7 +42,7 @@ def _record_success():
 # ── 请求节流（降低触发孔夫子限流概率） ──────────
 _THROTTLE_LOCK = threading.Lock()
 _LAST_REQUEST_TS = [0.0]
-_REQUEST_INTERVAL = 0.3  # 每次请求间隔 300ms
+_REQUEST_INTERVAL = 0.6  # 每次请求间隔 600ms
 
 def _throttle():
     """全局节流：每个请求间隔至少 300ms"""
