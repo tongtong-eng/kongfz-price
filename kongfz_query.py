@@ -470,7 +470,7 @@ def get_shop_freight_mould(cookie_str, item):
             conn = _get_freight_conn()
             dpath = f"/{shop_id}/{item_id}/"
             conn.request("GET", dpath, headers={**HEADERS, "Cookie": cookie_str,
-                                                "Referer": "https://search.kongfz.com/product/"})
+                                                "Referer": "https://book.kongfz.com/{shop_id}/{item_id}/"})
             dresp = conn.getresponse()
             dbody = dresp.read().decode("utf-8", errors="replace")
             m = re.search(r'mouldId["\']?\s*[:=]\s*["\']?(\d+)', dbody)
@@ -519,7 +519,9 @@ def calc_real_freight(cookie_str, item, province):
     """
     mould = get_shop_freight_mould(cookie_str, item)
     if not mould:
+        print(f"  🔧 [运费] 店铺{item.get('shopId')} 模板获取失败 mouldId={item.get('mouldId')}")
         return None, False
+    print(f"  🔧 [运费] 店铺{item.get('shopId')} 模板={mould.get('mouldName')} 收货={province}")
     fee_list = mould.get("feeList") or {}
     express = fee_list.get("express") or {}
     specials = express.get("special") or []
