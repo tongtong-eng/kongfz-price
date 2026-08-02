@@ -448,21 +448,48 @@ def _get_freight_conn():
 def get_shop_freight_mould(cookie_str, item):
     """获取单个商品的运费模板（按 shopId 缓存）。
 
+    搜索 API 不返回 mouldId，需要额外抓商品详情页提取，
+    再调 getFreightInfo 拿运费模板。
+
     返回 mould dict 或 None。
     """
     shop_id = item.get("shopId")
+    item_id = item.get("itemId")
     mould_id = item.get("mouldId")
-    if not mould_id:
-        mould_id = item.get("mould_id")
+
+    # 1. 尝试从缓存取（按 shopId，同店复用）
+    if shop_id:
+        cached = _FREIGHT_CACHE.get(f"s{shop_id}")
+        if cached and time.time() - cached[2] < _FREIGHT_TTL:
+            return cached[0]
+
+    # 2. 没有 mouldId → 抓详情页提取
+    if not mould_id and item_id and shop_id:
+        try:
+            _throttle()
+            conn = _get_freight_conn()
+            dpath = f"/{shop_id}/{item_id}/"
+            conn.request("GET", dpath, headers={**HEADERS, "Cookie": cookie_str,
+                                                "Referer": "https://search.kongfz.com/product/"})
+            dresp = conn.getresponse()
+            dbody = dresp.read().decode("utf-8", errors="replace")
+            m = re.search(r'mouldId["\']?\s*[:=]\s*["\']?(\d+)', dbody)
+            if m:
+                mould_id = m.group(1)
+                item["mouldId"] = mould_id
+            # 顺带提取 weight
+            wm = re.search(r'weight["\']?\s*[:=]\s*["\']?([\d.]+)', dbody)
+            if wm and "weight" not in item:
+                item["weight"] = wm.group(1)
+        except Exception:
+            return None
+
     if not mould_id:
         return None
-    cache_key = str(mould_id)
-    cached = _FREIGHT_CACHE.get(cache_key)
-    if cached and time.time() - cached[2] < _FREIGHT_TTL:
-        return cached[0]
 
+    # 3. 调 getFreightInfo 拿模板
     try:
-        _throttle()  # 复用节流锁
+        _throttle()
         conn = _get_freight_conn()
         path = f"/Pc/Ajax/getFreightInfo?mouldId={urllib.parse.quote(str(mould_id))}"
         conn.request("GET", path, headers={**HEADERS, "Cookie": cookie_str,
@@ -473,6 +500,8 @@ def get_shop_freight_mould(cookie_str, item):
         if data.get("status") != 1:
             return None
         mould = data.get("result", {}).get("mouldInfo", {})
+        # 按 shopId 缓存
+        cache_key = f"s{shop_id}" if shop_id else str(mould_id)
         _FREIGHT_CACHE[cache_key] = (mould, shop_id, time.time())
         # 缓存清理
         if len(_FREIGHT_CACHE) > 2000:
