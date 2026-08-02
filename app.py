@@ -42,7 +42,7 @@ from kongfz_query import (
     query_isbn, batch_query, HEADERS,
     query_isbn_by_address, batch_query_by_address, _parse_province,
 )
-from kongfz_address import cleanup_addresses, MAX_ADDRESSES, parse_address_text, add_address
+from kongfz_address import cleanup_addresses, MAX_ADDRESSES, parse_address_text, add_address, delete_address
 from kongfz_order import search_by_phone
 
 # ── 配置 ──────────────────────────────────────────────────
@@ -217,6 +217,21 @@ class Handler(http.server.BaseHTTPRequestHandler):
             info = parse_address_text(cookie, address)
             if info:
                 self.send_json({"success": True, **info})
+            else:
+                self.send_json({"success": False, "error": "地址解析失败，请检查是否含收件人和地址"})
+        elif path.startswith("/api/address/delete"):
+            # 删除指定收货地址
+            cookie = load_cookie()
+            if not cookie:
+                self.send_json({"error": "Cookie 未找到"})
+                return
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            addr_id = q.get("addrId", [""])[0]
+            if not addr_id:
+                self.send_json({"error": "缺少 addrId 参数"})
+                return
+            ok = delete_address(cookie, addr_id)
+            self.send_json({"success": ok})
             else:
                 self.send_json({"success": False, "error": "地址解析失败，请检查是否含收件人和地址"})
         elif path.startswith("/api/query"):
