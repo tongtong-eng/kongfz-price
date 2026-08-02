@@ -564,7 +564,7 @@ def calc_real_freight(cookie_str, item, province):
     return round(total_fee, 1), True
 
 
-def query_isbn_by_address(isbn, cookie_str, province, quality_filter="", top_n=10):
+def query_isbn_by_address(isbn, cookie_str, province, quality_filter="", top_n=5):
     """
     按收货地址省份查询单本 ISBN 的最低总价。
 
@@ -673,7 +673,7 @@ def query_isbn_by_address(isbn, cookie_str, province, quality_filter="", top_n=1
     }
 
 
-def batch_query_by_address(isbns, cookie_str, province, quality_filter="", top_n=10):
+def batch_query_by_address(isbns, cookie_str, province, quality_filter="", top_n=5):
     """按收货地址批量查价（串行，复用节流）。"""
     uniq_indices = {}
     for i, isbn in enumerate(isbns):
