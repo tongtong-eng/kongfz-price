@@ -232,8 +232,6 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return
             ok = delete_address(cookie, addr_id)
             self.send_json({"success": ok})
-            else:
-                self.send_json({"success": False, "error": "地址解析失败，请检查是否含收件人和地址"})
         elif path.startswith("/api/query"):
             cookie = load_cookie()
             if not cookie:
