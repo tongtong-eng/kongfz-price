@@ -136,8 +136,9 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
     <div style="margin-top:10px;padding:10px 12px;background:#fff0f7;border:2px dashed #f9a8d4;border-radius:12px">
       <div style="font-size:.8rem;color:#f472b6;font-weight:600;margin-bottom:6px">📮 收货地址（选填 · 自动按地址算运费）</div>
       <div style="display:flex;gap:6px">
-        <input id="addrInput" type="text" placeholder="粘贴买家收货地址，如：重庆市奉节县诗仙西路137号" style="flex:1;padding:8px 10px;border:2px solid #ffe4f0;border-radius:10px;font-size:.8rem;outline:none;background:#fff" onkeydown="if(event.key==='Enter')parseAddr()">
+        <input id="addrInput" type="text" placeholder="粘贴买家收货地址，如：刘齐倚 17340298250 重庆市奉节县诗仙西路137号" style="flex:1;padding:8px 10px;border:2px solid #ffe4f0;border-radius:10px;font-size:.8rem;outline:none;background:#fff" onkeydown="if(event.key==='Enter')parseAddr()">
         <button class="btn btn-outline" id="btnParseAddr" onclick="parseAddr()" style="white-space:nowrap">📍 解析</button>
+        <button class="btn btn-primary" id="btnAddAddr" onclick="addAddrKFZ()" style="white-space:nowrap;display:none">📦 添加到孔夫子</button>
       </div>
       <div id="addrResult" style="font-size:.75rem;color:#d48aa9;margin-top:5px"></div>
     </div>
@@ -216,11 +217,14 @@ function cp(){var b=id('pc');if(b)b.remove();Q.click()}
 
 // === 收货地址解析 ===
 var _addrProvince='';  // 全局：解析出的省份
+var _addrInfo=null;    // 全局：官方解析出的完整地址信息
 function parseAddr(){
   var val=(id('addrInput').value||'').trim();
   var res=id('addrResult');
+  var btnAdd=id('btnAddAddr');
   if(!val){res.textContent='请先输入地址';res.style.color='#ef4444';return}
   res.textContent='⏳ 解析中...';res.style.color='#d48aa9';
+  // 先本地简单解析省份（用于算运费）
   fetch('/api/parse_address?address='+encodeURIComponent(val))
     .then(function(r){return r.json()})
     .then(function(d){
@@ -233,8 +237,62 @@ function parseAddr(){
         res.textContent='⚠️ 未能识别省份，将使用默认运费';
         res.style.color='#f59e0b';
       }
+      // 再调官方解析，拿完整信息用于添加地址
+      fetch('/api/address/parse?address='+encodeURIComponent(val))
+        .then(function(r2){return r2.json()})
+        .then(function(d2){
+          if(d2.success){
+            _addrInfo=d2;
+            if(btnAdd)btnAdd.style.display='inline-block';
+          }else{
+            _addrInfo=null;
+            if(btnAdd)btnAdd.style.display='none';
+          }
+        })
+        .catch(function(){_addrInfo=null;if(btnAdd)btnAdd.style.display='none'});
     })
     .catch(function(){res.textContent='❌ 解析失败';res.style.color='#ef4444'});
+}
+
+// 添加到孔夫子收货地址
+function addAddrKFZ(){
+  var btn=id('btnAddAddr');
+  var res=id('addrResult');
+  if(!_addrInfo){res.textContent='⚠️ 请先解析地址';res.style.color='#f59e0b';return}
+  // 拼 area：重庆/直辖市用 cityId，普通省用 areaId||cityId||provId
+  var area=_addrInfo.areaId||_addrInfo.cityId||_addrInfo.provId;
+  if(!area){res.textContent='❌ 未解析到地区编码';res.style.color='#ef4444';return}
+  var body={
+    receiverName:_addrInfo.name||'',
+    phoneNum:_addrInfo.mobile||'',
+    mobile:'',
+    area:String(area),
+    address:_addrInfo.address||'',
+    zipCode:_addrInfo.zipCode||'',
+    isDefault:0
+  };
+  btn.disabled=1;btn.textContent='⏳ 添加中...';
+  fj('/api/address/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(function(d){
+      if(d.success){
+        btn.textContent='✅ 已添加';
+        btn.style.background='#10b981';
+        res.innerHTML='✅ 已添加到孔夫子收货地址：<strong>'+(body.receiverName||'')+'</strong>';
+        res.style.color='#10b981';
+        setTimeout(function(){btn.disabled=0;btn.textContent='📦 添加到孔夫子';btn.style.background=''},2000);
+      }else{
+        btn.textContent='❌ 添加失败';
+        res.textContent='❌ '+(d.error||'添加失败');
+        res.style.color='#ef4444';
+        setTimeout(function(){btn.disabled=0;btn.textContent='📦 添加到孔夫子'},2000);
+      }
+    })
+    .catch(function(){
+      btn.textContent='❌ 网络错误';
+      res.textContent='❌ 网络错误';
+      res.style.color='#ef4444';
+      setTimeout(function(){btn.disabled=0;btn.textContent='📦 添加到孔夫子'},2000);
+    });
 }
 
 // 查价（批量 API — 一次请求查所有 ISBN，服务器端并行处理）
