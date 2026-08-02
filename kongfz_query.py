@@ -137,21 +137,42 @@ def _parse_item(item):
     }
 
 
+def _is_unreliable_shop(item):
+    """
+    判断店铺是否"不可靠"（休假/发不出货/经营异常）。
+    返回 True 表示应排除该商品。
+    """
+    # 1. 明确标记休假的店铺
+    if item.get("shopIsHoliday"):
+        return True
+    # 2. 店主 30 天未登录（可能发不出货）
+    if item.get("shop30DaysNotLogin"):
+        return True
+    # 3. 成交率过低（< 80%，发货可靠性差）
+    rate_str = item.get("shopSuccessOrderRate", "") or ""
+    m = re.search(r'(\d+)%', rate_str)
+    if m:
+        rate = int(m.group(1))
+        if rate < 80:
+            return True
+    return False
+
+
 def _build_result(isbn, items, total_found=0):
     """
     从 API 返回的商品列表构建统一结果。
     本地按总价（含运费）重新排序，确保最低总价准确无误。
-    自动排除休假中店铺的商品和已售罄的商品。
+    自动排除休假/不可靠店铺的商品和已售罄的商品。
     """
     cheap_items = []
     all_prices = []
     book_title = book_author = book_press = None
-    holiday_skipped = 0   # 因店铺休假被跳过的商品数
+    holiday_skipped = 0   # 因店铺休假/不可靠被跳过的商品数
     sold_out_skipped = 0  # 因已售罄被跳过的商品数
 
     for item in items:
-        # 跳过休假店铺的商品
-        if item.get("shopIsHoliday"):
+        # 跳过休假店铺的商品（shopIsHoliday / 30天未登录 / 成交率过低）
+        if _is_unreliable_shop(item):
             holiday_skipped += 1
             continue
         # 跳过已售罄的商品
