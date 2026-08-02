@@ -133,6 +133,14 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
       <button class="btn btn-outline" id="btnClear">清空</button>
       <span id="status">就绪</span>
     </div>
+    <div style="margin-top:10px;padding:10px 12px;background:#fff0f7;border:2px dashed #f9a8d4;border-radius:12px">
+      <div style="font-size:.8rem;color:#f472b6;font-weight:600;margin-bottom:6px">📮 收货地址（选填 · 自动按地址算运费）</div>
+      <div style="display:flex;gap:6px">
+        <input id="addrInput" type="text" placeholder="粘贴买家收货地址，如：重庆市奉节县诗仙西路137号" style="flex:1;padding:8px 10px;border:2px solid #ffe4f0;border-radius:10px;font-size:.8rem;outline:none;background:#fff" onkeydown="if(event.key==='Enter')parseAddr()">
+        <button class="btn btn-outline" id="btnParseAddr" onclick="parseAddr()" style="white-space:nowrap">📍 解析</button>
+      </div>
+      <div id="addrResult" style="font-size:.75rem;color:#d48aa9;margin-top:5px"></div>
+    </div>
 
   <!-- Cookie 状态条 -->
   <div id="cookieBar" onclick="fold('cookie')">
@@ -206,6 +214,29 @@ var pt;I.addEventListener('paste',function(){clearTimeout(pt);pt=setTimeout(func
 I.addEventListener('keydown',function(e){if((e.metaKey||e.ctrlKey)&&e.key==='Enter')Q.click()});
 function cp(){var b=id('pc');if(b)b.remove();Q.click()}
 
+// === 收货地址解析 ===
+var _addrProvince='';  // 全局：解析出的省份
+function parseAddr(){
+  var val=(id('addrInput').value||'').trim();
+  var res=id('addrResult');
+  if(!val){res.textContent='请先输入地址';res.style.color='#ef4444';return}
+  res.textContent='⏳ 解析中...';res.style.color='#d48aa9';
+  fetch('/api/parse_address?address='+encodeURIComponent(val))
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if(d.province){
+        _addrProvince=d.province;
+        res.innerHTML='✅ 已识别省份：<strong>'+d.province+'</strong> · 查价将按该省计算真实运费';
+        res.style.color='#10b981';
+      }else{
+        _addrProvince='';
+        res.textContent='⚠️ 未能识别省份，将使用默认运费';
+        res.style.color='#f59e0b';
+      }
+    })
+    .catch(function(){res.textContent='❌ 解析失败';res.style.color='#ef4444'});
+}
+
 // 查价（批量 API — 一次请求查所有 ISBN，服务器端并行处理）
 Q.onclick=function(){
   if(R)return;
@@ -219,6 +250,28 @@ Q.onclick=function(){
   ss('⏳ 批量查询 '+is.length+' 本...','loading');
   E.innerHTML='<div class="summary"><div class="s-card blue"><div class="n">'+is.length+'</div><div class="l">查询中</div></div><div class="s-card green"><div class="n"><span id="batchSec">0</span>s</div><div class="l">已用时</div></div></div>';
   var tm=setInterval(function(){var el=id('batchSec');if(el)el.textContent=((Date.now()-st)/1000).toFixed(1)},500);
+
+  // 有收货地址 → 按地址算真实运费
+  if(_addrProvince){
+    var u2='/api/batch_query_address?isbns='+is.map(function(s){return encodeURIComponent(s)}).join(',')+'&province='+encodeURIComponent(_addrProvince);
+    if(ql)u2+='&quality='+encodeURIComponent(ql);
+    fj(u2).then(function(d){
+      clearInterval(tm);
+      if(d.error){ss('❌ '+d.error,'error');R=0;Q.disabled=0;return}
+      L=d.results||[];
+      var bid='b_'+Date.now();L.forEach(function(r){r._batchId=bid});
+      var ok=L.filter(function(r){return !r.error}),ng=L.filter(function(r){return r.error});
+      sh(L);
+      addToday();
+      R=0;Q.disabled=0;
+      ss('✅ 完成！查到 '+ok.length+'/'+L.length+' 本 · 按'+_addrProvince+'运费 · 用时 '+((Date.now()-st)/1000).toFixed(1)+'s','done')
+    }).catch(function(e){
+      clearInterval(tm);
+      ss('❌ 网络错误','error');R=0;Q.disabled=0
+    });
+    return;
+  }
+
   var u='/api/batch_query_stream?isbns='+is.map(function(s){return encodeURIComponent(s)}).join(',');
   if(ql)u+='&quality='+encodeURIComponent(ql);
   try{

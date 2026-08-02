@@ -394,3 +394,270 @@ def batch_query(isbns, cookie_str, quality_filter="", max_concurrent=10, fast_mo
                 uniq_results[isbn] = {"isbn": isbn, "title": "—", "error": str(e)[:40]}
 
     return [uniq_results[isbn] for isbn in isbns]
+
+
+# ══════════════════════════════════════════════════════════
+#  按收货地址计算真实运费（v2 发货功能）
+# ══════════════════════════════════════════════════════════
+
+# 全国省份标准名称（用于地址解析匹配）
+CHINA_PROVINCES = [
+    "北京", "天津", "河北", "山西", "内蒙古",
+    "辽宁", "吉林", "黑龙江",
+    "上海", "江苏", "浙江", "安徽", "福建", "江西", "山东",
+    "河南", "湖北", "湖南", "广东", "广西", "海南",
+    "重庆", "四川", "贵州", "云南", "西藏",
+    "陕西", "甘肃", "青海", "宁夏", "新疆",
+    "香港", "澳门", "台湾",
+]
+
+# 运费模板缓存：shopId → (mould_id, 模板费率, 时间戳)
+_FREIGHT_CACHE = {}
+_FREIGHT_TTL = 3600  # 1 小时
+
+# 运费接口专用 HTTP 连接（独立，避免与搜索连接池混淆）
+_FREIGHT_CONN = threading.local()
+
+def _parse_province(address):
+    """从地址文字解析省份名。
+
+    支持：完整省名（黑龙江省）、简称（黑龙江）、自治区/直辖市带后缀或不带。
+    返回省名或 None。
+    """
+    if not address:
+        return None
+    addr = str(address).strip()
+    # 先尝试完整匹配（含"省/市/自治区"后缀）
+    for prov in CHINA_PROVINCES:
+        if prov in addr:
+            return prov
+    # 兼容"XX省"但表里没列全的情况——这里 CHINA_PROVINCES 已全
+    return None
+
+
+def _get_freight_conn():
+    """运费接口的连接（复用线程本地连接）"""
+    c = getattr(_FREIGHT_CONN, 'conn', None)
+    if c is None:
+        c = http.client.HTTPSConnection("book.kongfz.com", timeout=15,
+                                        context=ssl.create_default_context())
+        _FREIGHT_CONN.conn = c
+    return c
+
+
+def get_shop_freight_mould(cookie_str, item):
+    """获取单个商品的运费模板（按 shopId 缓存）。
+
+    返回 mould dict 或 None。
+    """
+    shop_id = item.get("shopId")
+    mould_id = item.get("mouldId")
+    if not mould_id:
+        mould_id = item.get("mould_id")
+    if not mould_id:
+        return None
+    cache_key = str(mould_id)
+    cached = _FREIGHT_CACHE.get(cache_key)
+    if cached and time.time() - cached[2] < _FREIGHT_TTL:
+        return cached[0]
+
+    try:
+        _throttle()  # 复用节流锁
+        conn = _get_freight_conn()
+        path = f"/Pc/Ajax/getFreightInfo?mouldId={urllib.parse.quote(str(mould_id))}"
+        conn.request("GET", path, headers={**HEADERS, "Cookie": cookie_str,
+                                           "Referer": "https://book.kongfz.com/"})
+        resp = conn.getresponse()
+        body = resp.read()
+        data = json.loads(body.decode("utf-8"))
+        if data.get("status") != 1:
+            return None
+        mould = data.get("result", {}).get("mouldInfo", {})
+        _FREIGHT_CACHE[cache_key] = (mould, shop_id, time.time())
+        # 缓存清理
+        if len(_FREIGHT_CACHE) > 2000:
+            for k in list(_FREIGHT_CACHE.keys())[:500]:
+                del _FREIGHT_CACHE[k]
+        return mould
+    except Exception:
+        return None
+
+
+def calc_real_freight(cookie_str, item, province):
+    """按收货省份计算单个商品的真实运费。
+
+    返回 (真实运费, 是否命中) 或 (None, False)。
+    """
+    mould = get_shop_freight_mould(cookie_str, item)
+    if not mould:
+        return None, False
+    fee_list = mould.get("feeList") or {}
+    express = fee_list.get("express") or {}
+    specials = express.get("special") or []
+
+    # 匹配收货省份所在的费率组
+    matched = None
+    for spec in specials:
+        for area in spec.get("area") or []:
+            if area.get("provName") == province:
+                matched = spec
+                break
+        if matched:
+            break
+
+    if matched is None:
+        # 无匹配 → 用默认费率
+        default = express.get("default")
+        matched = default
+
+    if not matched:
+        return None, False
+
+    try:
+        initial_fee = float(matched.get("initialFee", 0))
+        add_fee = float(matched.get("addFee", 0))
+        initial_num = float(matched.get("initialNum", 0)) or 1
+    except (TypeError, ValueError):
+        return initial_fee, True
+
+    # 书通常 1 件 0.5kg，多数在首重内；超首重按续重计（weight 为 0.5 一般不会）
+    weight = item.get("weight") or 0.5
+    try:
+        weight = float(weight)
+    except (TypeError, ValueError):
+        weight = 0.5
+    weight = max(weight, 0.1)
+
+    total_fee = initial_fee
+    if weight > initial_num and add_fee > 0:
+        extra = weight - initial_num
+        total_fee += add_fee * max(1, int(extra // 0.5) + (1 if extra % 0.5 else 0))
+    return round(total_fee, 1), True
+
+
+def query_isbn_by_address(isbn, cookie_str, province, quality_filter="", top_n=10):
+    """
+    按收货地址省份查询单本 ISBN 的最低总价。
+
+    流程：
+      1. 搜索该 ISBN 的商品（sortType=5 总价升序）
+      2. 对总价靠前的 top_n 条商品，调 getFreightInfo 拿真实运费
+      3. 重算总价（书价 + 真实运费）→ 按真实总价排序 → 返回最低
+
+    参数：
+        isbn:           ISBN
+        cookie_str:     Cookie
+        province:       收货省份（如"重庆"）
+        quality_filter: 品相过滤
+        top_n:          只对前 N 条算真实运费（性能优化）
+
+    返回：与 query_isbn 相同结构的 result，额外含 real_freight 字段。
+    """
+    isbn = isbn.strip().replace("-", "").replace(" ", "")
+    if not re.match(r'^\d{10,13}$', isbn):
+        return {"isbn": isbn, "title": "—", "error": "格式不对"}
+
+    # 1. 搜索
+    items, total = _query_api(isbn, cookie_str, quality_filter)
+    if items is None:
+        return {"isbn": isbn, "title": "—", "error": total}
+    if not items:
+        return {"isbn": isbn, "title": "—", "error": "无在售记录", "count": total}
+
+    # 2. 先解析全部商品基本信息
+    parsed_all = []
+    for item in items:
+        if item.get("shopIsHoliday") or item.get("shop30DaysNotLogin"):
+            continue
+        r = _parse_item(item)
+        if r is None:
+            continue
+        r["_item"] = item  # 保留原始 item 用于取 mouldId/weight
+        # 先按搜索接口的运费估一个初始总价，用于排序挑前 top_n
+        parsed_all.append(r)
+
+    if not parsed_all:
+        return {"isbn": isbn, "title": "—", "error": "未解析到商品"}
+
+    # 3. 按搜索接口的（书价+固定运费）排序，取前 top_n 算真实运费
+    parsed_all.sort(key=lambda x: x["total"])
+    candidates = parsed_all[:top_n]
+
+    # 4. 对候选商品算真实运费
+    for r in candidates:
+        real_fee, hit = calc_real_freight(cookie_str, r["_item"], province)
+        if hit:
+            r["real_freight"] = real_fee
+            r["real_total"] = round(r["price"] + real_fee, 1)
+            # 重设运费字段为真实值
+            r["shipping"] = real_fee
+            r["total"] = r["real_total"]
+        else:
+            r["real_freight"] = r.get("shipping", 0)
+            r["real_total"] = r["total"]
+
+    # 5. 按真实总价排序
+    candidates.sort(key=lambda x: x["real_total"])
+    top = candidates[:5]
+    cheapest = top[0]
+
+    # 书名/作者/出版社
+    book_title = book_author = book_press = None
+    for item in items:
+        if not book_title:
+            book_title = item.get("title", "—")
+        if not book_author:
+            for k in ["author", "itemAuthor"]:
+                v = item.get(k)
+                if v and len(str(v)) > 1:
+                    book_author = str(v).strip()[:30]
+                    break
+        if not book_press:
+            for k in ["press", "publisher", "publishingHouse"]:
+                v = item.get(k)
+                if v and len(str(v)) > 1:
+                    book_press = str(v).strip()[:30]
+                    break
+        if book_title and book_author and book_press:
+            break
+
+    all_prices = [r["price"] for r in parsed_all]
+
+    return {
+        "isbn": isbn,
+        "title": book_title or "—",
+        "author": book_author or "",
+        "press": book_press or "",
+        "count": len(candidates),
+        "total_count": total,
+        "pages_scanned": 1,
+        "error": None,
+        "cheapest": cheapest,
+        "top_cheapest": top,
+        "price_range": {
+            "min": min(all_prices) if all_prices else 0,
+            "max": max(all_prices) if all_prices else 0,
+            "avg": round(sum(all_prices) / len(all_prices), 1) if all_prices else 0,
+        },
+        "province": province,
+        "real_freight_mode": True,
+    }
+
+
+def batch_query_by_address(isbns, cookie_str, province, quality_filter="", top_n=10):
+    """按收货地址批量查价（串行，复用节流）。"""
+    uniq_indices = {}
+    for i, isbn in enumerate(isbns):
+        key = isbn.strip().replace("-", "").replace(" ", "")
+        uniq_indices.setdefault(key, []).append(i)
+    uniq_isbns = list(uniq_indices.keys())
+
+    uniq_results = {}
+    for isbn in uniq_isbns:
+        try:
+            uniq_results[isbn] = query_isbn_by_address(
+                isbn, cookie_str, province, quality_filter, top_n)
+        except Exception as e:
+            uniq_results[isbn] = {"isbn": isbn, "title": "—", "error": str(e)[:40]}
+
+    return [uniq_results[isbn] for isbn in isbns]

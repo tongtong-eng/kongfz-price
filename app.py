@@ -38,7 +38,10 @@ from kongfz_cookie import (
     verify_current_cookie, extract_from_curl,
     migrate_from_shelve_needed, migrate_from_shelve,
 )
-from kongfz_query import query_isbn, batch_query, HEADERS
+from kongfz_query import (
+    query_isbn, batch_query, HEADERS,
+    query_isbn_by_address, batch_query_by_address, _parse_province,
+)
 from kongfz_address import cleanup_addresses, MAX_ADDRESSES
 from kongfz_order import search_by_phone
 
@@ -154,6 +157,52 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif path.startswith("/api/cookie/verify"):
             valid, msg = verify_current_cookie()
             self.send_json({"valid": valid, "message": msg, **get_cookie_info()})
+        elif path.startswith("/api/query_address"):
+            # 按收货地址算真实运费的单本查价（需在 /api/query 之前匹配）
+            cookie = load_cookie()
+            if not cookie:
+                self.send_json({"error": "Cookie 未找到，请先设置 Cookie"})
+                return
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            isbn = q.get("isbn", [""])[0]
+            province = q.get("province", [""])[0]
+            if not isbn:
+                self.send_json({"error": "缺少 isbn 参数"})
+                return
+            if not province:
+                self.send_json({"error": "缺少 province 参数"})
+                return
+            quality_filter = q.get("quality", [""])[0]
+            result = query_isbn_by_address(isbn, cookie, province, quality_filter)
+            self.send_json(result)
+        elif path.startswith("/api/batch_query_address"):
+            # 按收货地址算真实运费的批量查价（需在 /api/batch_query 之前匹配）
+            cookie = load_cookie()
+            if not cookie:
+                self.send_json({"error": "Cookie 未找到，请先设置 Cookie"})
+                return
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            isbns_raw = q.get("isbns", [""])[0]
+            province = q.get("province", [""])[0]
+            if not isbns_raw:
+                self.send_json({"error": "缺少 isbns 参数（逗号分隔）"})
+                return
+            if not province:
+                self.send_json({"error": "缺少 province 参数"})
+                return
+            isbns = [s.strip().replace("-", "") for s in isbns_raw.split(",") if s.strip().isdigit()]
+            if not isbns:
+                self.send_json({"error": "无有效 ISBN"})
+                return
+            quality_filter = q.get("quality", [""])[0]
+            results = batch_query_by_address(isbns, cookie, province, quality_filter)
+            self.send_json({"results": results, "count": len(results)})
+        elif path.startswith("/api/parse_address"):
+            # 解析地址里的省份
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            address = q.get("address", [""])[0]
+            prov = _parse_province(address)
+            self.send_json({"province": prov, "address": address})
         elif path.startswith("/api/query"):
             cookie = load_cookie()
             if not cookie:
