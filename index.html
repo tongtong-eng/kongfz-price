@@ -136,9 +136,11 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
     <div style="margin-top:10px;padding:10px 12px;background:#fff0f7;border:2px dashed #f9a8d4;border-radius:12px">
       <div style="font-size:.8rem;color:#f472b6;font-weight:600;margin-bottom:6px">📮 收货地址（选填 · 自动按地址算运费）</div>
       <div style="display:flex;gap:6px">
-        <input id="addrInput" type="text" placeholder="粘贴买家收货地址，如：刘齐倚 17340298250 重庆市奉节县诗仙西路137号" style="flex:1;padding:8px 10px;border:2px solid #ffe4f0;border-radius:10px;font-size:.8rem;outline:none;background:#fff" onkeydown="if(event.key==='Enter')parseAddr()">
+        <input id="addrInput" type="text" placeholder="粘贴买家收货地址，如：刘齐倚 17340298250 重庆市奉节县诗仙西路137号" style="flex:1;min-width:0;padding:8px 10px;border:2px solid #ffe4f0;border-radius:10px;font-size:.8rem;outline:none;background:#fff" onkeydown="if(event.key==='Enter')parseAddr()">
         <button class="btn btn-outline" id="btnParseAddr" onclick="parseAddr()" style="white-space:nowrap">📍 解析</button>
-        <button class="btn btn-primary" id="btnAddAddr" onclick="addAddrKFZ()" style="white-space:nowrap;display:none">📦 添加到孔夫子</button>
+      </div>
+      <div style="margin-top:6px">
+        <button class="btn btn-primary" id="btnAddAddr" onclick="addAddrKFZ()" style="white-space:nowrap;display:none;width:100%;padding:9px 0">📦 添加到孔夫子收货地址</button>
       </div>
       <div id="addrResult" style="font-size:.75rem;color:#d48aa9;margin-top:5px"></div>
     </div>
