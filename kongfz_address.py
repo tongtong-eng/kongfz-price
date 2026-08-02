@@ -196,3 +196,61 @@ def cleanup_addresses(cookie_str, max_count=MAX_ADDRESSES, dry_run=False):
     result["errors"] = ng
 
     return result
+
+
+# ══════════════════════════════════════════════════════════
+#  地址解析 + 添加收货地址（v2 发货功能）
+# ══════════════════════════════════════════════════════════
+
+ADDR_PARSE_API = "https://user.kongfz.com/pc-gw/express-web/pc/v1/address/parse"
+ADDR_ADD_API = "https://user.kongfz.com/pc-gw/user-service/client/pc/address"
+
+
+def parse_address_text(cookie_str, address_text):
+    """调孔夫子官方接口解析地址文字。
+
+    返回 dict（含 name/mobile/provId/provName/cityId/cityName/areaId/areaName/address 等）
+    或 None。
+    """
+    import urllib.parse
+    h = {**HEADERS, "Cookie": cookie_str,
+         "Referer": "https://user.kongfz.com/buyer/receive_address.html",
+         "Content-Type": "application/x-www-form-urlencoded"}
+    try:
+        url = ADDR_PARSE_API + "?source=" + urllib.parse.quote(address_text)
+        req = urllib.request.Request(url, headers=h, data=b"", method="POST")
+        resp = urllib.request.urlopen(req, timeout=15)
+        data = json.loads(resp.read().decode("utf-8", errors="replace"))
+        if data.get("status") and data.get("errCode") == 0:
+            return data.get("result")
+        return None
+    except Exception as e:
+        print(f"  ⚠️ 地址解析失败: {e}")
+        return None
+
+
+def add_address(cookie_str, addr_info):
+    """添加收货地址到孔夫子。
+
+    参数:
+        addr_info: dict，含 receiverName, phoneNum, mobile, area, address, zipCode, isDefault
+
+    返回: dict {success, error}
+    """
+    h = {**HEADERS, "Cookie": cookie_str,
+         "Referer": "https://user.kongfz.com/buyer/receive_address.html",
+         "Content-Type": "application/json"}
+    try:
+        req = urllib.request.Request(
+            ADDR_ADD_API,
+            data=json.dumps(addr_info).encode("utf-8"),
+            headers=h, method="POST")
+        resp = urllib.request.urlopen(req, timeout=15)
+        body = resp.read().decode("utf-8", errors="replace")
+        data = json.loads(body)
+        if data.get("status") == 1 or data.get("errCode") == 0 or data.get("code") == 0:
+            return {"success": True, "addrId": data.get("result", {}).get("addrId")
+                    if isinstance(data.get("result"), dict) else data.get("addrId")}
+        return {"success": False, "error": data.get("message", "添加失败")}
+    except Exception as e:
+        return {"success": False, "error": str(e)[:60]}

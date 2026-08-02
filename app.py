@@ -42,7 +42,7 @@ from kongfz_query import (
     query_isbn, batch_query, HEADERS,
     query_isbn_by_address, batch_query_by_address, _parse_province,
 )
-from kongfz_address import cleanup_addresses, MAX_ADDRESSES
+from kongfz_address import cleanup_addresses, MAX_ADDRESSES, parse_address_text, add_address
 from kongfz_order import search_by_phone
 
 # ── 配置 ──────────────────────────────────────────────────
@@ -203,6 +203,22 @@ class Handler(http.server.BaseHTTPRequestHandler):
             address = q.get("address", [""])[0]
             prov = _parse_province(address)
             self.send_json({"province": prov, "address": address})
+        elif path.startswith("/api/address/parse"):
+            # 用孔夫子官方接口完整解析地址（收件人/手机号/省市区）
+            cookie = load_cookie()
+            if not cookie:
+                self.send_json({"error": "Cookie 未找到"})
+                return
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            address = q.get("address", [""])[0]
+            if not address:
+                self.send_json({"error": "缺少 address 参数"})
+                return
+            info = parse_address_text(cookie, address)
+            if info:
+                self.send_json({"success": True, **info})
+            else:
+                self.send_json({"success": False, "error": "地址解析失败，请检查是否含收件人和地址"})
         elif path.startswith("/api/query"):
             cookie = load_cookie()
             if not cookie:
@@ -400,6 +416,34 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.serve_html()
 
     def do_POST(self):
+        if self.path.startswith("/api/address/add"):
+            # 添加收货地址到孔夫子
+            cookie = load_cookie()
+            if not cookie:
+                self.send_json({"error": "Cookie 未找到"})
+                return
+            body = self._read_json()
+            if body is None:
+                return
+            receiver = body.get("receiverName", "")
+            phone = body.get("phoneNum", "")
+            address = body.get("address", "")
+            area = body.get("area", "")
+            if not receiver or not address:
+                self.send_json({"error": "缺少收件人或地址"})
+                return
+            addr_info = {
+                "receiverName": receiver,
+                "phoneNum": phone,
+                "mobile": body.get("mobile", ""),
+                "area": area,
+                "address": address,
+                "zipCode": body.get("zipCode", ""),
+                "isDefault": 1 if body.get("isDefault") else 0,
+            }
+            result = add_address(cookie, addr_info)
+            self.send_json(result)
+            return
         if self.path.startswith("/api/cookie/update"):
             body = self._read_json()
             if body is None:
