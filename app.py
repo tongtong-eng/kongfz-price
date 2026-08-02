@@ -42,7 +42,7 @@ from kongfz_query import (
     query_isbn, batch_query, HEADERS,
     query_isbn_by_address, batch_query_by_address, _parse_province,
 )
-from kongfz_address import cleanup_addresses, MAX_ADDRESSES, parse_address_text, add_address, delete_address
+from kongfz_address import cleanup_addresses, MAX_ADDRESSES, parse_address_text, add_address, delete_address, list_addresses
 from kongfz_order import search_by_phone
 
 # ── 配置 ──────────────────────────────────────────────────
@@ -203,6 +203,24 @@ class Handler(http.server.BaseHTTPRequestHandler):
             address = q.get("address", [""])[0]
             prov = _parse_province(address)
             self.send_json({"province": prov, "address": address})
+        elif path.startswith("/api/address/list"):
+            # 列出孔夫子收货地址
+            cookie = load_cookie()
+            if not cookie:
+                self.send_json({"error": "Cookie 未找到"})
+                return
+            try:
+                addrs = list_addresses(cookie)
+                simplified = [{
+                    "addrId": a.get("addrId"),
+                    "receiverName": a.get("receiverName", ""),
+                    "mobile": a.get("mobile", ""),
+                    "address": (a.get("provName") or "") + (a.get("cityName") or "") + (a.get("areaName") or "") + (a.get("address") or ""),
+                    "isDefault": a.get("isDefault", 0),
+                } for a in addrs]
+                self.send_json({"success": True, "addresses": simplified, "count": len(simplified)})
+            except Exception as e:
+                self.send_json({"error": str(e)[:60]})
         elif path.startswith("/api/address/parse"):
             # 用孔夫子官方接口完整解析地址（收件人/手机号/省市区）
             cookie = load_cookie()
