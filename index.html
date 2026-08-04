@@ -121,7 +121,7 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
   <!-- 查价主操作区 -->
   <div class="card">
     <div class="card-title">📖 ISBN（每行一个）</div>
-    <textarea id="inputArea" placeholder="9787108009821&#10;9787020002207&#10;可批量粘贴，自动识别 ISBN"></textarea>
+    <textarea id="inputArea" placeholder="可直接粘贴书名/出版社/ISBN 混排文字，自动提取书号&#10;如：9787108009821&#10;9787020002207"></textarea>
     <div class="row">
       <label style="font-size:.8rem;color:#9d8bb0">品相:</label>
       <select id="qualitySelect">
@@ -212,8 +212,35 @@ function fold(n){
   if(b.classList.contains('open')&&n==='cookie')ckC();
 }
 
+// 从混排文字提取 ISBN（ISBN-13 + ISBN-10，校验位验证，处理粘连）
+function chk13(s){
+  if(!/^\d{13}$/.test(s))return false;
+  var sum=0;
+  for(var i=0;i<12;i++)sum+=(i%2?3:1)*(s.charCodeAt(i)-48);
+  return (10-sum%10)%10===s.charCodeAt(12)-48;
+}
+function chk10(s){
+  if(!/^\d{9}[\dX]$/.test(s))return false;
+  var sum=0;
+  for(var i=0;i<9;i++)sum+=(s.charCodeAt(i)-48)*(10-i);
+  sum+=(s[9]==='X'?10:(s.charCodeAt(9)-48));
+  return sum%11===0;
+}
+function extractISBNs(t){
+  var is=[],v={};
+  function add(s){if(!v[s]){v[s]=1;is.push(s)}}
+  var c=t.replace(/[-\s]/g,''); // 去连字符空格：978-7-111-67966-0 → 9787111679660
+  var re13=/(?:978|979)\d{10}/g,mm;
+  while((mm=re13.exec(c))!==null){ if(chk13(mm[0])) add(mm[0]); }
+  // 移除已识别 ISBN-13 后，剩余文本找 ISBN-10
+  var rest=c.replace(/(?:978|979)\d{10}/g,'');
+  var re10=/(^|[^\d])(\d{9}[\dX])(?!\d)/g,m2;
+  while((m2=re10.exec(rest))!==null){ if(chk10(m2[2])) add(m2[2]); }
+  return is;
+}
+
 // 粘贴
-var pt;I.addEventListener('paste',function(){clearTimeout(pt);pt=setTimeout(function(){var is=[],v={};I.value.split(/[\s,，、\n\r]+/).forEach(function(s){s=s.trim().replace(/-/g,'').replace(/ /g,'');if(/^\d{10,13}$/.test(s)&&!v[s]){v[s]=1;is.push(s)}});if(is.length){var b=id('pc');if(!b){b=document.createElement('div');b.className='pc-bar';b.id='pc';b.innerHTML='📋 识别到 <strong id="pcN"></strong> 个 ISBN <button onclick="cp()" style="padding:5px 12px;border-radius:6px;border:none;background:#a855f7;color:#fff;font-weight:600;cursor:pointer;font-size:.8rem">🔍 查价</button><button onclick="document.getElementById(\'pc\').remove()" style="padding:4px;border:none;background:transparent;color:#c4b5d0;cursor:pointer">✕</button>';I.closest('.card').appendChild(b)}id('pcN').textContent=is.length}},150)});
+var pt;I.addEventListener('paste',function(){clearTimeout(pt);pt=setTimeout(function(){var is=extractISBNs(I.value);if(is.length){var b=id('pc');if(!b){b=document.createElement('div');b.className='pc-bar';b.id='pc';b.innerHTML='📋 识别到 <strong id="pcN"></strong> 个 ISBN <button onclick="cp()" style="padding:5px 12px;border-radius:6px;border:none;background:#a855f7;color:#fff;font-weight:600;cursor:pointer;font-size:.8rem">🔍 查价</button><button onclick="document.getElementById(\'pc\').remove()" style="padding:4px;border:none;background:transparent;color:#c4b5d0;cursor:pointer">✕</button>';I.closest('.card').appendChild(b)}id('pcN').textContent=is.length}},150)});
 I.addEventListener('keydown',function(e){if((e.metaKey||e.ctrlKey)&&e.key==='Enter')Q.click()});
 function cp(){var b=id('pc');if(b)b.remove();Q.click()}
 
@@ -302,8 +329,7 @@ Q.onclick=function(){
   if(R)return;
   var t=I.value.trim();
   if(!t){ss('请输入 ISBN','error');return}
-  var is=[],v={};
-  t.split(/[\s,]+/).forEach(function(s){s=s.trim().replace(/-/g,'');if(/^\d{8,13}$/.test(s)&&!v[s]){v[s]=1;is.push(s)}});
+  var is=extractISBNs(t);
   if(!is.length){ss('无效 ISBN','error');return}
   R=1;Q.disabled=1;N.style.display='none';E.innerHTML='';
   var ql=id('qualitySelect').value,st=Date.now();
