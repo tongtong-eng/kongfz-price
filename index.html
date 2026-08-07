@@ -912,17 +912,22 @@ function copyTrack(i){
   }else{prompt('📋 复制物流信息：',txt)}
 }
 
-// 一键复制全部物流：汇总所有有单号的订单
+// 一键复制全部物流：汇总所有有单号的订单，只含 包裹总数/快递公司/单号/书号书名
 function copyAllTrack(){
   var has=_tkOrders.filter(function(o){return o.shipment_num});
   if(!has.length){toast('无物流可复制');return}
-  var lines=['这是您的所有物流哈，一共 '+has.length+' 个包裹',''];
+  var lines=['共 '+has.length+' 个包裹',''];
   has.forEach(function(o,i){
-    var st=trackStatus(o);
-    lines.push('包裹'+(i+1)+'：'+(o.shipping_company||'')+' '+o.shipment_num);
-    lines.push('物流状态：'+st.text);
+    lines.push('📦 包裹'+(i+1)+' | '+(o.shipping_company||'快递')+' | '+o.shipment_num);
     var items=o.items||[];
-    if(items.length)lines.push('书籍：'+items.map(function(it){return it.name||''}).join('、').substring(0,60));
+    if(items.length){
+      items.forEach(function(it){
+        var isbn=it.isbn||'';
+        lines.push((isbn?isbn+' ':'')+(it.name||'?'));
+      });
+    }else{
+      lines.push('(无书籍信息)');
+    }
     lines.push('');
   });
   var txt=lines.join('\n').replace(/\n\n$/, '\n');
