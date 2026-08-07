@@ -96,102 +96,102 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
 
 /* 手机专用 */
 @media(max-width:480px){
- body{padding:10px 8px 72px}
- .card{padding:10px;margin-bottom:8px}
- .result-box{padding:10px}
+  body{padding:10px 8px 72px}
+  .card{padding:10px;margin-bottom:8px}
+  .result-box{padding:10px}
 }
 </style>
 
 </head>
 <body>
 <div class="container">
- <!-- 顶部标题区 -->
- <div class="hero">
- <div class="hero-bow"></div>
- <div class="hero-title">孔夫子查价</div>
- <div class="hero-date" id="heroDate"></div>
- <div class="hero-stats">
- <div class="h-stat" onclick="scrollTo(0,0)"><div class="hs-n" id="statToday">0</div><div class="hs-l">今日查价</div></div>
- <div class="h-stat" onclick="showTrack()"><div class="hs-n"></div><div class="hs-l">快递追踪</div></div>
- <div class="h-stat" onclick="fold('hist')"><div class="hs-n" id="statHist">0</div><div class="hs-l">历史记录</div></div>
- <div class="h-stat" onclick="cleanupAddr()"><div class="hs-n"></div><div class="hs-l">清理地址</div></div>
- </div>
- </div>
+  <!-- 顶部标题区 -->
+  <div class="hero">
+    <div class="hero-bow">🎀</div>
+    <div class="hero-title">孔夫子查价</div>
+    <div class="hero-date" id="heroDate"></div>
+    <div class="hero-stats">
+      <div class="h-stat" onclick="scrollTo(0,0)"><div class="hs-n" id="statToday">0</div><div class="hs-l">今日查价</div></div>
+      <div class="h-stat" onclick="showTrack()"><div class="hs-n">📦</div><div class="hs-l">快递追踪</div></div>
+      <div class="h-stat" onclick="fold('hist')"><div class="hs-n" id="statHist">0</div><div class="hs-l">历史记录</div></div>
+      <div class="h-stat" onclick="cleanupAddr()"><div class="hs-n">🧹</div><div class="hs-l">清理地址</div></div>
+    </div>
+  </div>
 
- <!-- 查价主操作区 -->
- <div class="card">
- <div class="card-title"> ISBN（每行一个）</div>
- <textarea id="inputArea" placeholder="可直接粘贴书名/出版社/ISBN 混排文字，自动提取书号&#10;如：9787108009821&#10;9787020002207"></textarea>
- <div class="row">
- <label style="font-size:.8rem;color:#9d8bb0">品相:</label>
- <select id="qualitySelect">
- <option value="">不限</option><option value="100~100">全新</option>
- <option value="95~100">九五品+</option><option value="90~100">九品+</option>
- <option value="85~100">八五品+</option>
- </select>
- <button class="btn btn-primary" id="btnQuery"> 查最低价</button>
- <button class="btn btn-outline" id="btnClear">清空</button>
- <span id="status">就绪</span>
- </div>
- <div style="margin-top:10px;padding:10px 12px;background:#fff0f7;border:2px dashed #f9a8d4;border-radius:12px">
- <div style="font-size:.8rem;color:#f472b6;font-weight:600;margin-bottom:6px"> 收货地址（选填 · 自动按地址算运费）</div>
- <div style="display:flex;gap:6px">
- <input id="addrInput" type="text" placeholder="粘贴买家收货地址，如：刘齐倚 17340298250 重庆市奉节县诗仙西路137号" style="flex:1;min-width:0;padding:8px 10px;border:2px solid #ffe4f0;border-radius:10px;font-size:.8rem;outline:none;background:#fff" onkeydown="if(event.key==='Enter')parseAddr()">
- <button class="btn btn-outline" id="btnParseAddr" onclick="parseAddr()" style="white-space:nowrap"> 解析</button>
- </div>
- <div style="margin-top:6px">
- <button class="btn btn-primary" id="btnAddAddr" onclick="addAddrKFZ()" style="white-space:nowrap;display:none;width:100%;padding:9px 0"> 添加到孔夫子收货地址</button>
- </div>
- <div id="addrResult" style="font-size:.75rem;color:#d48aa9;margin-top:5px"></div>
- </div>
+  <!-- 查价主操作区 -->
+  <div class="card">
+    <div class="card-title">📖 ISBN（每行一个）</div>
+    <textarea id="inputArea" placeholder="可直接粘贴书名/出版社/ISBN 混排文字，自动提取书号&#10;如：9787108009821&#10;9787020002207"></textarea>
+    <div class="row">
+      <label style="font-size:.8rem;color:#9d8bb0">品相:</label>
+      <select id="qualitySelect">
+        <option value="">不限</option><option value="100~100">全新</option>
+        <option value="95~100">九五品+</option><option value="90~100">九品+</option>
+        <option value="85~100">八五品+</option>
+      </select>
+      <button class="btn btn-primary" id="btnQuery">🔍 查最低价</button>
+      <button class="btn btn-outline" id="btnClear">清空</button>
+      <span id="status">就绪</span>
+    </div>
+    <div style="margin-top:10px;padding:10px 12px;background:#fff0f7;border:2px dashed #f9a8d4;border-radius:12px">
+      <div style="font-size:.8rem;color:#f472b6;font-weight:600;margin-bottom:6px">📮 收货地址（选填 · 自动按地址算运费）</div>
+      <div style="display:flex;gap:6px">
+        <input id="addrInput" type="text" placeholder="粘贴买家收货地址，如：刘齐倚 17340298250 重庆市奉节县诗仙西路137号" style="flex:1;min-width:0;padding:8px 10px;border:2px solid #ffe4f0;border-radius:10px;font-size:.8rem;outline:none;background:#fff" onkeydown="if(event.key==='Enter')parseAddr()">
+        <button class="btn btn-outline" id="btnParseAddr" onclick="parseAddr()" style="white-space:nowrap">📍 解析</button>
+      </div>
+      <div style="margin-top:6px">
+        <button class="btn btn-primary" id="btnAddAddr" onclick="addAddrKFZ()" style="white-space:nowrap;display:none;width:100%;padding:9px 0">📦 添加到孔夫子收货地址</button>
+      </div>
+      <div id="addrResult" style="font-size:.75rem;color:#d48aa9;margin-top:5px"></div>
+    </div>
 
- <!-- Cookie 状态条 -->
- <div id="cookieBar" onclick="fold('cookie')">
- <span id="cookIcon"></span> <span id="cookText"></span> <span id="cookAct" style="font-size:.75rem;color:#9d8bb0;float:right">→</span>
- </div>
+  <!-- Cookie 状态条 -->
+  <div id="cookieBar" onclick="fold('cookie')">
+    <span id="cookIcon">🟢</span> <span id="cookText"></span> <span id="cookAct" style="font-size:.75rem;color:#9d8bb0;float:right">→</span>
+  </div>
 
- <div class="card" style="border:1px solid #fde68a">
- <div class="fold-header" onclick="fold('cookie')">
- <div class="card-title" style="margin-bottom:0"> Cookie 设置</div>
- <span><span id="cookDot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#c4b5d0;margin-right:4px"></span><span class="arrow" id="cookArrow">▶</span></span>
- </div>
- <div class="fold-body" id="fold_cookie">
- <div style="margin-top:6px;font-size:.8rem;color:#475569;line-height:1.6">
- <div id="cookSt" style="padding:6px 10px;border-radius:6px;background:#f8fafc;font-size:.78rem;border:1px solid #e2e8f0;margin-bottom:6px">检查中...</div>
- <details style="margin-bottom:6px;background:#eff6ff;border-radius:6px;padding:8px 10px;border:1px solid #bfdbfe;font-size:.75rem">
- <summary style="font-weight:600;color:#a855f7;cursor:pointer"> 手机取 Cookie</summary>
- <div style="margin-top:6px;line-height:1.7">
- 在手机浏览器打开 <strong>kongfz.com</strong> 并登录 → 地址栏输入 <code style="background:#e2e8f0;padding:1px 4px;border-radius:3px;word-break:break-all">javascript:prompt('',document.cookie)</code> → 复制弹窗内容
- </div>
- </details>
- <textarea id="cookInp" placeholder="粘贴 Cookie 字符串或 cURL 命令" style="width:100%;min-height:50px;font-family:monospace;font-size:.78rem"></textarea>
- <div class="row">
- <button class="btn btn-primary" onclick="saveCookie()" style="background:#f59e0b;font-size:.8rem"> 保存</button>
- <span id="cookMsg" style="font-size:.8rem"></span>
- </div>
- </div>
- </div>
- </div>
+  <div class="card" style="border:1px solid #fde68a">
+    <div class="fold-header" onclick="fold('cookie')">
+      <div class="card-title" style="margin-bottom:0">🍪 Cookie 设置</div>
+      <span><span id="cookDot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#c4b5d0;margin-right:4px"></span><span class="arrow" id="cookArrow">▶</span></span>
+    </div>
+    <div class="fold-body" id="fold_cookie">
+      <div style="margin-top:6px;font-size:.8rem;color:#475569;line-height:1.6">
+        <div id="cookSt" style="padding:6px 10px;border-radius:6px;background:#f8fafc;font-size:.78rem;border:1px solid #e2e8f0;margin-bottom:6px">检查中...</div>
+        <details style="margin-bottom:6px;background:#eff6ff;border-radius:6px;padding:8px 10px;border:1px solid #bfdbfe;font-size:.75rem">
+          <summary style="font-weight:600;color:#a855f7;cursor:pointer">📱 手机取 Cookie</summary>
+          <div style="margin-top:6px;line-height:1.7">
+            在手机浏览器打开 <strong>kongfz.com</strong> 并登录 → 地址栏输入 <code style="background:#e2e8f0;padding:1px 4px;border-radius:3px;word-break:break-all">javascript:prompt('',document.cookie)</code> → 复制弹窗内容
+          </div>
+        </details>
+        <textarea id="cookInp" placeholder="粘贴 Cookie 字符串或 cURL 命令" style="width:100%;min-height:50px;font-family:monospace;font-size:.78rem"></textarea>
+        <div class="row">
+          <button class="btn btn-primary" onclick="saveCookie()" style="background:#f59e0b;font-size:.8rem">💾 保存</button>
+          <span id="cookMsg" style="font-size:.8rem"></span>
+        </div>
+      </div>
+    </div>
+  </div>
 
- <div class="card">
- <div class="fold-header" onclick="fold('hist')">
- <div class="card-title" style="margin-bottom:0"> 历史记录</div>
- <span class="arrow" id="histArrow">▶</span>
- </div>
- <div class="fold-body" id="fold_hist"><div id="histList" style="margin-top:4px"><div style="text-align:center;color:#c4b5d0;font-size:.8rem;padding:10px">暂无</div></div></div>
- </div>
+  <div class="card">
+    <div class="fold-header" onclick="fold('hist')">
+      <div class="card-title" style="margin-bottom:0">📋 历史记录</div>
+      <span class="arrow" id="histArrow">▶</span>
+    </div>
+    <div class="fold-body" id="fold_hist"><div id="histList" style="margin-top:4px"><div style="text-align:center;color:#c4b5d0;font-size:.8rem;padding:10px">暂无</div></div></div>
+  </div>
 
- <div id="results"></div>
- <div id="empty" class="empty-state"> 输入 ISBN 后点查最低价</div>
+  <div id="results"></div>
+  <div id="empty" class="empty-state">📝 输入 ISBN 后点查最低价</div>
 </div>
 
 <div class="bottom-nav">
- <button onclick="scrollTo(0,0)"><svg viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg><span>顶部</span></button>
- <button onclick="showTrack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg><span> 快递</span></button>
- <button onclick="fold('cookie')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg><span>Cookie</span></button>
- <button onclick="fold('hist')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>历史</span></button>
- <button onclick="cleanupAddr()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg><span>清理地址</span></button>
- <button onclick="selfCheck()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg><span>自检</span></button>
+  <button onclick="scrollTo(0,0)"><svg viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg><span>顶部</span></button>
+  <button onclick="showTrack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg><span>📦 快递</span></button>
+  <button onclick="fold('cookie')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg><span>Cookie</span></button>
+  <button onclick="fold('hist')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>历史</span></button>
+  <button onclick="cleanupAddr()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg><span>清理地址</span></button>
+  <button onclick="selfCheck()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg><span>自检</span></button>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -204,377 +204,377 @@ function fj(u,o){return fetch(u,o||{}).then(function(r){return r.json()})}
 
 // 折叠
 function fold(n){
- var b=id('fold_'+n),a=id(n+'Arrow');
- if(!b)return;
- b.classList.toggle('open');
- if(a)a.classList.toggle('open');
- if(b.classList.contains('open')&&n==='hist')loadH();
- if(b.classList.contains('open')&&n==='cookie')ckC();
+  var b=id('fold_'+n),a=id(n+'Arrow');
+  if(!b)return;
+  b.classList.toggle('open');
+  if(a)a.classList.toggle('open');
+  if(b.classList.contains('open')&&n==='hist')loadH();
+  if(b.classList.contains('open')&&n==='cookie')ckC();
 }
 
 // 从混排文字提取 ISBN（ISBN-13 + ISBN-10，校验位验证，处理粘连）
 function chk13(s){
- if(!/^\d{13}$/.test(s))return false;
- var sum=0;
- for(var i=0;i<12;i++)sum+=(i%2?3:1)*(s.charCodeAt(i)-48);
- return (10-sum%10)%10===s.charCodeAt(12)-48;
+  if(!/^\d{13}$/.test(s))return false;
+  var sum=0;
+  for(var i=0;i<12;i++)sum+=(i%2?3:1)*(s.charCodeAt(i)-48);
+  return (10-sum%10)%10===s.charCodeAt(12)-48;
 }
 function chk10(s){
- if(!/^\d{9}[\dX]$/.test(s))return false;
- var sum=0;
- for(var i=0;i<9;i++)sum+=(s.charCodeAt(i)-48)*(10-i);
- sum+=(s[9]==='X'?10:(s.charCodeAt(9)-48));
- return sum%11===0;
+  if(!/^\d{9}[\dX]$/.test(s))return false;
+  var sum=0;
+  for(var i=0;i<9;i++)sum+=(s.charCodeAt(i)-48)*(10-i);
+  sum+=(s[9]==='X'?10:(s.charCodeAt(9)-48));
+  return sum%11===0;
 }
 function extractISBNs(t){
- var is=[],v={};
- function add(s){if(!v[s]){v[s]=1;is.push(s)}}
- var c=t.replace(/[-\s]/g,''); // 去连字符空格：978-7-111-67966-0 → 9787111679660
- var re13=/(?:978|979)\d{10}/g,mm;
- while((mm=re13.exec(c))!==null){ if(chk13(mm[0])) add(mm[0]); }
- // 移除已识别 ISBN-13 后，剩余文本找 ISBN-10
- var rest=c.replace(/(?:978|979)\d{10}/g,'');
- var re10=/(^|[^\d])(\d{9}[\dX])(?!\d)/g,m2;
- while((m2=re10.exec(rest))!==null){ if(chk10(m2[2])) add(m2[2]); }
- return is;
+  var is=[],v={};
+  function add(s){if(!v[s]){v[s]=1;is.push(s)}}
+  var c=t.replace(/[-\s]/g,''); // 去连字符空格：978-7-111-67966-0 → 9787111679660
+  var re13=/(?:978|979)\d{10}/g,mm;
+  while((mm=re13.exec(c))!==null){ if(chk13(mm[0])) add(mm[0]); }
+  // 移除已识别 ISBN-13 后，剩余文本找 ISBN-10
+  var rest=c.replace(/(?:978|979)\d{10}/g,'');
+  var re10=/(^|[^\d])(\d{9}[\dX])(?!\d)/g,m2;
+  while((m2=re10.exec(rest))!==null){ if(chk10(m2[2])) add(m2[2]); }
+  return is;
 }
 
 // 粘贴
-var pt;I.addEventListener('paste',function(){clearTimeout(pt);pt=setTimeout(function(){var is=extractISBNs(I.value);if(is.length){var b=id('pc');if(!b){b=document.createElement('div');b.className='pc-bar';b.id='pc';b.innerHTML=' 识别到 <strong id="pcN"></strong> 个 ISBN <button onclick="cp()" style="padding:5px 12px;border-radius:6px;border:none;background:#a855f7;color:#fff;font-weight:600;cursor:pointer;font-size:.8rem"> 查价</button><button onclick="document.getElementById(\'pc\').remove()" style="padding:4px;border:none;background:transparent;color:#c4b5d0;cursor:pointer"></button>';I.closest('.card').appendChild(b)}id('pcN').textContent=is.length}},150)});
+var pt;I.addEventListener('paste',function(){clearTimeout(pt);pt=setTimeout(function(){var is=extractISBNs(I.value);if(is.length){var b=id('pc');if(!b){b=document.createElement('div');b.className='pc-bar';b.id='pc';b.innerHTML='📋 识别到 <strong id="pcN"></strong> 个 ISBN <button onclick="cp()" style="padding:5px 12px;border-radius:6px;border:none;background:#a855f7;color:#fff;font-weight:600;cursor:pointer;font-size:.8rem">🔍 查价</button><button onclick="document.getElementById(\'pc\').remove()" style="padding:4px;border:none;background:transparent;color:#c4b5d0;cursor:pointer">✕</button>';I.closest('.card').appendChild(b)}id('pcN').textContent=is.length}},150)});
 I.addEventListener('keydown',function(e){if((e.metaKey||e.ctrlKey)&&e.key==='Enter')Q.click()});
 function cp(){var b=id('pc');if(b)b.remove();Q.click()}
 
 // === 收货地址解析 ===
-var _addrProvince=''; // 全局：解析出的省份
-var _addrInfo=null; // 全局：官方解析出的完整地址信息
+var _addrProvince='';  // 全局：解析出的省份
+var _addrInfo=null;    // 全局：官方解析出的完整地址信息
 function parseAddr(){
- var val=(id('addrInput').value||'').trim();
- var res=id('addrResult');
- var btnAdd=id('btnAddAddr');
- if(!val){res.textContent='请先输入地址';res.style.color='#ef4444';return}
- res.textContent=' 解析中...';res.style.color='#d48aa9';
- // 先本地简单解析省份（用于算运费）
- fetch('/api/parse_address?address='+encodeURIComponent(val))
- .then(function(r){return r.json()})
- .then(function(d){
- if(d.province){
- _addrProvince=d.province;
- res.innerHTML=' 已识别省份：<strong>'+d.province+'</strong> · 查价将按该省计算真实运费';
- res.style.color='#10b981';
- }else{
- _addrProvince='';
- res.textContent=' 未能识别省份，将使用默认运费';
- res.style.color='#f59e0b';
- }
- // 再调官方解析，拿完整信息用于添加地址
- fetch('/api/address/parse?address='+encodeURIComponent(val))
- .then(function(r2){return r2.json()})
- .then(function(d2){
- if(d2.success){
- _addrInfo=d2;
- if(btnAdd)btnAdd.style.display='inline-block';
- }else{
- _addrInfo=null;
- if(btnAdd)btnAdd.style.display='none';
- }
- })
- .catch(function(){_addrInfo=null;if(btnAdd)btnAdd.style.display='none'});
- })
- .catch(function(){res.textContent=' 解析失败';res.style.color='#ef4444'});
+  var val=(id('addrInput').value||'').trim();
+  var res=id('addrResult');
+  var btnAdd=id('btnAddAddr');
+  if(!val){res.textContent='请先输入地址';res.style.color='#ef4444';return}
+  res.textContent='⏳ 解析中...';res.style.color='#d48aa9';
+  // 先本地简单解析省份（用于算运费）
+  fetch('/api/parse_address?address='+encodeURIComponent(val))
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if(d.province){
+        _addrProvince=d.province;
+        res.innerHTML='✅ 已识别省份：<strong>'+d.province+'</strong> · 查价将按该省计算真实运费';
+        res.style.color='#10b981';
+      }else{
+        _addrProvince='';
+        res.textContent='⚠️ 未能识别省份，将使用默认运费';
+        res.style.color='#f59e0b';
+      }
+      // 再调官方解析，拿完整信息用于添加地址
+      fetch('/api/address/parse?address='+encodeURIComponent(val))
+        .then(function(r2){return r2.json()})
+        .then(function(d2){
+          if(d2.success){
+            _addrInfo=d2;
+            if(btnAdd)btnAdd.style.display='inline-block';
+          }else{
+            _addrInfo=null;
+            if(btnAdd)btnAdd.style.display='none';
+          }
+        })
+        .catch(function(){_addrInfo=null;if(btnAdd)btnAdd.style.display='none'});
+    })
+    .catch(function(){res.textContent='❌ 解析失败';res.style.color='#ef4444'});
 }
 
 // 添加到孔夫子收货地址
 function addAddrKFZ(){
- var btn=id('btnAddAddr');
- var res=id('addrResult');
- if(!_addrInfo){res.textContent=' 请先解析地址';res.style.color='#f59e0b';return}
- // 拼 area：重庆/直辖市用 cityId，普通省用 areaId||cityId||provId
- var area=_addrInfo.areaId||_addrInfo.cityId||_addrInfo.provId;
- if(!area){res.textContent=' 未解析到地区编码';res.style.color='#ef4444';return}
- var body={
- receiverName:_addrInfo.name||'',
- phoneNum:_addrInfo.mobile||'',
- mobile:'',
- area:String(area),
- address:_addrInfo.address||'',
- zipCode:_addrInfo.zipCode||'',
- isDefault:0
- };
- btn.disabled=1;btn.textContent=' 添加中...';
- fj('/api/address/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
- .then(function(d){
- if(d.success){
- btn.textContent=' 已添加';
- btn.style.background='#10b981';
- res.innerHTML=' 已添加到孔夫子收货地址：<strong>'+(body.receiverName||'')+'</strong>';
- res.style.color='#10b981';
- setTimeout(function(){btn.disabled=0;btn.textContent=' 添加到孔夫子';btn.style.background=''},2000);
- }else{
- btn.textContent=' 添加失败';
- res.textContent=' '+(d.error||'添加失败');
- res.style.color='#ef4444';
- setTimeout(function(){btn.disabled=0;btn.textContent=' 添加到孔夫子'},2000);
- }
- })
- .catch(function(){
- btn.textContent=' 网络错误';
- res.textContent=' 网络错误';
- res.style.color='#ef4444';
- setTimeout(function(){btn.disabled=0;btn.textContent=' 添加到孔夫子'},2000);
- });
+  var btn=id('btnAddAddr');
+  var res=id('addrResult');
+  if(!_addrInfo){res.textContent='⚠️ 请先解析地址';res.style.color='#f59e0b';return}
+  // 拼 area：重庆/直辖市用 cityId，普通省用 areaId||cityId||provId
+  var area=_addrInfo.areaId||_addrInfo.cityId||_addrInfo.provId;
+  if(!area){res.textContent='❌ 未解析到地区编码';res.style.color='#ef4444';return}
+  var body={
+    receiverName:_addrInfo.name||'',
+    phoneNum:_addrInfo.mobile||'',
+    mobile:'',
+    area:String(area),
+    address:_addrInfo.address||'',
+    zipCode:_addrInfo.zipCode||'',
+    isDefault:0
+  };
+  btn.disabled=1;btn.textContent='⏳ 添加中...';
+  fj('/api/address/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(function(d){
+      if(d.success){
+        btn.textContent='✅ 已添加';
+        btn.style.background='#10b981';
+        res.innerHTML='✅ 已添加到孔夫子收货地址：<strong>'+(body.receiverName||'')+'</strong>';
+        res.style.color='#10b981';
+        setTimeout(function(){btn.disabled=0;btn.textContent='📦 添加到孔夫子';btn.style.background=''},2000);
+      }else{
+        btn.textContent='❌ 添加失败';
+        res.textContent='❌ '+(d.error||'添加失败');
+        res.style.color='#ef4444';
+        setTimeout(function(){btn.disabled=0;btn.textContent='📦 添加到孔夫子'},2000);
+      }
+    })
+    .catch(function(){
+      btn.textContent='❌ 网络错误';
+      res.textContent='❌ 网络错误';
+      res.style.color='#ef4444';
+      setTimeout(function(){btn.disabled=0;btn.textContent='📦 添加到孔夫子'},2000);
+    });
 }
 
 // 查价（批量 API — 一次请求查所有 ISBN，服务器端并行处理）
 Q.onclick=function(){
- if(R)return;
- var t=I.value.trim();
- if(!t){ss('请输入 ISBN','error');return}
- var is=extractISBNs(t);
- if(!is.length){ss('无效 ISBN','error');return}
- R=1;Q.disabled=1;N.style.display='none';E.innerHTML='';
- var ql=id('qualitySelect').value,st=Date.now();
- ss(' 批量查询 '+is.length+' 本...','loading');
- E.innerHTML='<div class="summary"><div class="s-card blue"><div class="n">'+is.length+'</div><div class="l">查询中</div></div><div class="s-card green"><div class="n"><span id="batchSec">0</span>s</div><div class="l">已用时</div></div></div>';
- var tm=setInterval(function(){var el=id('batchSec');if(el)el.textContent=((Date.now()-st)/1000).toFixed(1)},500);
+  if(R)return;
+  var t=I.value.trim();
+  if(!t){ss('请输入 ISBN','error');return}
+  var is=extractISBNs(t);
+  if(!is.length){ss('无效 ISBN','error');return}
+  R=1;Q.disabled=1;N.style.display='none';E.innerHTML='';
+  var ql=id('qualitySelect').value,st=Date.now();
+  ss('⏳ 批量查询 '+is.length+' 本...','loading');
+  E.innerHTML='<div class="summary"><div class="s-card blue"><div class="n">'+is.length+'</div><div class="l">查询中</div></div><div class="s-card green"><div class="n"><span id="batchSec">0</span>s</div><div class="l">已用时</div></div></div>';
+  var tm=setInterval(function(){var el=id('batchSec');if(el)el.textContent=((Date.now()-st)/1000).toFixed(1)},500);
 
- // 有收货地址 → 按地址算真实运费
- if(_addrProvince){
- var u2='/api/batch_query_address?isbns='+is.map(function(s){return encodeURIComponent(s)}).join(',')+'&province='+encodeURIComponent(_addrProvince);
- if(ql)u2+='&quality='+encodeURIComponent(ql);
- fj(u2).then(function(d){
- clearInterval(tm);
- if(d.error){ss(' '+d.error,'error');R=0;Q.disabled=0;return}
- L=d.results||[];
- var bid='b_'+Date.now();L.forEach(function(r){r._batchId=bid});
- var ok=L.filter(function(r){return !r.error}),ng=L.filter(function(r){return r.error});
- sh(L);
- addToday();
- R=0;Q.disabled=0;
- ss(' 完成！查到 '+ok.length+'/'+L.length+' 本 · 按'+_addrProvince+'运费 · 用时 '+((Date.now()-st)/1000).toFixed(1)+'s','done')
- }).catch(function(e){
- clearInterval(tm);
- ss(' 网络错误','error');R=0;Q.disabled=0
- });
- return;
- }
+  // 有收货地址 → 按地址算真实运费
+  if(_addrProvince){
+    var u2='/api/batch_query_address?isbns='+is.map(function(s){return encodeURIComponent(s)}).join(',')+'&province='+encodeURIComponent(_addrProvince);
+    if(ql)u2+='&quality='+encodeURIComponent(ql);
+    fj(u2).then(function(d){
+      clearInterval(tm);
+      if(d.error){ss('❌ '+d.error,'error');R=0;Q.disabled=0;return}
+      L=d.results||[];
+      var bid='b_'+Date.now();L.forEach(function(r){r._batchId=bid});
+      var ok=L.filter(function(r){return !r.error}),ng=L.filter(function(r){return r.error});
+      sh(L);
+      addToday();
+      R=0;Q.disabled=0;
+      ss('✅ 完成！查到 '+ok.length+'/'+L.length+' 本 · 按'+_addrProvince+'运费 · 用时 '+((Date.now()-st)/1000).toFixed(1)+'s','done')
+    }).catch(function(e){
+      clearInterval(tm);
+      ss('❌ 网络错误','error');R=0;Q.disabled=0
+    });
+    return;
+  }
 
- var u='/api/batch_query_stream?isbns='+is.map(function(s){return encodeURIComponent(s)}).join(',');
- if(ql)u+='&quality='+encodeURIComponent(ql);
- try{
- var es=new EventSource(u);
- es.addEventListener('progress',function(e){
- var p=JSON.parse(e.data);
- if(!p||!p.current)return;
- ss(' 查询 '+p.current+'/'+p.total+' 本...','loading');
- });
- es.addEventListener('complete',function(e){
- es.close();
- clearInterval(tm);
- var d=JSON.parse(e.data);
- L=d.results||[];
- if(d.batchId)L.forEach(function(r){r._batchId=d.batchId});
- var ok=L.filter(function(r){return !r.error}),ng=L.filter(function(r){return r.error});
- sh(L);
- addToday();
- R=0;Q.disabled=0;
- ss(' 完成！查到 '+ok.length+'/'+L.length+' 本 · 用时 '+((Date.now()-st)/1000).toFixed(1)+'s','done')
- });
- es.onerror=function(){
- es.close();
- clearInterval(tm);
- ss(' 查询异常','error');R=0;Q.disabled=0
- };
- }catch(err){
- clearInterval(tm);
- ss(' 浏览器不支持 SSE','error');R=0;Q.disabled=0
- }
+  var u='/api/batch_query_stream?isbns='+is.map(function(s){return encodeURIComponent(s)}).join(',');
+  if(ql)u+='&quality='+encodeURIComponent(ql);
+  try{
+    var es=new EventSource(u);
+    es.addEventListener('progress',function(e){
+      var p=JSON.parse(e.data);
+      if(!p||!p.current)return;
+      ss('⏳ 查询 '+p.current+'/'+p.total+' 本...','loading');
+    });
+    es.addEventListener('complete',function(e){
+      es.close();
+      clearInterval(tm);
+      var d=JSON.parse(e.data);
+      L=d.results||[];
+      if(d.batchId)L.forEach(function(r){r._batchId=d.batchId});
+      var ok=L.filter(function(r){return !r.error}),ng=L.filter(function(r){return r.error});
+      sh(L);
+      addToday();
+      R=0;Q.disabled=0;
+      ss('✅ 完成！查到 '+ok.length+'/'+L.length+' 本 · 用时 '+((Date.now()-st)/1000).toFixed(1)+'s','done')
+    });
+    es.onerror=function(){
+      es.close();
+      clearInterval(tm);
+      ss('❌ 查询异常','error');R=0;Q.disabled=0
+    };
+  }catch(err){
+    clearInterval(tm);
+    ss('❌ 浏览器不支持 SSE','error');R=0;Q.disabled=0
+  }
 };
 
 function sh(data){
- var ok=data.filter(function(r){return !r.error}),pd=ok.filter(function(r){return r.cheapest}),fl=data.filter(function(r){return r.error}),html='';
- var hc=0,so=0;data.forEach(function(r){hc+=r.holiday_shop_count||0;so+=r.sold_out_skipped||0});
- if(fl.length){
- html+='<div class="card" style="border:2px solid #ef4444;background:#fef2f2;margin-bottom:10px"><div class="card-title" style="color:#fb7185"> 异常 '+fl.length+' 个</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">';
- fl.forEach(function(f){html+='<span class="fail-chip" onclick="rq(\''+f.isbn+'\')"> '+f.isbn+' <span style="color:#fca5a5">('+esc(f.error||'')+')</span></span>'});
- html+='</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-primary" onclick="rqA()" style="background:#fb7185;font-size:.8rem"> 重查全部</button><button onclick="cpyFail()" style="padding:5px 10px;border-radius:6px;border:1px solid #c4b5d0;background:transparent;color:#9d8bb0;cursor:pointer;font-size:.78rem"> 复制异常书号</button></div></div>';
- }
- html+='<div class="summary"><div class="s-card blue"><div class="n">'+data.length+'</div><div class="l">查询</div></div><div class="s-card green"><div class="n">'+ok.length+'</div><div class="l">查到</div></div><div class="s-card amber"><div class="n">'+(data.length-ok.length)+'</div><div class="l">异常</div></div>';
- if(pd.length){var tot=0;pd.forEach(function(r){tot+=r.cheapest.total});html+='<div class="s-card green"><div class="n">¥'+tot.toFixed(1)+'</div><div class="l">最低总价</div></div><div class="s-card" style="background:#f0fdf4"><div class="n" style="color:#10b981;font-size:1.1rem">¥'+(Math.round(tot*1.27*100)/100).toFixed(1)+'</div><div class="l">建议售价</div></div>'+(hc>0?'<div style="grid-column:1/-1;font-size:.7rem;color:#c4b5d0;text-align:center;margin-top:-2px"> 已自动排除 '+hc+' 个休假/异常店铺的商品</div>':'')+(so>0?'<div style="grid-column:1/-1;font-size:.7rem;color:#c4b5d0;text-align:center;margin-top:-2px">已自动排除 '+so+' 个已售罄商品</div>':'')+'<div style="grid-column:1/-1;text-align:center;margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center"><button onclick="ba()" style="padding:8px 24px;border-radius:8px;border:none;background:#fb7185;color:#fff;cursor:pointer;font-weight:600;font-size:1rem;box-shadow:0 2px 8px rgba(220,38,38,.3)"> 一键加购全部 '+pd.length+' 本</button><button onclick="clearAllCart()" style="padding:8px 24px;border-radius:8px;border:none;background:#9d8bb0;color:#fff;cursor:pointer;font-weight:500;font-size:1rem"> 清空购物车</button><button onclick="copyToBuyer()" style="padding:8px 24px;border-radius:8px;border:none;background:#a855f7;color:#fff;cursor:pointer;font-weight:600;font-size:1rem;box-shadow:0 2px 8px rgba(37,99,235,.3)"> 复制给买家</button></div>'}
- html+='</div>';
- data.forEach(function(r){
- if(r.error){html+='<div class="card" style="border-left:3px solid #ef4444"><div style="font-family:monospace;font-size:.75rem;color:#c4b5d0">'+esc(r.isbn)+'</div><div style="color:#ef4444;font-size:.8rem;margin-top:2px">'+esc(r.error)+'</div></div>'}
- else if(r.cheapest){
- html+='<div class="result-box"><div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:4px"><div class="book-title">'+esc(r.title)+'</div><span style="font-size:.7rem;color:#c4b5d0">'+esc(r.isbn)+'</span></div>';
- if(r.author||r.press)html+='<div class="meta">'+esc(r.author)+(r.author&&r.press?' · ':'')+esc(r.press)+'</div>';
- // 价格参考行：最低总价(含运费)、均价、最高价
- var pr=r.price_range||{},prmin=pr.min||0,pravg=pr.avg||0,prmax=pr.max||0;
- var cheapTotal=r.cheapest?r.cheapest.total:prmin;
- html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin:3px 0 6px;padding:4px 8px;background:#f8fafc;border-radius:6px;font-size:.72rem;text-align:center"><div><div style="font-size:.6rem;color:#c4b5d0">最低总价(含运费)</div><strong style="color:#fb7185;font-size:.85rem">¥'+cheapTotal.toFixed(1)+'</strong></div><div><div style="font-size:.6rem;color:#c4b5d0">均价</div><strong style="font-size:.85rem">¥'+pravg.toFixed(1)+'</strong></div><div><div style="font-size:.6rem;color:#c4b5d0">最高</div><strong style="color:#c4b5d0;font-size:.85rem">¥'+prmax.toFixed(1)+'</strong></div></div><div style="font-size:.65rem;color:#c4b5d0;margin:-3px 0 2px;text-align:center">在售 '+r.total_count+' 本 · 书价最低¥'+prmin.toFixed(1)+'</div>';
- if(r.cheapest.itemId&&r.cheapest.shopId){var c=r.cheapest;html+='<div style="margin:4px 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button onclick="ac('+c.itemId+','+c.shopId+',this)" style="padding:5px 14px;border-radius:6px;border:none;background:#059669;color:#fff;cursor:pointer;font-size:.82rem;font-weight:500"> 最低价 ¥'+c.total.toFixed(1)+'</button><span style="font-size:.7rem;color:#9d8bb0">'+esc(c.shop)+' · '+esc(c.quality_text)+'</span></div>'}
- // 记账按钮
- var aun=r.author||''; var p=r.cheapest?r.cheapest.price:0; var sp=r.cheapest?r.cheapest.shipping:0;
- var items=r.top_cheapest||[r.cheapest];
- html+='<table><thead><tr><th>#</th><th>店铺</th><th>品相</th><th style="text-align:right">书价</th><th style="text-align:right">运费</th><th style="text-align:right;color:#fb7185">总价</th><th></th></tr></thead><tbody>';
- items.forEach(function(it,j){
- html+='<tr><td>'+(j+1)+'</td><td>'+esc(it.shop)+(it.area?'<div class="meta">'+esc(it.area)+'</div>':'')+'</td><td>'+esc(it.quality_text||'—')+'</td><td style="text-align:right">¥'+it.price.toFixed(2)+'</td><td style="text-align:right">¥'+it.shipping.toFixed(1)+'</td><td style="text-align:right'+(j===0?';font-weight:700;color:#fb7185':'')+'">¥'+it.total.toFixed(1)+'</td><td style="text-align:center">'+(it.itemId&&it.shopId?'<button onclick="ac('+it.itemId+','+it.shopId+',this)" style="padding:2px 6px;border-radius:4px;border:1px solid #a855f7;background:transparent;color:#a855f7;cursor:pointer;font-size:.72rem"></button>':'')+'</td></tr>'
- });
- html+='</tbody></table><div style="font-size:.65rem;color:#c4b5d0;margin-top:3px">扫描'+(r.pages_scanned||1)+'页 · 在售'+r.total_count+'本'+(r.holiday_shop_count?' · 排除'+r.holiday_shop_count+'个休假/异常店铺':'')+(r.sold_out_skipped?' · 已售罄'+r.sold_out_skipped+'本':'')+'</div></div>'
- }
- });
- E.innerHTML=html;L=data;
- var sb='sb_'+Date.now();E.insertAdjacentHTML('afterbegin','<div class="save-bar" id="'+sb+'"><span></span><input id="si" placeholder="命名（可选）"><button class="btn-save" onclick="sH(\''+sb+'\')">保存查询</button><button class="btn-save" onclick="cpyQuote(0)" style="background:#059669;margin-left:4px"> 我的成本</button><button class="btn-save" onclick="cpyQuote(1)" style="background:#a855f7;margin-left:2px"> 发给买家</button></div>');
+  var ok=data.filter(function(r){return !r.error}),pd=ok.filter(function(r){return r.cheapest}),fl=data.filter(function(r){return r.error}),html='';
+  var hc=0,so=0;data.forEach(function(r){hc+=r.holiday_shop_count||0;so+=r.sold_out_skipped||0});
+  if(fl.length){
+    html+='<div class="card" style="border:2px solid #ef4444;background:#fef2f2;margin-bottom:10px"><div class="card-title" style="color:#fb7185">⚠️ 异常 '+fl.length+' 个</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">';
+    fl.forEach(function(f){html+='<span class="fail-chip" onclick="rq(\''+f.isbn+'\')">🔍 '+f.isbn+' <span style="color:#fca5a5">('+esc(f.error||'')+')</span></span>'});
+    html+='</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-primary" onclick="rqA()" style="background:#fb7185;font-size:.8rem">🔍 重查全部</button><button onclick="cpyFail()" style="padding:5px 10px;border-radius:6px;border:1px solid #c4b5d0;background:transparent;color:#9d8bb0;cursor:pointer;font-size:.78rem">📋 复制异常书号</button></div></div>';
+  }
+  html+='<div class="summary"><div class="s-card blue"><div class="n">'+data.length+'</div><div class="l">查询</div></div><div class="s-card green"><div class="n">'+ok.length+'</div><div class="l">查到</div></div><div class="s-card amber"><div class="n">'+(data.length-ok.length)+'</div><div class="l">异常</div></div>';
+  if(pd.length){var tot=0;pd.forEach(function(r){tot+=r.cheapest.total});html+='<div class="s-card green"><div class="n">¥'+tot.toFixed(1)+'</div><div class="l">最低总价</div></div><div class="s-card" style="background:#f0fdf4"><div class="n" style="color:#10b981;font-size:1.1rem">¥'+(Math.round(tot*1.27*100)/100).toFixed(1)+'</div><div class="l">建议售价</div></div>'+(hc>0?'<div style="grid-column:1/-1;font-size:.7rem;color:#c4b5d0;text-align:center;margin-top:-2px">🛌 已自动排除 '+hc+' 个休假/异常店铺的商品</div>':'')+(so>0?'<div style="grid-column:1/-1;font-size:.7rem;color:#c4b5d0;text-align:center;margin-top:-2px">已自动排除 '+so+' 个已售罄商品</div>':'')+'<div style="grid-column:1/-1;text-align:center;margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center"><button onclick="ba()" style="padding:8px 24px;border-radius:8px;border:none;background:#fb7185;color:#fff;cursor:pointer;font-weight:600;font-size:1rem;box-shadow:0 2px 8px rgba(220,38,38,.3)">🛒 一键加购全部 '+pd.length+' 本</button><button onclick="clearAllCart()" style="padding:8px 24px;border-radius:8px;border:none;background:#9d8bb0;color:#fff;cursor:pointer;font-weight:500;font-size:1rem">🗑️ 清空购物车</button><button onclick="copyToBuyer()" style="padding:8px 24px;border-radius:8px;border:none;background:#a855f7;color:#fff;cursor:pointer;font-weight:600;font-size:1rem;box-shadow:0 2px 8px rgba(37,99,235,.3)">📤 复制给买家</button></div>'}
+  html+='</div>';
+  data.forEach(function(r){
+    if(r.error){html+='<div class="card" style="border-left:3px solid #ef4444"><div style="font-family:monospace;font-size:.75rem;color:#c4b5d0">'+esc(r.isbn)+'</div><div style="color:#ef4444;font-size:.8rem;margin-top:2px">'+esc(r.error)+'</div></div>'}
+    else if(r.cheapest){
+      html+='<div class="result-box"><div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:4px"><div class="book-title">'+esc(r.title)+'</div><span style="font-size:.7rem;color:#c4b5d0">'+esc(r.isbn)+'</span></div>';
+      if(r.author||r.press)html+='<div class="meta">'+esc(r.author)+(r.author&&r.press?' · ':'')+esc(r.press)+'</div>';
+      // 价格参考行：最低总价(含运费)、均价、最高价
+      var pr=r.price_range||{},prmin=pr.min||0,pravg=pr.avg||0,prmax=pr.max||0;
+      var cheapTotal=r.cheapest?r.cheapest.total:prmin;
+      html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin:3px 0 6px;padding:4px 8px;background:#f8fafc;border-radius:6px;font-size:.72rem;text-align:center"><div><div style="font-size:.6rem;color:#c4b5d0">最低总价(含运费)</div><strong style="color:#fb7185;font-size:.85rem">¥'+cheapTotal.toFixed(1)+'</strong></div><div><div style="font-size:.6rem;color:#c4b5d0">均价</div><strong style="font-size:.85rem">¥'+pravg.toFixed(1)+'</strong></div><div><div style="font-size:.6rem;color:#c4b5d0">最高</div><strong style="color:#c4b5d0;font-size:.85rem">¥'+prmax.toFixed(1)+'</strong></div></div><div style="font-size:.65rem;color:#c4b5d0;margin:-3px 0 2px;text-align:center">在售 '+r.total_count+' 本 · 书价最低¥'+prmin.toFixed(1)+'</div>';
+      if(r.cheapest.itemId&&r.cheapest.shopId){var c=r.cheapest;html+='<div style="margin:4px 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button onclick="ac('+c.itemId+','+c.shopId+',this)" style="padding:5px 14px;border-radius:6px;border:none;background:#059669;color:#fff;cursor:pointer;font-size:.82rem;font-weight:500">🛒 最低价 ¥'+c.total.toFixed(1)+'</button><span style="font-size:.7rem;color:#9d8bb0">'+esc(c.shop)+' · '+esc(c.quality_text)+'</span></div>'}
+      // 记账按钮
+      var aun=r.author||''; var p=r.cheapest?r.cheapest.price:0; var sp=r.cheapest?r.cheapest.shipping:0;
+      var items=r.top_cheapest||[r.cheapest];
+      html+='<table><thead><tr><th>#</th><th>店铺</th><th>品相</th><th style="text-align:right">书价</th><th style="text-align:right">运费</th><th style="text-align:right;color:#fb7185">总价</th><th></th></tr></thead><tbody>';
+      items.forEach(function(it,j){
+        html+='<tr><td>'+(j+1)+'</td><td>'+esc(it.shop)+(it.area?'<div class="meta">'+esc(it.area)+'</div>':'')+'</td><td>'+esc(it.quality_text||'—')+'</td><td style="text-align:right">¥'+it.price.toFixed(2)+'</td><td style="text-align:right">¥'+it.shipping.toFixed(1)+'</td><td style="text-align:right'+(j===0?';font-weight:700;color:#fb7185':'')+'">¥'+it.total.toFixed(1)+'</td><td style="text-align:center">'+(it.itemId&&it.shopId?'<button onclick="ac('+it.itemId+','+it.shopId+',this)" style="padding:2px 6px;border-radius:4px;border:1px solid #a855f7;background:transparent;color:#a855f7;cursor:pointer;font-size:.72rem">🛒</button>':'')+'</td></tr>'
+      });
+      html+='</tbody></table><div style="font-size:.65rem;color:#c4b5d0;margin-top:3px">扫描'+(r.pages_scanned||1)+'页 · 在售'+r.total_count+'本'+(r.holiday_shop_count?' · 🛌 排除'+r.holiday_shop_count+'个休假/异常店铺':'')+(r.sold_out_skipped?' · 已售罄'+r.sold_out_skipped+'本':'')+'</div></div>'
+    }
+  });
+  E.innerHTML=html;L=data;
+  var sb='sb_'+Date.now();E.insertAdjacentHTML('afterbegin','<div class="save-bar" id="'+sb+'"><span>💾</span><input id="si" placeholder="命名（可选）"><button class="btn-save" onclick="sH(\''+sb+'\')">保存查询</button><button class="btn-save" onclick="cpyQuote(0)" style="background:#059669;margin-left:4px">📋 我的成本</button><button class="btn-save" onclick="cpyQuote(1)" style="background:#a855f7;margin-left:2px">📤 发给买家</button></div>');
 }
 
 // 加购
 function ac(iid,sid,btn){
- var o=btn.textContent;btn.textContent='';btn.disabled=1;btn.style.opacity='.6';
- fj('/api/addtocart?itemId='+iid+'&shopId='+sid).then(function(d){
- if(d.success){btn.textContent='';btn.style.borderColor='#10b981';btn.style.color='#10b981';toast('已加购')}
- else{btn.textContent='';setTimeout(function(){btn.textContent=o;btn.disabled=0;btn.style.opacity='1'},2000)}
- }).catch(function(){btn.textContent='';setTimeout(function(){btn.textContent=o;btn.disabled=0;btn.style.opacity='1'},2000)})
+  var o=btn.textContent;btn.textContent='⏳';btn.disabled=1;btn.style.opacity='.6';
+  fj('/api/addtocart?itemId='+iid+'&shopId='+sid).then(function(d){
+    if(d.success){btn.textContent='✅';btn.style.borderColor='#10b981';btn.style.color='#10b981';toast('已加购')}
+    else{btn.textContent='❌';setTimeout(function(){btn.textContent=o;btn.disabled=0;btn.style.opacity='1'},2000)}
+  }).catch(function(){btn.textContent='❌';setTimeout(function(){btn.textContent=o;btn.disabled=0;btn.style.opacity='1'},2000)})
 }
 function ba(){
- var is=L.filter(function(r){return r.cheapest&&r.cheapest.itemId&&r.cheapest.shopId});if(!is.length){toast('无商品');return}
- var btn=document.querySelector('[onclick="ba()"]');btn.disabled=1;btn.textContent=' 0/'+is.length;var ok=0,ng=0;
- function nx(i){if(i>=is.length){btn.textContent=' '+ok+'/'+is.length+(ng?' ('+ng+'失败)':'');btn.style.background=ok>0?'#059669':'#fb7185';toast('已完成 '+ok+'/'+is.length);return}btn.textContent=' '+(i+1)+'/'+is.length;fj('/api/addtocart?itemId='+is[i].cheapest.itemId+'&shopId='+is[i].cheapest.shopId).then(function(d){if(d.success)ok++;else ng++;setTimeout(function(){nx(i+1)},1200)}).catch(function(){ng++;setTimeout(function(){nx(i+1)},1200)})}nx(0)
+  var is=L.filter(function(r){return r.cheapest&&r.cheapest.itemId&&r.cheapest.shopId});if(!is.length){toast('无商品');return}
+  var btn=document.querySelector('[onclick="ba()"]');btn.disabled=1;btn.textContent='⏳ 0/'+is.length;var ok=0,ng=0;
+  function nx(i){if(i>=is.length){btn.textContent='✅ '+ok+'/'+is.length+(ng?' ('+ng+'失败)':'');btn.style.background=ok>0?'#059669':'#fb7185';toast('已完成 '+ok+'/'+is.length);return}btn.textContent='⏳ '+(i+1)+'/'+is.length;fj('/api/addtocart?itemId='+is[i].cheapest.itemId+'&shopId='+is[i].cheapest.shopId).then(function(d){if(d.success)ok++;else ng++;setTimeout(function(){nx(i+1)},1200)}).catch(function(){ng++;setTimeout(function(){nx(i+1)},1200)})}nx(0)
 }
 
 // 一键清空所有购物车
 function clearAllCart(){
- if(!confirm('确定清空孔夫子购物车中的所有商品吗？'))return;
- var btn=event&&event.target;if(btn){btn.disabled=1;btn.textContent=' 获取购物车...'}
- fj('/api/clearcart').then(function(d){
- if(d.error){toast(' '+d.error);if(btn){btn.disabled=0;btn.textContent=' 清空购物车'};return}
- if(d.total===0){toast(' 购物车已空');if(btn){btn.disabled=0;btn.textContent=' 清空购物车'};return}
- if(d.deleted===d.total){
- toast(' 已清空 '+d.total+' 件');
- }else{
- toast(' 清空 '+d.deleted+'/'+d.total+' 件'+(d.failed&&d.failed.length?'，失败 '+d.failed.length+' 件':''));
- }
- if(btn){btn.disabled=0;btn.textContent=' 清空购物车'}
- }).catch(function(){
- toast(' 请求失败');
- if(btn){btn.disabled=0;btn.textContent=' 清空购物车'}
- })
+  if(!confirm('确定清空孔夫子购物车中的所有商品吗？'))return;
+  var btn=event&&event.target;if(btn){btn.disabled=1;btn.textContent='⏳ 获取购物车...'}
+  fj('/api/clearcart').then(function(d){
+    if(d.error){toast('❌ '+d.error);if(btn){btn.disabled=0;btn.textContent='🗑️ 清空购物车'};return}
+    if(d.total===0){toast('✅ 购物车已空');if(btn){btn.disabled=0;btn.textContent='🗑️ 清空购物车'};return}
+    if(d.deleted===d.total){
+      toast('✅ 已清空 '+d.total+' 件');
+    }else{
+      toast('⚠️ 清空 '+d.deleted+'/'+d.total+' 件'+(d.failed&&d.failed.length?'，失败 '+d.failed.length+' 件':''));
+    }
+    if(btn){btn.disabled=0;btn.textContent='🗑️ 清空购物车'}
+  }).catch(function(){
+    toast('❌ 请求失败');
+    if(btn){btn.disabled=0;btn.textContent='🗑️ 清空购物车'}
+  })
 }
 
 // 复制给买家：简短汇总话术
 function copyToBuyer(){
- if(!L||!L.length){toast('无数据');return}
- var ok=L.filter(function(r){return r.cheapest}), ng=L.filter(function(r){return r.error});
- var lines=[];
- if(ok.length){
- var tot=0; ok.forEach(function(r){tot+=r.cheapest.price+r.cheapest.shipping});
- var totalSug=Math.round(tot*1.27*100)/100;
- lines.push('查到 '+ok.length+' 本 总价 ¥'+totalSug.toFixed(1));
- }
- if(ng.length){
- lines.push(' ▎ 以下 '+ng.length+' 本搜索不到：'+ng.map(function(r){return r.isbn}).join('、'));
- }
- doCopy(lines.join('\n'),function(){toast(' 已复制，可直接发给买家')},function(){prompt(' 复制给买家：',lines.join('\n'))});
+  if(!L||!L.length){toast('无数据');return}
+  var ok=L.filter(function(r){return r.cheapest}), ng=L.filter(function(r){return r.error});
+  var lines=[];
+  if(ok.length){
+    var tot=0; ok.forEach(function(r){tot+=r.cheapest.price+r.cheapest.shipping});
+    var totalSug=Math.round(tot*1.27*100)/100;
+    lines.push('查到 '+ok.length+' 本 总价 ¥'+totalSug.toFixed(1));
+  }
+  if(ng.length){
+    lines.push('  ▎ 以下 '+ng.length+' 本搜索不到：'+ng.map(function(r){return r.isbn}).join('、'));
+  }
+  doCopy(lines.join('\n'),function(){toast('✅ 已复制，可直接发给买家')},function(){prompt('📋 复制给买家：',lines.join('\n'))});
 }
 
 // 复制报价单：forBuyer=1 精简版（给买家），否则详细版（自用）
 function cpyQuote(forBuyer){
- var ok=L.filter(function(r){return r.cheapest});
- if(!ok.length){toast('无有效数据');return}
- var lines=[], i=0, totalCost=0, totalSug=0;
- ok.forEach(function(r){
- i++;
- var c=r.cheapest, p=c.price, s=c.shipping, t=p+s, sug=Math.round(t*1.27*100)/100;
- totalCost+=t; totalSug+=sug;
- if(forBuyer){
- lines.push(i+'. '+(r.title||'无书名'));
- lines.push(' ISBN: '+r.isbn);
- lines.push(' ¥'+sug.toFixed(1));
- }else{
- lines.push(i+'. '+(r.title||'无书名'));
- lines.push(' ISBN: '+r.isbn);
- lines.push(' 最低进价: ¥'+p.toFixed(1)+'+¥'+s.toFixed(1)+'=¥'+t.toFixed(1));
- lines.push(' 建议售价: ¥'+sug.toFixed(1)+' (127%)');
- }
- });
- lines.push('');
- lines.push('合计: '+ok.length+' 本');
- if(forBuyer){
- lines.push('总价: ¥'+totalSug.toFixed(1));
- }else{
- lines.push('总进价: ¥'+totalCost.toFixed(1)+' 总建议售价: ¥'+totalSug.toFixed(1));
- }
- var label=forBuyer?'报价单已复制，可直接发给买家':'已复制成本报价单';
- doCopy(lines.join('\n'),function(){toast(' '+label)},function(){prompt(' '+(forBuyer?'报价单':'成本单')+'，复制后关闭：',lines.join('\n'))});
+  var ok=L.filter(function(r){return r.cheapest});
+  if(!ok.length){toast('无有效数据');return}
+  var lines=[], i=0, totalCost=0, totalSug=0;
+  ok.forEach(function(r){
+    i++;
+    var c=r.cheapest, p=c.price, s=c.shipping, t=p+s, sug=Math.round(t*1.27*100)/100;
+    totalCost+=t; totalSug+=sug;
+    if(forBuyer){
+      lines.push(i+'. '+(r.title||'无书名'));
+      lines.push('   ISBN: '+r.isbn);
+      lines.push('   ¥'+sug.toFixed(1));
+    }else{
+      lines.push(i+'. '+(r.title||'无书名'));
+      lines.push('   ISBN: '+r.isbn);
+      lines.push('   最低进价: ¥'+p.toFixed(1)+'+¥'+s.toFixed(1)+'=¥'+t.toFixed(1));
+      lines.push('   建议售价: ¥'+sug.toFixed(1)+' (127%)');
+    }
+  });
+  lines.push('');
+  lines.push('合计: '+ok.length+' 本');
+  if(forBuyer){
+    lines.push('总价: ¥'+totalSug.toFixed(1));
+  }else{
+    lines.push('总进价: ¥'+totalCost.toFixed(1)+'  总建议售价: ¥'+totalSug.toFixed(1));
+  }
+  var label=forBuyer?'报价单已复制，可直接发给买家':'已复制成本报价单';
+  doCopy(lines.join('\n'),function(){toast('✅ '+label)},function(){prompt('📋 '+(forBuyer?'报价单':'成本单')+'，复制后关闭：',lines.join('\n'))});
 }
 
 // 单本报价（发给买家）
 function cpySingleQuote(isbn){
- var r=null;
- for(var i=0;i<L.length;i++){if(L[i].isbn===isbn){r=L[i];break}}
- if(!r||!r.cheapest){toast('无数据');return}
- var c=r.cheapest, t=c.price+c.shipping, sug=Math.round(t*1.27*100)/100;
- var txt=r.title+'\nISBN: '+r.isbn+'\n¥'+sug.toFixed(1);
- doCopy(txt,function(){toast(' 已复制报价，可发给买家')},function(){prompt(' 报价：',txt)});
+  var r=null;
+  for(var i=0;i<L.length;i++){if(L[i].isbn===isbn){r=L[i];break}}
+  if(!r||!r.cheapest){toast('无数据');return}
+  var c=r.cheapest, t=c.price+c.shipping, sug=Math.round(t*1.27*100)/100;
+  var txt=r.title+'\nISBN: '+r.isbn+'\n¥'+sug.toFixed(1);
+  doCopy(txt,function(){toast('✅ 已复制报价，可发给买家')},function(){prompt('📋 报价：',txt)});
 }
 
 // 复制异常书号（一键复制转发消息）
 function cpyFail(){
- var fail=[];
- document.querySelectorAll('.fail-chip').forEach(function(el){var m=(el.textContent||'').match(/\d{8,13}/);if(m)fail.push(m[0])});
- if(!fail.length){toast('无异常书号');return}
- var txt=' 以下 '+fail.length+' 本书号搜索不到：\n'+fail.join('\n');
- doCopy(txt,function(){toast(' 已复制 '+fail.length+' 个异常书号，可直接转发')},function(){prompt(' 异常书号（'+fail.length+' 个），复制后关闭：',txt)})
+  var fail=[];
+  document.querySelectorAll('.fail-chip').forEach(function(el){var m=(el.textContent||'').match(/\d{8,13}/);if(m)fail.push(m[0])});
+  if(!fail.length){toast('无异常书号');return}
+  var txt='📋 以下 '+fail.length+' 本书号搜索不到：\n'+fail.join('\n');
+  doCopy(txt,function(){toast('✅ 已复制 '+fail.length+' 个异常书号，可直接转发')},function(){prompt('📋 异常书号（'+fail.length+' 个），复制后关闭：',txt)})
 }
 // 全功能复制弹窗
 function showCopyModal(txt){
- var old=document.getElementById('cm');
- if(old)old.remove();
- var m=document.createElement('div');
- m.id='cm';
- m.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
- m.onclick=function(){m.remove()};
- var box=document.createElement('div');
- box.style.cssText='background:#fff;border-radius:12px;padding:16px;max-width:500px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 4px 20px rgba(0,0,0,.2)';
- box.onclick=function(e){e.stopPropagation()};
- var id='ct_'+Date.now();
- box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong> 复制内容</strong><span onclick="document.getElementById(\'cm\').remove()" style="font-size:1.3rem;cursor:pointer;color:#c4b5d0;padding:0 4px"></span></div>'+
- '<textarea id="'+id+'" style="width:100%;min-height:120px;padding:10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.85rem;font-family:monospace;outline:none;resize:none;white-space:pre-wrap;word-break:break-all;overflow-y:auto;line-height:1.5;background:#fff;color:#000;-webkit-text-fill-color:#000" readonly></textarea>'+
- '<div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;flex-wrap:wrap">'+
- '<button onclick="kfzCopy(document.getElementById(\''+id+'\').value,this)" style="padding:8px 24px;border-radius:8px;border:none;background:#f9a8d4;color:#fff;cursor:pointer;font-weight:500;font-size:.9rem"> 一键复制</button>'+
- '<button onclick="document.getElementById(\'cm\').remove()" style="padding:8px 20px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#9d8bb0;cursor:pointer;font-size:.85rem">关闭</button>'+
- '</div>';
- m.appendChild(box);
- document.body.appendChild(m);
- var ta=document.getElementById(id);
- ta.value=txt;
- // textarea 高度自适应内容（上限屏幕 55%），完整展示全部文本
- var h=ta.scrollHeight+24;
- var maxH=window.innerHeight*0.55;
- ta.style.height=Math.min(h,maxH)+'px';
- // 聚焦但不自动全选（避免移动端误触发选择）
- setTimeout(function(){ta.focus();ta.scrollTop=0},50);
+  var old=document.getElementById('cm');
+  if(old)old.remove();
+  var m=document.createElement('div');
+  m.id='cm';
+  m.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
+  m.onclick=function(){m.remove()};
+  var box=document.createElement('div');
+  box.style.cssText='background:#fff;border-radius:12px;padding:16px;max-width:500px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 4px 20px rgba(0,0,0,.2)';
+  box.onclick=function(e){e.stopPropagation()};
+  var id='ct_'+Date.now();
+  box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>📋 复制内容</strong><span onclick="document.getElementById(\'cm\').remove()" style="font-size:1.3rem;cursor:pointer;color:#c4b5d0;padding:0 4px">✕</span></div>'+
+    '<textarea id="'+id+'" style="width:100%;min-height:120px;padding:10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.85rem;font-family:monospace;outline:none;resize:none;white-space:pre-wrap;word-break:break-all;overflow-y:auto;line-height:1.5;background:#fff;color:#000;-webkit-text-fill-color:#000" readonly></textarea>'+
+    '<div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;flex-wrap:wrap">'+
+      '<button onclick="kfzCopy(document.getElementById(\''+id+'\').value,this)" style="padding:8px 24px;border-radius:8px;border:none;background:#f9a8d4;color:#fff;cursor:pointer;font-weight:500;font-size:.9rem">📋 一键复制</button>'+
+      '<button onclick="document.getElementById(\'cm\').remove()" style="padding:8px 20px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#9d8bb0;cursor:pointer;font-size:.85rem">关闭</button>'+
+    '</div>';
+  m.appendChild(box);
+  document.body.appendChild(m);
+  var ta=document.getElementById(id);
+  ta.value=txt;
+  // textarea 高度自适应内容（上限屏幕 55%），完整展示全部文本
+  var h=ta.scrollHeight+24;
+  var maxH=window.innerHeight*0.55;
+  ta.style.height=Math.min(h,maxH)+'px';
+  // 聚焦但不自动全选（避免移动端误触发选择）
+  setTimeout(function(){ta.focus();ta.scrollTop=0},50);
 }
 
 // 完整复制到剪贴板（不依赖 textarea 选中，避免长文本截断）
 function kfzCopy(txt,btn){
- var ok=function(){btn.textContent=' 已复制';setTimeout(function(){document.getElementById('cm').remove()},600)};
- var fail=function(){prompt(' 手动复制：',txt);setTimeout(function(){document.getElementById('cm').remove()},600)};
- if(navigator.clipboard&&navigator.clipboard.writeText){
- navigator.clipboard.writeText(txt).then(ok).catch(fail);
- }else if(document.execCommand){
- // 降级：隐藏 textarea + execCommand
- var ta=document.createElement('textarea');
- ta.value=txt;
- ta.style.position='fixed';ta.style.left='-9999px';ta.style.top='0';
- document.body.appendChild(ta);
- ta.focus();ta.select();ta.setSelectionRange(0,txt.length);
- try{
- if(document.execCommand('copy')){document.body.removeChild(ta);ok()}
- else{document.body.removeChild(ta);fail()}
- }catch(e){document.body.removeChild(ta);fail()}
- }else{fail()}
+  var ok=function(){btn.textContent='✅ 已复制';setTimeout(function(){document.getElementById('cm').remove()},600)};
+  var fail=function(){prompt('📋 手动复制：',txt);setTimeout(function(){document.getElementById('cm').remove()},600)};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(ok).catch(fail);
+  }else if(document.execCommand){
+    // 降级：隐藏 textarea + execCommand
+    var ta=document.createElement('textarea');
+    ta.value=txt;
+    ta.style.position='fixed';ta.style.left='-9999px';ta.style.top='0';
+    document.body.appendChild(ta);
+    ta.focus();ta.select();ta.setSelectionRange(0,txt.length);
+    try{
+      if(document.execCommand('copy')){document.body.removeChild(ta);ok()}
+      else{document.body.removeChild(ta);fail()}
+    }catch(e){document.body.removeChild(ta);fail()}
+  }else{fail()}
 }
 
 function doCopy(txt,onOk,onFail){
- showCopyModal(txt);
+  showCopyModal(txt);
 }
 // 重查
 function rq(is){I.value=is;E.innerHTML='';N.style.display='none';scrollTo(0,0);setTimeout(function(){Q.click()},300)}
@@ -582,100 +582,100 @@ function rqA(){var is=[];document.querySelectorAll('.fail-chip').forEach(functio
 
 // 历史
 function loadH(){
- fj('/api/history/list').then(function(d){
- var el=id('histList');
- if(!d.records||!d.records.length){el.innerHTML='<div style="text-align:center;color:#c4b5d0;font-size:.8rem;padding:10px">暂无记录</div>';return}
- el.innerHTML=d.records.map(function(r){
- return '<div class="h-item" id="hi_'+r.id+'"><div class="info"><div class="name">'+esc(r.name)+'</div><div class="meta">'+(r.created_at||'')+' · '+r.book_count+'本'+(r.priced_count?' · ¥'+r.total_cost.toFixed(1):'')+'</div></div><div class="actions"><button class="btn-h-q" onclick="rH(\''+r.id+'\')"></button>'+(r.priced_count?'<button class="btn-h-c" onclick="cH(\''+r.id+'\')"></button>':'')+'<button class="btn-h-d" onclick="dH(\''+r.id+'\')"></button></div></div>'
- }).join('')
- }).catch(function(){})
+  fj('/api/history/list').then(function(d){
+    var el=id('histList');
+    if(!d.records||!d.records.length){el.innerHTML='<div style="text-align:center;color:#c4b5d0;font-size:.8rem;padding:10px">暂无记录</div>';return}
+    el.innerHTML=d.records.map(function(r){
+      return '<div class="h-item" id="hi_'+r.id+'"><div class="info"><div class="name">'+esc(r.name)+'</div><div class="meta">'+(r.created_at||'')+' · '+r.book_count+'本'+(r.priced_count?' · 🏷️ ¥'+r.total_cost.toFixed(1):'')+'</div></div><div class="actions"><button class="btn-h-q" onclick="rH(\''+r.id+'\')">🔍</button>'+(r.priced_count?'<button class="btn-h-c" onclick="cH(\''+r.id+'\')">🛒</button>':'')+'<button class="btn-h-d" onclick="dH(\''+r.id+'\')">🗑️</button></div></div>'
+    }).join('')
+  }).catch(function(){})
 }
 function sH(sbId){
- var btn=document.querySelector('#'+sbId+' .btn-save');if(!btn)return;
- var nm=(id('si').value||'').trim()||('查询 '+new Date().toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}));
- btn.disabled=1;btn.textContent='';
- fj('/api/history/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:nm,results:L,quality_filter:id('qualitySelect').value})}).then(function(d){
- if(d.success){btn.textContent='';btn.style.background='#10b981';fold('hist');id('histArrow')&&id('histArrow').classList.add('open');loadH()}
- else{btn.textContent='';setTimeout(function(){btn.disabled=0;btn.textContent='保存';btn.style.background='#f59e0b'},2000)}
- }).catch(function(){btn.textContent='';setTimeout(function(){btn.disabled=0;btn.textContent='保存';btn.style.background='#f59e0b'},2000)})
+  var btn=document.querySelector('#'+sbId+' .btn-save');if(!btn)return;
+  var nm=(id('si').value||'').trim()||('查询 '+new Date().toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}));
+  btn.disabled=1;btn.textContent='⏳';
+  fj('/api/history/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:nm,results:L,quality_filter:id('qualitySelect').value})}).then(function(d){
+    if(d.success){btn.textContent='✅';btn.style.background='#10b981';fold('hist');id('histArrow')&&id('histArrow').classList.add('open');loadH()}
+    else{btn.textContent='❌';setTimeout(function(){btn.disabled=0;btn.textContent='保存';btn.style.background='#f59e0b'},2000)}
+  }).catch(function(){btn.textContent='❌';setTimeout(function(){btn.disabled=0;btn.textContent='保存';btn.style.background='#f59e0b'},2000)})
 }
 function rH(id){
- fj('/api/history/get?id='+encodeURIComponent(id)).then(function(rec){
- if(rec.error||!rec.isbns||!rec.isbns.length){toast('无数据');return}
- I.value=rec.isbns.join('\n');if(rec.quality_filter)id('qualitySelect').value=rec.quality_filter;
- E.innerHTML='';N.style.display='none';scrollTo(0,0);setTimeout(function(){Q.click()},300)
- }).catch(function(){toast('获取失败')})
+  fj('/api/history/get?id='+encodeURIComponent(id)).then(function(rec){
+    if(rec.error||!rec.isbns||!rec.isbns.length){toast('无数据');return}
+    I.value=rec.isbns.join('\n');if(rec.quality_filter)id('qualitySelect').value=rec.quality_filter;
+    E.innerHTML='';N.style.display='none';scrollTo(0,0);setTimeout(function(){Q.click()},300)
+  }).catch(function(){toast('获取失败')})
 }
 function cH(id){
- fj('/api/history/get?id='+encodeURIComponent(id)).then(function(rec){
- if(rec.error){toast(rec.error);return}
- var is=(rec.results||[]).filter(function(r){return r.cheapest&&r.cheapest.itemId&&r.cheapest.shopId});
- if(!is.length){toast('无商品');return}
- var btn=event&&event.target;if(btn){btn.disabled=1;btn.textContent=' 0/'+is.length}
- var ok=0,ng=0;
- function nx(i){if(i>=is.length){if(btn){btn.textContent=' '+ok+'/'+is.length+(ng?' ('+ng+'失败)':'');btn.style.background=ok>0?'#059669':'#fb7185';setTimeout(function(){btn.disabled=0},2000)}return}if(btn)btn.textContent=' '+(i+1)+'/'+is.length;fj('/api/addtocart?itemId='+encodeURIComponent(is[i].cheapest.itemId)+'&shopId='+encodeURIComponent(is[i].cheapest.shopId)).then(function(d){if(d.success)ok++;else ng++;setTimeout(function(){nx(i+1)},1200)}).catch(function(){ng++;setTimeout(function(){nx(i+1)},1200)})}nx(0)
- }).catch(function(){toast('获取记录失败')})
+  fj('/api/history/get?id='+encodeURIComponent(id)).then(function(rec){
+    if(rec.error){toast(rec.error);return}
+    var is=(rec.results||[]).filter(function(r){return r.cheapest&&r.cheapest.itemId&&r.cheapest.shopId});
+    if(!is.length){toast('无商品');return}
+    var btn=event&&event.target;if(btn){btn.disabled=1;btn.textContent='⏳ 0/'+is.length}
+    var ok=0,ng=0;
+    function nx(i){if(i>=is.length){if(btn){btn.textContent='✅ '+ok+'/'+is.length+(ng?' ('+ng+'失败)':'');btn.style.background=ok>0?'#059669':'#fb7185';setTimeout(function(){btn.disabled=0},2000)}return}if(btn)btn.textContent='⏳ '+(i+1)+'/'+is.length;fj('/api/addtocart?itemId='+encodeURIComponent(is[i].cheapest.itemId)+'&shopId='+encodeURIComponent(is[i].cheapest.shopId)).then(function(d){if(d.success)ok++;else ng++;setTimeout(function(){nx(i+1)},1200)}).catch(function(){ng++;setTimeout(function(){nx(i+1)},1200)})}nx(0)
+  }).catch(function(){toast('获取记录失败')})
 }
 function dH(id){
- if(!confirm('删除？'))return;
- fj('/api/history/delete?id='+encodeURIComponent(id)).then(function(d){if(d.success){var el=document.getElementById('hi_'+id);if(el)el.style.display='none';loadH()}}).catch(function(){})
+  if(!confirm('删除？'))return;
+  fj('/api/history/delete?id='+encodeURIComponent(id)).then(function(d){if(d.success){var el=document.getElementById('hi_'+id);if(el)el.style.display='none';loadH()}}).catch(function(){})
 }
 
 // Cookie
 function ckC(){
- fj('/api/cookie/status').then(function(d){
- var el=id('cookSt'),dot=id('cookDot'),bar=id('cookieBar'),ico=id('cookIcon'),txt=id('cookText'),act=id('cookAct');
- if(d.has_cookie){el.innerHTML=' Cookie 已设置 · '+d.cookie_len+' 字符';el.style.background='#f0fdf4';dot.style.background='#10b981'}
- else{el.innerHTML=' 未设置 Cookie';el.style.background='#fef2f2';dot.style.background='#ef4444'}
- if(!d.has_cookie){bar.style.display='flex';bar.className='invalid';ico.textContent='';txt.textContent='未设置 Cookie';act.textContent='设置 →'}
- else if(d.is_valid){bar.style.display='flex';bar.className='valid';ico.textContent='';txt.textContent='Cookie 正常'+(d.days_since_update>7?'，已用 '+d.days_since_update.toFixed(0)+' 天':'');act.textContent='→'}
- else{bar.style.display='flex';bar.className='invalid';ico.textContent='';txt.textContent='Cookie 已失效';act.textContent='更新 →'}
- if(!d.has_cookie||!d.is_valid){id('fold_cookie')&&id('fold_cookie').classList.add('open');id('cookArrow')&&id('cookArrow').classList.add('open')}
- }).catch(function(){id('cookSt').innerHTML=' 获取失败';id('cookDot').style.background='#c4b5d0'})
+  fj('/api/cookie/status').then(function(d){
+    var el=id('cookSt'),dot=id('cookDot'),bar=id('cookieBar'),ico=id('cookIcon'),txt=id('cookText'),act=id('cookAct');
+    if(d.has_cookie){el.innerHTML='✅ Cookie 已设置 · '+d.cookie_len+' 字符';el.style.background='#f0fdf4';dot.style.background='#10b981'}
+    else{el.innerHTML='❌ 未设置 Cookie';el.style.background='#fef2f2';dot.style.background='#ef4444'}
+    if(!d.has_cookie){bar.style.display='flex';bar.className='invalid';ico.textContent='🔴';txt.textContent='未设置 Cookie';act.textContent='设置 →'}
+    else if(d.is_valid){bar.style.display='flex';bar.className='valid';ico.textContent='🟢';txt.textContent='Cookie 正常'+(d.days_since_update>7?'，已用 '+d.days_since_update.toFixed(0)+' 天':'');act.textContent='→'}
+    else{bar.style.display='flex';bar.className='invalid';ico.textContent='🔴';txt.textContent='Cookie 已失效';act.textContent='更新 →'}
+    if(!d.has_cookie||!d.is_valid){id('fold_cookie')&&id('fold_cookie').classList.add('open');id('cookArrow')&&id('cookArrow').classList.add('open')}
+  }).catch(function(){id('cookSt').innerHTML='⚠️ 获取失败';id('cookDot').style.background='#c4b5d0'})
 }
 function saveCookie(){
- var inp=id('cookInp'),msg=id('cookMsg'),raw=inp.value.trim();
- if(!raw){msg.textContent=' 请输入';msg.style.color='#ef4444';return}
- fj('/api/cookie/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cookie:raw})}).then(function(d){
- if(d.success){msg.textContent=d.warning?' '+d.warning:' 保存成功';msg.style.color=d.warning?'#f59e0b':'#10b981';ckC();inp.value=''}
- else{msg.textContent=' '+(d.error||'失败');msg.style.color='#ef4444'}
- }).catch(function(){msg.textContent=' 网络错误';msg.style.color='#ef4444'})
+  var inp=id('cookInp'),msg=id('cookMsg'),raw=inp.value.trim();
+  if(!raw){msg.textContent='❌ 请输入';msg.style.color='#ef4444';return}
+  fj('/api/cookie/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cookie:raw})}).then(function(d){
+    if(d.success){msg.textContent=d.warning?'⚠️ '+d.warning:'✅ 保存成功';msg.style.color=d.warning?'#f59e0b':'#10b981';ckC();inp.value=''}
+    else{msg.textContent='❌ '+(d.error||'失败');msg.style.color='#ef4444'}
+  }).catch(function(){msg.textContent='❌ 网络错误';msg.style.color='#ef4444'})
 }
 
 function toast(t){var el=id('toast');el.textContent=t;el.style.display='block';clearTimeout(el._t);el._t=setTimeout(function(){el.style.display='none'},2000)}
 
 // 地址清理
 function cleanupAddr(isAuto){
- var label=isAuto?'':'';
- fetch('/api/address/cleanup?dry_run=1').then(function(r){return r.json()}).then(function(d){
- if(d.error){toast(' '+d.error);return}
- if(d.success===false){
- if(!isAuto){
- var el=id('results');
- el.innerHTML='<div class="card" style="border:2px solid #fca5a5;background:#fef2f2;margin-bottom:10px"><div class="card-title" style="color:#fb7185"> 地址清理</div><div style="font-size:.8rem;color:#9d8bb0">'+(d.error||'Cookie 未登录地址管理')+'<br><br>请先在浏览器登录 <strong>kongfz.com</strong>，然后更新 Cookie。</div></div>'+el.innerHTML;
- }
- return;
- }
- if(d.to_delete&&d.to_delete.length){
- var msg=label+' 发现 '+d.to_delete.length+' 个旧地址，清理中...';
- ss(msg,'loading');
- fetch('/api/address/cleanup?max='+d.max_count).then(function(r){return r.json()}).then(function(r2){
- if(r2.error){toast(' '+r2.error);return}
- if(r2.success===false){toast(' '+(r2.error||'失败'));return}
- toast(' 已删除 '+r2.deleted+' 个旧地址，保留 '+r2.kept+' 个');
- if(isAuto)return;
- var h='<div class="card" style="border:2px solid #10b981;background:#f0fdf4;margin-bottom:10px"><div class="card-title" style="color:#f472b6"> 地址清理结果</div><div style="font-size:.8rem">共 <strong>'+d.total+'</strong> 个地址（上限 '+d.max_count+'），默认 <strong>'+d.default_count+'</strong> 个</div>';
- if(r2.deleted>0)h+='<div style="font-size:.78rem;color:#9d8bb0;margin-top:4px">已删除 '+r2.deleted+' 个旧地址</div>';
- h+='</div>';
- var el=id('results');
- el.innerHTML=h+el.innerHTML;
- ss(' 清理完成','done');
- }).catch(function(){})
- }else{
- if(d.message&&d.message.indexOf('超过')===-1&&d.message.indexOf('未超过')===-1)return;
- if(!isAuto)toast(' 地址数量正常（共 '+d.total+' 个，上限 '+d.max_count+'）');
- }
- }).catch(function(){})
+  var label=isAuto?'⏳':'🧹';
+  fetch('/api/address/cleanup?dry_run=1').then(function(r){return r.json()}).then(function(d){
+    if(d.error){toast('❌ '+d.error);return}
+    if(d.success===false){
+      if(!isAuto){
+        var el=id('results');
+        el.innerHTML='<div class="card" style="border:2px solid #fca5a5;background:#fef2f2;margin-bottom:10px"><div class="card-title" style="color:#fb7185">🧹 地址清理</div><div style="font-size:.8rem;color:#9d8bb0">'+(d.error||'Cookie 未登录地址管理')+'<br><br>请先在浏览器登录 <strong>kongfz.com</strong>，然后更新 Cookie。</div></div>'+el.innerHTML;
+      }
+      return;
+    }
+    if(d.to_delete&&d.to_delete.length){
+      var msg=label+' 发现 '+d.to_delete.length+' 个旧地址，清理中...';
+      ss(msg,'loading');
+      fetch('/api/address/cleanup?max='+d.max_count).then(function(r){return r.json()}).then(function(r2){
+        if(r2.error){toast('❌ '+r2.error);return}
+        if(r2.success===false){toast('⚠️ '+(r2.error||'失败'));return}
+        toast('🧹 已删除 '+r2.deleted+' 个旧地址，保留 '+r2.kept+' 个');
+        if(isAuto)return;
+        var h='<div class="card" style="border:2px solid #10b981;background:#f0fdf4;margin-bottom:10px"><div class="card-title" style="color:#f472b6">🧹 地址清理结果</div><div style="font-size:.8rem">共 <strong>'+d.total+'</strong> 个地址（上限 '+d.max_count+'），默认 <strong>'+d.default_count+'</strong> 个</div>';
+        if(r2.deleted>0)h+='<div style="font-size:.78rem;color:#9d8bb0;margin-top:4px">已删除 '+r2.deleted+' 个旧地址</div>';
+        h+='</div>';
+        var el=id('results');
+        el.innerHTML=h+el.innerHTML;
+        ss('✅ 清理完成','done');
+      }).catch(function(){})
+    }else{
+      if(d.message&&d.message.indexOf('超过')===-1&&d.message.indexOf('未超过')===-1)return;
+      if(!isAuto)toast('✅ 地址数量正常（共 '+d.total+' 个，上限 '+d.max_count+'）');
+    }
+  }).catch(function(){})
 }
 
 // 初始化
@@ -691,82 +691,82 @@ function getToday(){var k=todayKey();var n=parseInt(localStorage.getItem(k)||'0'
 function addToday(){var n=getToday()+1;localStorage.setItem(todayKey(),String(n));var el=id('statToday');if(el)el.textContent=n}
 // 日期 + 已用天数
 function initHero(){
- var d=new Date();
- var wd=['日','一','二','三','四','五','六'][d.getDay()];
- var el=id('heroDate');
- if(el)el.textContent=(d.getMonth()+1)+'月'+d.getDate()+'日 · 星期'+wd+' · 已连续使用 '+getStreak()+' 天';
- var st=id('statToday');if(st)st.textContent=getToday();
- // 历史记录数
- fj('/api/history/list').then(function(dd){
- if(dd&&dd.records){var h=id('statHist');if(h)h.textContent=dd.records.length}
- }).catch(function(){});
+  var d=new Date();
+  var wd=['日','一','二','三','四','五','六'][d.getDay()];
+  var el=id('heroDate');
+  if(el)el.textContent=(d.getMonth()+1)+'月'+d.getDate()+'日 · 星期'+wd+' · 已连续使用 '+getStreak()+' 天';
+  var st=id('statToday');if(st)st.textContent=getToday();
+  // 历史记录数
+  fj('/api/history/list').then(function(dd){
+    if(dd&&dd.records){var h=id('statHist');if(h)h.textContent=dd.records.length}
+  }).catch(function(){});
 }
 // 连续使用天数（localStorage）
 function getStreak(){
- var KEY='kfz_streak';
- var last=localStorage.getItem(KEY+'_last');
- var count=parseInt(localStorage.getItem(KEY)||'0',10);
- var today=new Date().toISOString().slice(0,10);
- if(!last||isNaN(count)){localStorage.setItem(KEY,'1');localStorage.setItem(KEY+'_last',today);return 1}
- var yest=new Date(Date.now()-86400000).toISOString().slice(0,10);
- if(last===today)return count;
- if(last===yest){count++;localStorage.setItem(KEY,String(count))}
- else{count=1;localStorage.setItem(KEY,'1')}
- localStorage.setItem(KEY+'_last',today);
- return count;
+  var KEY='kfz_streak';
+  var last=localStorage.getItem(KEY+'_last');
+  var count=parseInt(localStorage.getItem(KEY)||'0',10);
+  var today=new Date().toISOString().slice(0,10);
+  if(!last||isNaN(count)){localStorage.setItem(KEY,'1');localStorage.setItem(KEY+'_last',today);return 1}
+  var yest=new Date(Date.now()-86400000).toISOString().slice(0,10);
+  if(last===today)return count;
+  if(last===yest){count++;localStorage.setItem(KEY,String(count))}
+  else{count=1;localStorage.setItem(KEY,'1')}
+  localStorage.setItem(KEY+'_last',today);
+  return count;
 }
 setTimeout(function(){initHero()},300);
 
 // === 自检功能 ===
 function selfCheck(){
- var btn = event && event.target;
- if(btn){btn.disabled=1;btn.style.opacity='.5'}
- var el = document.querySelector('.container');
- var html='<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button onclick="loc()" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:.8rem;cursor:pointer">← 返回查价</button><strong style="font-size:.9rem"> 系统自检</strong></div>';
- html+='<div class="card"><div class="card-title"> 检测中...</div><div style="text-align:center;padding:20px;color:#c4b5d0">正在检查各项功能...</div></div>';
- el.innerHTML = html;
+  var btn = event && event.target;
+  if(btn){btn.disabled=1;btn.style.opacity='.5'}
+  var el = document.querySelector('.container');
+  var html='<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button onclick="loc()" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:.8rem;cursor:pointer">← 返回查价</button><strong style="font-size:.9rem">🔍 系统自检</strong></div>';
+  html+='<div class="card"><div class="card-title">⏳ 检测中...</div><div style="text-align:center;padding:20px;color:#c4b5d0">正在检查各项功能...</div></div>';
+  el.innerHTML = html;
 
- fj('/api/self_check').then(function(d){
- if(!d){el.innerHTML='<div class="card"> 自检失败</div>';return}
- var h='<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button onclick="loc()" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:.8rem;cursor:pointer">← 返回查价</button><strong style="font-size:.9rem"> 系统自检</strong><span style="font-size:.72rem;color:#c4b5d0">'+d.time+'</span></div>';
+  fj('/api/self_check').then(function(d){
+    if(!d){el.innerHTML='<div class="card">❌ 自检失败</div>';return}
+    var h='<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button onclick="loc()" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:.8rem;cursor:pointer">← 返回查价</button><strong style="font-size:.9rem">🔍 系统自检</strong><span style="font-size:.72rem;color:#c4b5d0">'+d.time+'</span></div>';
 
- h += '<div class="card"><div class="card-title"> 版本</div><table><tbody>';
- h += '<tr><td>Git 版本</td><td>'+esc(d.git_commit||'无')+'</td></tr>';
- h += '<tr><td>远程版本</td><td>'+(d.git_remote?esc(d.git_remote):'<span style="color:#f59e0b">未部署</span>')+'</td></tr>';
- var synced = d.git_commit && d.git_remote && d.git_commit.split(' ')[0] === d.git_remote.split(' ')[0];
- h += '<tr><td>本地↔云端</td><td>'+(synced?'<span style="color:#10b981"> 一致</span>':'<span style="color:#ef4444"> 不一致</span>')+'</td></tr>';
- if(d.git_dirty && d.git_dirty.length){
- h += '<tr><td>未提交改动</td><td><span style="color:#f59e0b">'+d.git_dirty.length+' 个文件</span></td></tr>';
- }
- h += '</tbody></table></div>';
+    h += '<div class="card"><div class="card-title">📌 版本</div><table><tbody>';
+    h += '<tr><td>Git 版本</td><td>'+esc(d.git_commit||'无')+'</td></tr>';
+    h += '<tr><td>远程版本</td><td>'+(d.git_remote?esc(d.git_remote):'<span style="color:#f59e0b">未部署</span>')+'</td></tr>';
+    var synced = d.git_commit && d.git_remote && d.git_commit.split(' ')[0] === d.git_remote.split(' ')[0];
+    h += '<tr><td>本地↔云端</td><td>'+(synced?'<span style="color:#10b981">✅ 一致</span>':'<span style="color:#ef4444">❌ 不一致</span>')+'</td></tr>';
+    if(d.git_dirty && d.git_dirty.length){
+      h += '<tr><td>未提交改动</td><td><span style="color:#f59e0b">'+d.git_dirty.length+' 个文件</span></td></tr>';
+    }
+    h += '</tbody></table></div>';
 
- var cok = d.cookie||{};
- h += '<div class="card"><div class="card-title"> Cookie</div><table><tbody>';
- h += '<tr><td>状态</td><td>'+(cok.valid?'<span style="color:#10b981"> 有效</span>':'<span style="color:#ef4444"> 无效</span>')+'</td></tr>';
- h += '<tr><td>长度</td><td>'+cok.len+' 字符</td></tr>';
- h += '</tbody></table></div>';
+    var cok = d.cookie||{};
+    h += '<div class="card"><div class="card-title">🍪 Cookie</div><table><tbody>';
+    h += '<tr><td>状态</td><td>'+(cok.valid?'<span style="color:#10b981">✅ 有效</span>':'<span style="color:#ef4444">❌ 无效</span>')+'</td></tr>';
+    h += '<tr><td>长度</td><td>'+cok.len+' 字符</td></tr>';
+    h += '</tbody></table></div>';
 
- var aq = d.api_query||{}, ac = d.api_addtocart||{};
- h += '<div class="card"><div class="card-title"> API 测试</div><table><tbody>';
- h += '<tr><td>查价</td><td>'+(aq.ok?'<span style="color:#10b981"></span>':'<span style="color:#ef4444"></span>')+'</td><td style="font-size:.75rem;color:#9d8bb0">'+esc(aq.detail||'')+'</td></tr>';
- h += '<tr><td>加购</td><td>'+(ac.ok?'<span style="color:#10b981"></span>':'<span style="color:#ef4444"></span>')+'</td><td style="font-size:.75rem;color:#9d8bb0">'+esc(ac.detail||'')+'</td></tr>';
- h += '</tbody></table></div>';
+    var aq = d.api_query||{}, ac = d.api_addtocart||{};
+    h += '<div class="card"><div class="card-title">📡 API 测试</div><table><tbody>';
+    h += '<tr><td>查价</td><td>'+(aq.ok?'<span style="color:#10b981">✅</span>':'<span style="color:#ef4444">❌</span>')+'</td><td style="font-size:.75rem;color:#9d8bb0">'+esc(aq.detail||'')+'</td></tr>';
+    h += '<tr><td>加购</td><td>'+(ac.ok?'<span style="color:#10b981">✅</span>':'<span style="color:#ef4444">❌</span>')+'</td><td style="font-size:.75rem;color:#9d8bb0">'+esc(ac.detail||'')+'</td></tr>';
+    h += '</tbody></table></div>';
 
- h += '<div class="card"><div class="card-title"> 关键文件</div><table><thead><tr><th>文件</th><th>修改时间</th><th>Hash</th></tr></thead><tbody>';
- var files = d.files||{};
- var fnames = Object.keys(files).sort();
- fnames.forEach(function(fn){
- var fi = files[fn];
- h += '<tr><td style="font-family:monospace;font-size:.72rem">'+esc(fn)+'</td><td>'+(fi.mtime||'-')+'</td><td style="font-family:monospace;font-size:.72rem;color:#9d8bb0">'+(fi.hash||'-')+'</td></tr>';
- });
- h += '</tbody></table></div>';
+    h += '<div class="card"><div class="card-title">📄 关键文件</div><table><thead><tr><th>文件</th><th>修改时间</th><th>Hash</th></tr></thead><tbody>';
+    var files = d.files||{};
+    var fnames = Object.keys(files).sort();
+    fnames.forEach(function(fn){
+      var fi = files[fn];
+      h += '<tr><td style="font-family:monospace;font-size:.72rem">'+esc(fn)+'</td><td>'+(fi.mtime||'-')+'</td><td style="font-family:monospace;font-size:.72rem;color:#9d8bb0">'+(fi.hash||'-')+'</td></tr>';
+    });
+    h += '</tbody></table></div>';
 
- el.innerHTML = h;
- if(btn){btn.disabled=0;btn.style.opacity='1'}
- }).catch(function(){
- el.innerHTML = '<div class="card"> 自检请求失败</div>';
- if(btn){btn.disabled=0;btn.style.opacity='1'}
- })
+    el.innerHTML = h;
+    if(btn){btn.disabled=0;btn.style.opacity='1'}
+  }).catch(function(){
+    el.innerHTML = '<div class="card">❌ 自检请求失败</div>';
+    if(btn){btn.disabled=0;btn.style.opacity='1'}
+  })
 }
 
 // 一键记账（不弹窗，自动用最低总价）
@@ -776,167 +776,167 @@ function loc(){location.reload()}
 
 // === 快递查号 ===
 function showTrack(){
- var cont=document.querySelector('.container');
- var h='<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button onclick="loc()" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:.8rem;cursor:pointer">← 返回查价</button><strong style="font-size:.9rem"> 快递查号</strong></div>';
- h+='<div class="card"><div class="card-title"> 搜手机号查快递</div>';
- h+='<div style="display:flex;gap:8px"><input id="tkPhone" type="tel" placeholder="输入买家手机号" maxlength="11" onkeydown="if(event.key==\'Enter\')tkSearch()" style="flex:1;padding:13px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:1rem;outline:none"><button id="tkBtn" onclick="tkSearch()" style="padding:13px 22px;border-radius:8px;border:none;background:#a855f7;color:#fff;font-weight:600;font-size:1rem;cursor:pointer"> 查询</button></div>';
- h+='<div id="tkHint" style="font-size:.78rem;color:#c4b5d0;margin-top:10px;line-height:1.5">输入手机号，查询快递单号、收件人和书籍</div>';
- h+='</div><div id="tkRes"></div>';
- cont.innerHTML=h;
- setTimeout(function(){id('tkPhone').focus()},100);
+  var cont=document.querySelector('.container');
+  var h='<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button onclick="loc()" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:.8rem;cursor:pointer">← 返回查价</button><strong style="font-size:.9rem">📦 快递查号</strong></div>';
+  h+='<div class="card"><div class="card-title">📱 搜手机号查快递</div>';
+  h+='<div style="display:flex;gap:8px"><input id="tkPhone" type="tel" placeholder="输入买家手机号" maxlength="11" onkeydown="if(event.key==\'Enter\')tkSearch()" style="flex:1;padding:13px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:1rem;outline:none"><button id="tkBtn" onclick="tkSearch()" style="padding:13px 22px;border-radius:8px;border:none;background:#a855f7;color:#fff;font-weight:600;font-size:1rem;cursor:pointer">🔍 查询</button></div>';
+  h+='<div id="tkHint" style="font-size:.78rem;color:#c4b5d0;margin-top:10px;line-height:1.5">输入手机号，查询快递单号、收件人和书籍</div>';
+  h+='</div><div id="tkRes"></div>';
+  cont.innerHTML=h;
+  setTimeout(function(){id('tkPhone').focus()},100);
 }
 
 var _tkOrders=[],_tkPage=1,_tkPhone='';
 
 function tkSearch(page){
- var p=id('tkPhone'),btn=id('tkBtn');
- if(!p||!btn)return;
- var phone=p.value.trim();
- if(!phone||!/^1\d{10}$/.test(phone)){toast('请输入正确的11位手机号');return}
- if(page===undefined||page===null)page=1;
- btn.disabled=1;btn.textContent=' 查询中...';
- _tkPhone=phone;_tkPage=page;
- var el=id('tkRes');if(!el)return;
- el.innerHTML='<div style="text-align:center;padding:20px;color:#c4b5d0"> 查询中...</div>';
+  var p=id('tkPhone'),btn=id('tkBtn');
+  if(!p||!btn)return;
+  var phone=p.value.trim();
+  if(!phone||!/^1\d{10}$/.test(phone)){toast('请输入正确的11位手机号');return}
+  if(page===undefined||page===null)page=1;
+  btn.disabled=1;btn.textContent='⏳ 查询中...';
+  _tkPhone=phone;_tkPage=page;
+  var el=id('tkRes');if(!el)return;
+  el.innerHTML='<div style="text-align:center;padding:20px;color:#c4b5d0">⏳ 查询中...</div>';
 
- fetch('/api/order/search?phone='+encodeURIComponent(phone)+'&page='+page)
- .then(function(r){return r.json()})
- .then(function(d){
- btn.disabled=0;btn.textContent=' 查询';
- if(d.error){el.innerHTML='<div style="color:#ef4444;text-align:center;padding:14px;background:#fef2f2;border-radius:8px"> '+d.error+'</div>';return}
- _tkOrders=d.orders||[];
- if(!_tkOrders.length){
- el.innerHTML='<div class="empty-state" style="padding:30px"> 没有找到这个手机号的订单</div>';
- return;
- }
- renderTkOrders(el, d);
- })
- .catch(function(){
- btn.disabled=0;btn.textContent=' 查询';
- el.innerHTML='<div style="color:#ef4444;text-align:center;padding:14px;background:#fef2f2;border-radius:8px"> 网络错误</div>';
- });
+  fetch('/api/order/search?phone='+encodeURIComponent(phone)+'&page='+page)
+    .then(function(r){return r.json()})
+    .then(function(d){
+      btn.disabled=0;btn.textContent='🔍 查询';
+      if(d.error){el.innerHTML='<div style="color:#ef4444;text-align:center;padding:14px;background:#fef2f2;border-radius:8px">❌ '+d.error+'</div>';return}
+      _tkOrders=d.orders||[];
+      if(!_tkOrders.length){
+        el.innerHTML='<div class="empty-state" style="padding:30px">📭 没有找到这个手机号的订单</div>';
+        return;
+      }
+      renderTkOrders(el, d);
+    })
+    .catch(function(){
+      btn.disabled=0;btn.textContent='🔍 查询';
+      el.innerHTML='<div style="color:#ef4444;text-align:center;padding:14px;background:#fef2f2;border-radius:8px">❌ 网络错误</div>';
+    });
 }
 
 function renderTkOrders(el, d){
- var orders=d.orders||[];
- var hasTrackCount=orders.filter(function(o){return o.shipment_num}).length;
- var h='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px"><span style="font-size:.78rem;color:#9d8bb0">共找到 <strong>'+d.total+'</strong> 条订单 · <strong>'+hasTrackCount+'</strong> 条有物流</span>';
- if(hasTrackCount){
- h+='<button onclick="copyAllTrack()" style="padding:7px 14px;border-radius:8px;border:none;background:#a855f7;color:#fff;font-weight:600;font-size:.8rem;cursor:pointer"> 一键复制全部物流</button>';
- }
- h+='</div>';
+  var orders=d.orders||[];
+  var hasTrackCount=orders.filter(function(o){return o.shipment_num}).length;
+  var h='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px"><span style="font-size:.78rem;color:#9d8bb0">共找到 <strong>'+d.total+'</strong> 条订单 · <strong>'+hasTrackCount+'</strong> 条有物流</span>';
+  if(hasTrackCount){
+    h+='<button onclick="copyAllTrack()" style="padding:7px 14px;border-radius:8px;border:none;background:#a855f7;color:#fff;font-weight:600;font-size:.8rem;cursor:pointer">📋 一键复制全部物流</button>';
+  }
+  h+='</div>';
 
- orders.forEach(function(o,i){
- var items=o.items||[];
- var hasTrack=o.shipment_num&&o.shipment_num.length>0;
- var st=trackStatus(o);
+  orders.forEach(function(o,i){
+    var items=o.items||[];
+    var hasTrack=o.shipment_num&&o.shipment_num.length>0;
+    var st=trackStatus(o);
 
- h+='<div class="tk-order" id="tko_'+i+'" style="margin-bottom:10px;border:1px solid #ffe4f0;border-radius:14px;padding:12px 14px;background:#fff">';
+    h+='<div class="tk-order" id="tko_'+i+'" style="margin-bottom:10px;border:1px solid #ffe4f0;border-radius:14px;padding:12px 14px;background:#fff">';
 
- // 第一行：快递单号（左侧）+ 收件人（右侧）
- h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">';
- if(hasTrack){
- var tn = o.shipment_num||'';
- h+='<div style="flex:1;min-width:160px;line-height:1.4">';
- h+='<div style="font-family:monospace;font-size:.9rem;color:#f472b6;font-weight:700;word-break:break-all"> '+(o.shipping_company?o.shipping_company+' ':'')+tn+'</div>';
- h+='</div>';
- }else{
- h+='<div style="flex:1;min-width:160px;line-height:1.4"><span style="font-size:.85rem;color:#e0a8c2"> 尚未发货</span></div>';
- }
- h+='<span style="font-size:.85rem;font-weight:600;color:#a9446f;white-space:nowrap;padding-top:2px"> '+(o.receiver_name||'收件人')+'</span>';
- h+='</div>';
+    // 第一行：快递单号（左侧）+ 收件人（右侧）
+    h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">';
+    if(hasTrack){
+      var tn = o.shipment_num||'';
+      h+='<div style="flex:1;min-width:160px;line-height:1.4">';
+      h+='<div style="font-family:monospace;font-size:.9rem;color:#f472b6;font-weight:700;word-break:break-all">📮 '+(o.shipping_company?o.shipping_company+' ':'')+tn+'</div>';
+      h+='</div>';
+    }else{
+      h+='<div style="flex:1;min-width:160px;line-height:1.4"><span style="font-size:.85rem;color:#e0a8c2">📮 尚未发货</span></div>';
+    }
+    h+='<span style="font-size:.85rem;font-weight:600;color:#a9446f;white-space:nowrap;padding-top:2px">👤 '+(o.receiver_name||'收件人')+'</span>';
+    h+='</div>';
 
- // 第二行：物流状态标签 + 复制按钮（间距拉开）
- h+='<div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">';
- if(hasTrack){
- h+='<span style="font-size:.72rem;padding:3px 10px;border-radius:12px;color:#fff;background:'+st.cls+'">'+st.text+'</span>';
- h+='<span onclick="copyTrack('+i+')" style="padding:5px 12px;border-radius:8px;background:#f9a8d4;color:#fff;font-size:.75rem;cursor:pointer;font-weight:600"> 复制物流</span>';
- }else{
- h+='<span style="font-size:.72rem;padding:3px 10px;border-radius:12px;color:#fff;background:#e0a8c2">未发货</span>';
- }
- h+='</div>';
+    // 第二行：物流状态标签 + 复制按钮（间距拉开）
+    h+='<div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">';
+    if(hasTrack){
+      h+='<span style="font-size:.72rem;padding:3px 10px;border-radius:12px;color:#fff;background:'+st.cls+'">'+st.text+'</span>';
+      h+='<span onclick="copyTrack('+i+')" style="padding:5px 12px;border-radius:8px;background:#f9a8d4;color:#fff;font-size:.75rem;cursor:pointer;font-weight:600">📋 复制物流</span>';
+    }else{
+      h+='<span style="font-size:.72rem;padding:3px 10px;border-radius:12px;color:#fff;background:#e0a8c2">未发货</span>';
+    }
+    h+='</div>';
 
- // 第三行：书籍（行间距拉开，长书名自动换行）
- if(items.length){
- h+='<div style="margin-top:12px;border-top:1px dashed #ffe4f0;padding-top:10px">';
- items.forEach(function(it){
- var isbn=it.isbn||'';
- h+='<div style="padding:5px 0;font-size:.84rem;line-height:1.5;word-break:break-all">';
- h+='<span style="color:#a9446f"> '+(it.name||'?')+'</span>';
- if(isbn)h+='<span style="color:#d48aa9;font-size:.72rem"> '+isbn+'</span>';
- h+='</div>';
- });
- h+='</div>';
- }
+    // 第三行：书籍（行间距拉开，长书名自动换行）
+    if(items.length){
+      h+='<div style="margin-top:12px;border-top:1px dashed #ffe4f0;padding-top:10px">';
+      items.forEach(function(it){
+        var isbn=it.isbn||'';
+        h+='<div style="padding:5px 0;font-size:.84rem;line-height:1.5;word-break:break-all">';
+        h+='<span style="color:#a9446f">📖 '+(it.name||'?')+'</span>';
+        if(isbn)h+='<span style="color:#d48aa9;font-size:.72rem">  '+isbn+'</span>';
+        h+='</div>';
+      });
+      h+='</div>';
+    }
 
- h+='</div>';
- });
+    h+='</div>';
+  });
 
- var more=d.total>d.page*d.page_size;
- if(more){
- h+='<div style="text-align:center;margin:10px 0"><button onclick="tkSearch('+(_tkPage+1)+')" style="padding:8px 24px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-size:.85rem;cursor:pointer"> 下一页</button></div>';
- }
+  var more=d.total>d.page*d.page_size;
+  if(more){
+    h+='<div style="text-align:center;margin:10px 0"><button onclick="tkSearch('+(_tkPage+1)+')" style="padding:8px 24px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-size:.85rem;cursor:pointer">📄 下一页</button></div>';
+  }
 
- el.innerHTML=h;
+  el.innerHTML=h;
 }
 
 function copyTkNum(tn){
- if(navigator.clipboard&&navigator.clipboard.writeText){
- navigator.clipboard.writeText(tn).then(function(){toast(' 已复制: '+tn)}).catch(function(){prompt(' 复制快递单号：',tn)})
- }else{prompt(' 复制快递单号：',tn)}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(tn).then(function(){toast('✅ 已复制: '+tn)}).catch(function(){prompt('📋 复制快递单号：',tn)})
+  }else{prompt('📋 复制快递单号：',tn)}
 }
 
 // 物流状态判断：未发货 / 已揽收 / 运输中 / 派送中 / 待领取 / 已签收
 function trackStatus(o){
- if(!o.shipment_num) return {text:'未发货',cls:'#c4b5d0'};
- var lg=o.logistic||[];
- if(!lg.length) return {text:'在途',cls:'#a855f7'};
- var last=lg[lg.length-1];
- var s=(last.status||''),c=last.code;
- if(c===3||s.indexOf('签收')>=0) return {text:'已签收',cls:'#10b981'};
- if(c===412||s.indexOf('待取')>=0||s.indexOf('超时')>=0||s.indexOf('暂存')>=0||s.indexOf('驿站')>=0) return {text:'待领取',cls:'#f59e0b'};
- if(c===5||s.indexOf('派送')>=0) return {text:'派送中',cls:'#f59e0b'};
- if(c===1||s.indexOf('揽收')>=0) return {text:'已揽收',cls:'#a855f7'};
- if(c===0||s.indexOf('运输')>=0||s.indexOf('转运')>=0) return {text:'运输中',cls:'#a855f7'};
- return {text:'在途',cls:'#a855f7'};
+  if(!o.shipment_num) return {text:'未发货',cls:'#c4b5d0'};
+  var lg=o.logistic||[];
+  if(!lg.length) return {text:'在途',cls:'#a855f7'};
+  var last=lg[lg.length-1];
+  var s=(last.status||''),c=last.code;
+  if(c===3||s.indexOf('签收')>=0) return {text:'已签收',cls:'#10b981'};
+  if(c===412||s.indexOf('待取')>=0||s.indexOf('超时')>=0||s.indexOf('暂存')>=0||s.indexOf('驿站')>=0) return {text:'待领取',cls:'#f59e0b'};
+  if(c===5||s.indexOf('派送')>=0) return {text:'派送中',cls:'#f59e0b'};
+  if(c===1||s.indexOf('揽收')>=0) return {text:'已揽收',cls:'#a855f7'};
+  if(c===0||s.indexOf('运输')>=0||s.indexOf('转运')>=0) return {text:'运输中',cls:'#a855f7'};
+  return {text:'在途',cls:'#a855f7'};
 }
 
 // 一键复制单条物流：公司 + 单号 + 状态
 function copyTrack(i){
- var o=_tkOrders[i];
- if(!o)return;
- var st=trackStatus(o);
- var txt='物流：'+(o.shipping_company||'')+'\n单号：'+(o.shipment_num||'')+'\n状态：'+st.text;
- if(navigator.clipboard&&navigator.clipboard.writeText){
- navigator.clipboard.writeText(txt).then(function(){toast(' 已复制物流信息')}).catch(function(){prompt(' 复制物流信息：',txt)})
- }else{prompt(' 复制物流信息：',txt)}
+  var o=_tkOrders[i];
+  if(!o)return;
+  var st=trackStatus(o);
+  var txt='物流：'+(o.shipping_company||'')+'\n单号：'+(o.shipment_num||'')+'\n状态：'+st.text;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){toast('✅ 已复制物流信息')}).catch(function(){prompt('📋 复制物流信息：',txt)})
+  }else{prompt('📋 复制物流信息：',txt)}
 }
 
 // 一键复制全部物流：汇总所有有单号的订单
 function copyAllTrack(){
- var has=_tkOrders.filter(function(o){return o.shipment_num});
- if(!has.length){toast('无物流可复制');return}
- var lines=['这是您的所有物流哈，一共 '+has.length+' 个包裹',''];
- has.forEach(function(o,i){
- var st=trackStatus(o);
- lines.push('包裹'+(i+1)+'：'+(o.shipping_company||'')+' '+o.shipment_num);
- lines.push('物流状态：'+st.text);
- var items=o.items||[];
- if(items.length)lines.push('书籍：'+items.map(function(it){return it.name||''}).join('、').substring(0,60));
- lines.push('');
- });
- var txt=lines.join('\n').replace(/\n\n$/, '\n');
- if(navigator.clipboard&&navigator.clipboard.writeText){
- navigator.clipboard.writeText(txt).then(function(){toast(' 已复制 '+has.length+' 个物流')}).catch(function(){prompt(' 物流汇总：',txt)})
- }else{prompt(' 物流汇总：',txt)}
+  var has=_tkOrders.filter(function(o){return o.shipment_num});
+  if(!has.length){toast('无物流可复制');return}
+  var lines=['这是您的所有物流哈，一共 '+has.length+' 个包裹',''];
+  has.forEach(function(o,i){
+    var st=trackStatus(o);
+    lines.push('包裹'+(i+1)+'：'+(o.shipping_company||'')+' '+o.shipment_num);
+    lines.push('物流状态：'+st.text);
+    var items=o.items||[];
+    if(items.length)lines.push('书籍：'+items.map(function(it){return it.name||''}).join('、').substring(0,60));
+    lines.push('');
+  });
+  var txt=lines.join('\n').replace(/\n\n$/, '\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){toast('✅ 已复制 '+has.length+' 个物流')}).catch(function(){prompt('📋 物流汇总：',txt)})
+  }else{prompt('📋 物流汇总：',txt)}
 }
 
 function foldTk(i){
- var b=id('tkb_'+i);
- if(!b)return;
- b.style.maxHeight=b.style.maxHeight==='none'?'0px':'none';
- b.style.overflow=b.style.overflow==='visible'?'hidden':'visible';
- b.style.padding=b.style.padding==='10px 12px'?'0 12px':'10px 12px';
+  var b=id('tkb_'+i);
+  if(!b)return;
+  b.style.maxHeight=b.style.maxHeight==='none'?'0px':'none';
+  b.style.overflow=b.style.overflow==='visible'?'hidden':'visible';
+  b.style.padding=b.style.padding==='10px 12px'?'0 12px':'10px 12px';
 }
 </script>
 </body>
