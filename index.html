@@ -230,10 +230,10 @@ function extractISBNs(t){
   var is=[],v={};
   function add(s){if(!v[s]){v[s]=1;is.push(s)}}
   var c=t.replace(/[-\s]/g,''); // 去连字符空格：978-7-111-67966-0 → 9787111679660
-  var re13=/(?:978|979)\d{10}/g,mm;
+  var re13=/(?:978|979|977)\d{10}/g,mm;
   while((mm=re13.exec(c))!==null){ if(chk13(mm[0])) add(mm[0]); }
   // 移除已识别 ISBN-13 后，剩余文本找 ISBN-10
-  var rest=c.replace(/(?:978|979)\d{10}/g,'');
+  var rest=c.replace(/(?:978|979|977)\d{10}/g,'');
   var re10=/(^|[^\d])(\d{9}[\dX])(?!\d)/g,m2;
   while((m2=re10.exec(rest))!==null){ if(chk10(m2[2])) add(m2[2]); }
   return is;
