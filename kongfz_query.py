@@ -20,17 +20,19 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ── 自适应并发数（检测到失败自动降速） ──────────
-_RATE = {"consecutive_fails": 0, "max_workers": 1}
+_RATE = {"consecutive_fails": 0, "max_workers": 3}
 
 def _get_max_workers():
-    """根据失败率动态调整批量并发数"""
+    """根据失败率动态调整批量并发数：
+       0 次失败 → 默认并发 3（配合全局 600ms 节流，出站仍 1.67 次/秒，与已验证稳定的频率一致）
+       1~2 次失败 → 降到 2
+       ≥3 次失败 → 降到 1（完全串行，最稳）
+       每次成功会递减失败计数，自动逐步恢复并发。"""
     fails = _RATE["consecutive_fails"]
-    if fails >= 5:
-        return 1
-    elif fails >= 3:
+    if fails >= 3:
         return 1
     elif fails >= 1:
-        return 1
+        return 2
     return _RATE["max_workers"]
 
 def _record_fail():
@@ -54,7 +56,7 @@ def _throttle():
         _LAST_REQUEST_TS[0] = time.monotonic()
 
 # 限流关键词
-_RATE_LIMIT_HINTS = ("请求过于频繁", "访问频次", "频繁", "frequency", "too many")
+_RATE_LIMIT_HINTS = ("请求过于频繁", "访问频次", "频繁", "frequency", "too many", "请登录", "登录后再")
 
 # ── 线程级 HTTP 连接池（复用 TLS 连接，减少握手开销） ──
 _CONN_LOCK = threading.Lock()
@@ -294,7 +296,7 @@ def _query_api(isbn, cookie_str, quality_filter=""):
         msg = str(data.get("message", ""))
         if any(hint in msg for hint in _RATE_LIMIT_HINTS):
             _record_fail()
-            time.sleep(2.0)
+            time.sleep(3.0)
             data, err = _do_request()
 
     if err:

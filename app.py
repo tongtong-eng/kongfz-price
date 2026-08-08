@@ -41,6 +41,7 @@ from kongfz_cookie import (
 from kongfz_query import (
     query_isbn, batch_query, HEADERS,
     query_isbn_by_address, batch_query_by_address, _parse_province,
+    _get_max_workers,
 )
 from kongfz_address import cleanup_addresses, MAX_ADDRESSES, parse_address_text, add_address, delete_address, list_addresses
 from kongfz_order import search_by_phone
@@ -619,7 +620,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         results = [None] * len(isbns)
         done_count = [0]
 
-        with ThreadPoolExecutor(max_workers=min(len(isbns), 10)) as ex:
+        with ThreadPoolExecutor(max_workers=min(len(isbns), _get_max_workers())) as ex:
             fut_map = {}
             for i, isbn in enumerate(isbns):
                 fut = ex.submit(_qisbn, isbn, cookie, quality_filter)
