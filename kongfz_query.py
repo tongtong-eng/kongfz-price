@@ -254,28 +254,33 @@ def _build_result(isbn, items, total_found=0):
 
 # ── 核心查价 ───────────────────────────────────
 
-def _query_api(isbn, cookie_str, quality_filter="", user_area=""):
+def _query_api(isbn, cookie_str, quality_filter="", user_area="", pages=1):
     """
-    执行 API 请求：sortType=5 总价升序，仅第 1 页。
-    复用线程级 HTTPS 连接减少 TLS 握手开销。
+    执行 API 请求：sortType=5 总价升序，复用线程级 HTTPS 连接。
     返回 (items_list, total_count) 或 (None, error_msg)。
 
     user_area: 收货地区编码（如 4010000000 重庆奉节）。
     传了之后搜索接口返回的运费(postage.shippingList)就是按该收货地址的真实运费，
     这是"精确按地址查价"的核心（不需要抓详情页/调 getFreightInfo）。
-    """
-    params = {
-        "keyword": isbn, "page": 1, "size": PAGE_SIZE,
-        "sortType": SORT_TYPE,
-    }
-    if quality_filter:
-        params["quality"] = quality_filter
-    if user_area:
-        params["userArea"] = user_area
-    url = f"{API_PATH}?{urllib.parse.urlencode(params)}"
 
-    def _do_request():
-        """单次请求，返回 (data, error_msg)"""
+    pages: 翻页扫描页数（默认 1 页 50 条）。>1 时翻页合并去重。
+    精确查价用（userArea 模式服务端排序不完全按该地址总价，首页可能漏掉
+    更低价店，实测翻页能发现更低 → 精确查价扫多页保证不漏）。
+    """
+    all_items = []
+    total_found = 0
+
+    def _do_request(page):
+        """请求指定页，返回 (data, error_msg)"""
+        params = {
+            "keyword": isbn, "page": page, "size": PAGE_SIZE,
+            "sortType": SORT_TYPE,
+        }
+        if quality_filter:
+            params["quality"] = quality_filter
+        if user_area:
+            params["userArea"] = user_area
+        url = f"{API_PATH}?{urllib.parse.urlencode(params)}"
         try:
             conn = _get_conn()
             conn.request("GET", url, headers={**HEADERS, "Cookie": cookie_str})
@@ -296,36 +301,51 @@ def _query_api(isbn, cookie_str, quality_filter="", user_area=""):
         except Exception as e:
             return None, str(e)[:40]
 
-    # 节流：每个请求间隔至少 300ms
-    _throttle()
+    for page in range(1, pages + 1):
+        _throttle()
+        data, err = _do_request(page)
 
-    data, err = _do_request()
+        # 限流检测：遇到"请求过于频繁"等待 2 秒重试一次
+        if data and data.get("status") != 1:
+            msg = str(data.get("message", ""))
+            if any(hint in msg for hint in _RATE_LIMIT_HINTS):
+                _record_fail()
+                time.sleep(3.0)
+                data, err = _do_request(page)
 
-    # 限流检测：遇到"请求过于频繁"等待 2 秒重试一次
-    if data and data.get("status") != 1:
-        msg = str(data.get("message", ""))
-        if any(hint in msg for hint in _RATE_LIMIT_HINTS):
-            _record_fail()
-            time.sleep(3.0)
-            data, err = _do_request()
+        if err:
+            if page == 1:
+                _record_fail()
+                return None, err
+            break  # 后续页失败，用已扫到的页兜底
+        if data.get("status") != 1:
+            if page == 1:
+                _record_fail()
+                return None, str(data.get("message", "查询失败"))[:40]
+            break
 
-    if err:
-        _record_fail()
-        return None, err
+        _record_success()
+        payload = data.get("data", {})
+        item_resp = payload.get("itemResponse", {})
+        items = item_resp.get("list") or item_resp.get("items") or []
+        t = payload.get("totalFound") or payload.get("totalCount") or 0
+        total_found = t or total_found
+        if items:
+            all_items.extend(items)
+        # 该页不足一页 = 没有更多了
+        if len(items) < PAGE_SIZE:
+            break
 
-    if data.get("status") != 1:
-        msg = data.get("message", "查询失败")
-        _record_fail()
-        return None, msg[:40]
-
-    _record_success()
-
-    payload = data.get("data", {})
-    item_resp = payload.get("itemResponse", {})
-    items = item_resp.get("list") or item_resp.get("items") or []
-    total_found = payload.get("totalFound") or payload.get("totalCount") or 0
-
-    return items, total_found
+    # 跨页去重（按 itemId）
+    seen = set()
+    dedup = []
+    for it in all_items:
+        k = it.get("itemId")
+        if k in seen:
+            continue
+        seen.add(k)
+        dedup.append(it)
+    return dedup, total_found
 
 
 def query_isbn(isbn, cookie_str, quality_filter=""):
@@ -440,16 +460,17 @@ def _parse_province(address):
     return None
 
 
-def query_isbn_by_address(isbn, cookie_str, province, quality_filter="", user_area="", top_n=5, precise=False):
+def query_isbn_by_address(isbn, cookie_str, province, quality_filter="", user_area="", pages=5, top_n=5, precise=False):
     """
     按收货地址查询单本 ISBN 的真实最低总价（userArea 方案）。
 
     核心：搜索接口带 userArea=收货地区编码（如 4010000000 重庆奉节县），
     返回的运费（postage.shippingList[0].shippingFee）即为按该地址的真实运费。
-    ——不需要抓详情页、不需要调 getFreightInfo，速度与普通查价相同（秒级）。
+    ——不需要抓详情页、不需要调 getFreightInfo，速度快（每本 1-3 秒）。
 
     - 剔除"该收货地址无运费数据"（大概率不发货到该地）的店铺
-    - 精确性：搜索接口直接按该地址算运费，本地全量排序取最低，绝不遗漏
+    - 精确性：翻 pages 页合并全量排序取最低。因为 userArea 模式下服务端
+      排序不完全按该地址总价，首页可能漏掉更低价店，故默认扫 5 页保证不漏。
 
     参数：
         isbn:           ISBN
@@ -457,6 +478,7 @@ def query_isbn_by_address(isbn, cookie_str, province, quality_filter="", user_ar
         province:       收货省份名（仅用于前端显示，如"重庆"）
         quality_filter: 品相过滤
         user_area:      收货地区编码（10 位，取 cityId || provId）
+        pages:          翻页扫描页数（默认 5 页 ≈ 250 条候选）
         top_n / precise: 保留向后兼容（userArea 方案下恒精确，参数已无意义）
 
     返回：与 query_isbn 相同结构，额外含 user_area / real_freight_mode / scan_count。
@@ -465,8 +487,8 @@ def query_isbn_by_address(isbn, cookie_str, province, quality_filter="", user_ar
     if not re.match(r'^\d{10,13}$', isbn):
         return {"isbn": isbn, "title": "—", "error": "格式不对"}
 
-    # 1. 搜索（带 userArea → 搜索接口按收货地址算真实运费）
-    items, total = _query_api(isbn, cookie_str, quality_filter, user_area=user_area)
+    # 1. 搜索（带 userArea → 搜索接口按收货地址算真实运费；翻 pages 页扩大候选）
+    items, total = _query_api(isbn, cookie_str, quality_filter, user_area=user_area, pages=pages)
     if items is None:
         return {"isbn": isbn, "title": "—", "error": total}
     if not items:
@@ -541,7 +563,8 @@ def query_isbn_by_address(isbn, cookie_str, province, quality_filter="", user_ar
         "publisher": book_press or "",
         "count": len(parsed_all),
         "total_count": total,
-        "pages_scanned": 1,
+        "pages_scanned": pages,
+        "pages": pages,
         "error": None,
         "cheapest": cheapest,
         "top_cheapest": top,
@@ -561,8 +584,8 @@ def query_isbn_by_address(isbn, cookie_str, province, quality_filter="", user_ar
     }
 
 
-def batch_query_by_address(isbns, cookie_str, province, quality_filter="", user_area="", top_n=5, precise=False):
-    """按收货地址批量查价（userArea 方案，每本仅 1 次搜索请求，秒级）。"""
+def batch_query_by_address(isbns, cookie_str, province, quality_filter="", user_area="", pages=5, top_n=5, precise=False):
+    """按收货地址批量查价（userArea 方案，每本扫 pages 页，约 1-3 秒/本）。"""
     uniq_indices = {}
     for i, isbn in enumerate(isbns):
         key = isbn.strip().replace("-", "").replace(" ", "")
@@ -573,7 +596,8 @@ def batch_query_by_address(isbns, cookie_str, province, quality_filter="", user_
     for isbn in uniq_isbns:
         try:
             uniq_results[isbn] = query_isbn_by_address(
-                isbn, cookie_str, province, quality_filter, user_area, top_n, precise)
+                isbn, cookie_str, province, quality_filter,
+                user_area=user_area, pages=pages, top_n=top_n, precise=precise)
         except Exception as e:
             uniq_results[isbn] = {"isbn": isbn, "title": "—", "error": str(e)[:40]}
 

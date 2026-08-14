@@ -418,7 +418,7 @@ function sh(data){
   // 精细化模式横幅：按买家地址真实运费逐店比价，确认全局最低
   if(_addrProvince&&data.length&&data[0].precise){
     var sc=0;data.forEach(function(r){sc+=r.scan_count||0});
-    html+='<div class="card" style="border:2px solid #7c3aed;background:#f5f3ff;margin-bottom:10px;padding:10px 14px;font-size:.8rem;color:#5b21b6;font-weight:600">🧭 精确模式：已按 <strong>'+_addrProvince+'</strong> 收货地址的真实运费确认每本最低总价（'+sc+' 家店，秒级，保证不漏）</div>';
+    html+='<div class="card" style="border:2px solid #7c3aed;background:#f5f3ff;margin-bottom:10px;padding:10px 14px;font-size:.8rem;color:#5b21b6;font-weight:600">🧭 精确模式：已按 <strong>'+_addrProvince+'</strong> 收货地址的真实运费确认每本最低总价（扫'+(data[0].pages||5)+'页 · '+sc+' 家店，保证不漏）</div>';
   }
   // 顶部对账行：查到 X 本 · 总价；以下 N 本搜索不到
   var tot=0;pd.forEach(function(r){tot+=r.cheapest.total});
