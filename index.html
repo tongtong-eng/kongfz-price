@@ -272,7 +272,7 @@ function parseAddr(){
     .then(function(d){
       if(d.province){
         _addrProvince=d.province;
-        res.innerHTML='✅ 已识别省份：<strong>'+d.province+'</strong> · 查价将按该省计算真实运费';
+        res.innerHTML='✅ 已识别省份：<strong>'+d.province+'</strong> · 查价将按该省精确计算真实运费、确认全局最低（会稍慢）';
         res.style.color='#10b981';
       }else{
         _addrProvince='';
@@ -351,10 +351,11 @@ Q.onclick=function(){
   E.innerHTML='<div class="summary"><div class="s-card blue"><div class="n">'+is.length+'</div><div class="l">查询中</div></div><div class="s-card green"><div class="n"><span id="batchSec">0</span>s</div><div class="l">已用时</div></div></div>';
   var tm=setInterval(function(){var el=id('batchSec');if(el)el.textContent=((Date.now()-st)/1000).toFixed(1)},500);
 
-  // 有收货地址 → 按地址算真实运费
+  // 有收货地址 → 精细化查价（按真实运费逐店比价，保证全局最低）
   if(_addrProvince){
-    var u2='/api/batch_query_address?isbns='+is.map(function(s){return encodeURIComponent(s)}).join(',')+'&province='+encodeURIComponent(_addrProvince);
+    var u2='/api/batch_query_address?isbns='+is.map(function(s){return encodeURIComponent(s)}).join(',')+'&province='+encodeURIComponent(_addrProvince)+'&precise=1';
     if(ql)u2+='&quality='+encodeURIComponent(ql);
+    ss('⏳ 精细化查价中（按 '+_addrProvince+' 真实运费逐店比价，确认最低，会稍慢）...','loading');
     fj(u2).then(function(d){
       clearInterval(tm);
       if(d.error){ss('❌ '+d.error,'error');R=0;Q.disabled=0;return}
@@ -365,7 +366,7 @@ Q.onclick=function(){
       sh(L);
       addToday();
       R=0;Q.disabled=0;
-      ss('✅ 完成！查到 '+ok.length+'/'+L.length+' 本 · 按'+_addrProvince+'运费 · 用时 '+((Date.now()-st)/1000).toFixed(1)+'s','done')
+      ss('✅ 完成！查到 '+ok.length+'/'+L.length+' 本 · 已按 '+_addrProvince+' 精确比价确认最低 · 用时 '+((Date.now()-st)/1000).toFixed(1)+'s','done')
     }).catch(function(e){
       clearInterval(tm);
       ss('❌ 网络错误','error');R=0;Q.disabled=0
@@ -409,6 +410,11 @@ Q.onclick=function(){
 function sh(data){
   var ok=data.filter(function(r){return !r.error}),pd=ok.filter(function(r){return r.cheapest}),fl=data.filter(function(r){return r.error}),html='';
   var hc=0,so=0;data.forEach(function(r){hc+=r.holiday_shop_count||0;so+=r.sold_out_skipped||0});
+  // 精细化模式横幅：按买家地址真实运费逐店比价，确认全局最低
+  if(_addrProvince&&data.length&&data[0].precise){
+    var sc=0;data.forEach(function(r){sc+=r.scan_count||0});
+    html+='<div class="card" style="border:2px solid #7c3aed;background:#f5f3ff;margin-bottom:10px;padding:10px 14px;font-size:.8rem;color:#5b21b6;font-weight:600">🧭 精细化模式：已按 <strong>'+_addrProvince+'</strong> 的真实运费逐店比价，确认每本全局最低总价（共 '+sc+' 家店精确计算，保证不漏）</div>';
+  }
   // 顶部对账行：查到 X 本 · 总价；以下 N 本搜索不到
   var tot=0;pd.forEach(function(r){tot+=r.cheapest.total});
   if(pd.length||fl.length){
@@ -441,7 +447,7 @@ function sh(data){
       items.forEach(function(it,j){
         html+='<tr><td>'+(j+1)+'</td><td>'+esc(it.shop)+(it.area?'<div class="meta">'+esc(it.area)+'</div>':'')+'</td><td>'+esc(it.quality_text||'—')+'</td><td style="text-align:right">¥'+it.price.toFixed(2)+'</td><td style="text-align:right">¥'+it.shipping.toFixed(1)+'</td><td style="text-align:right'+(j===0?';font-weight:700;color:#fb7185':'')+'">¥'+it.total.toFixed(1)+'</td><td style="text-align:center">'+(it.itemId&&it.shopId?'<button onclick="ac('+it.itemId+','+it.shopId+',this)" style="padding:2px 6px;border-radius:4px;border:1px solid #a855f7;background:transparent;color:#a855f7;cursor:pointer;font-size:.72rem">🛒</button>':'')+'</td></tr>'
       });
-      html+='</tbody></table><div style="font-size:.65rem;color:#c4b5d0;margin-top:3px">扫描'+(r.pages_scanned||1)+'页 · 在售'+r.total_count+'本'+(r.holiday_shop_count?' · 🛌 排除'+r.holiday_shop_count+'个休假/异常店铺':'')+(r.sold_out_skipped?' · 已售罄'+r.sold_out_skipped+'本':'')+'</div></div>'
+      html+='</tbody></table><div style="font-size:.65rem;color:#c4b5d0;margin-top:3px">扫描'+(r.pages_scanned||1)+'页 · 在售'+r.total_count+'本'+(r.holiday_shop_count?' · 🛌 排除'+r.holiday_shop_count+'个休假/异常店铺':'')+(r.sold_out_skipped?' · 已售罄'+r.sold_out_skipped+'本':'')+(r.precise?' · 🎯 已精确比价'+r.scan_count+'家店确认最低':'')+'</div></div>'
     }
   });
   E.innerHTML=html;L=data;

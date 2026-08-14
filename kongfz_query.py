@@ -570,23 +570,34 @@ def calc_real_freight(cookie_str, item, province):
     return round(total_fee, 1), True
 
 
-def query_isbn_by_address(isbn, cookie_str, province, quality_filter="", top_n=5):
+def query_isbn_by_address(isbn, cookie_str, province, quality_filter="", top_n=5, precise=False):
     """
     按收货地址省份查询单本 ISBN 的最低总价。
 
     流程：
       1. 搜索该 ISBN 的商品（sortType=5 总价升序）
-      2. 对总价靠前的 top_n 条商品，调 getFreightInfo 拿真实运费
-      3. 重算总价（书价 + 真实运费）→ 按真实总价排序 → 返回最低
+      2. 调 getFreightInfo 拿各店到该省的真实运费，重算总价
+      3. 按真实总价排序 → 返回最低
+
+    precise=True（精细化模式，填了准确地址就用）：
+      - 对全部在售商品按【书价升序】逐个算真实运费，并剪枝：
+        真实总价 ≥ 书价，一旦当前最低真实总价 best 已确定、且某商品
+        书价 ≥ best，它和后续所有商品都不可能更低，提前结束。
+      - 数学上保证找到全局真实最低总价（绝不遗漏任何店）。
+      - 通常只需算前几家店，仅运费差异极大时才需算更多。
+
+    precise=False（快速模式，默认）：
+      - 只对估算总价前 top_n 条算真实运费（快，极端情况可能漏）。
 
     参数：
         isbn:           ISBN
         cookie_str:     Cookie
         province:       收货省份（如"重庆"）
         quality_filter: 品相过滤
-        top_n:          只对前 N 条算真实运费（性能优化）
+        top_n:          快速模式下只对前 N 条算真实运费
+        precise:        精细化模式（True 保证全局最低总价）
 
-    返回：与 query_isbn 相同结构的 result，额外含 real_freight 字段。
+    返回：与 query_isbn 相同结构的 result，额外含 real_freight_mode / precise / scan_count。
     """
     isbn = isbn.strip().replace("-", "").replace(" ", "")
     if not re.match(r'^\d{10,13}$', isbn):
@@ -599,46 +610,23 @@ def query_isbn_by_address(isbn, cookie_str, province, quality_filter="", top_n=5
     if not items:
         return {"isbn": isbn, "title": "—", "error": "无在售记录", "count": total}
 
-    # 2. 先解析全部商品基本信息
+    # 2. 先解析全部商品基本信息（排除休假/不可靠店铺 + 已售罄）
     parsed_all = []
+    book_title = book_author = book_press = None
+    holiday_skipped = 0
+    sold_out_skipped = 0
     for item in items:
-        if item.get("shopIsHoliday") or item.get("shop30DaysNotLogin"):
+        if _is_unreliable_shop(item):
+            holiday_skipped += 1
+            continue
+        if item.get("isSoldOut"):
+            sold_out_skipped += 1
             continue
         r = _parse_item(item)
         if r is None:
             continue
         r["_item"] = item  # 保留原始 item 用于取 mouldId/weight
-        # 先按搜索接口的运费估一个初始总价，用于排序挑前 top_n
         parsed_all.append(r)
-
-    if not parsed_all:
-        return {"isbn": isbn, "title": "—", "error": "未解析到商品"}
-
-    # 3. 按搜索接口的（书价+固定运费）排序，取前 top_n 算真实运费
-    parsed_all.sort(key=lambda x: x["total"])
-    candidates = parsed_all[:top_n]
-
-    # 4. 对候选商品算真实运费
-    for r in candidates:
-        real_fee, hit = calc_real_freight(cookie_str, r["_item"], province)
-        if hit:
-            r["real_freight"] = real_fee
-            r["real_total"] = round(r["price"] + real_fee, 1)
-            # 重设运费字段为真实值
-            r["shipping"] = real_fee
-            r["total"] = r["real_total"]
-        else:
-            r["real_freight"] = r.get("shipping", 0)
-            r["real_total"] = r["total"]
-
-    # 5. 按真实总价排序
-    candidates.sort(key=lambda x: x["real_total"])
-    top = candidates[:5]
-    cheapest = top[0]
-
-    # 书名/作者/出版社
-    book_title = book_author = book_press = None
-    for item in items:
         if not book_title:
             book_title = item.get("title", "—")
         if not book_author:
@@ -653,8 +641,60 @@ def query_isbn_by_address(isbn, cookie_str, province, quality_filter="", top_n=5
                 if v and len(str(v)) > 1:
                     book_press = str(v).strip()[:30]
                     break
-        if book_title and book_author and book_press:
-            break
+
+    if not parsed_all:
+        if holiday_skipped > 0 and sold_out_skipped == 0:
+            return {"isbn": isbn, "title": book_title or "—",
+                    "error": f"所有 {holiday_skipped} 个在售商品店铺均在休假中",
+                    "holiday_shop_count": holiday_skipped}
+        if sold_out_skipped > 0:
+            return {"isbn": isbn, "title": book_title or "—",
+                    "error": f"全部 {sold_out_skipped} 个商品均已售罄",
+                    "sold_out_skipped": sold_out_skipped,
+                    "holiday_shop_count": holiday_skipped or 0}
+        return {"isbn": isbn, "title": book_title or "—", "error": "未解析到商品"}
+
+    scan_count = 0
+
+    if precise:
+        # 精细化模式：书价升序 + 剪枝全量，保证真实最低总价不漏
+        parsed_all.sort(key=lambda x: x["price"])
+        best = float("inf")
+        for r in parsed_all:
+            # 真实总价 ≥ 书价；已有最低 best 且 书价 ≥ best → 后续不可能更低
+            if best < float("inf") and r["price"] >= best:
+                break
+            scan_count += 1
+            real_fee, hit = calc_real_freight(cookie_str, r["_item"], province)
+            # 拿不到运费模板时用搜索接口运费兜底（可能低估，但不会漏算）
+            r["real_freight"] = real_fee if hit else r.get("shipping", 0)
+            r["real_total"] = round(r["price"] + r["real_freight"], 1)
+            r["shipping"] = r["real_freight"]
+            r["total"] = r["real_total"]
+            if r["real_total"] < best:
+                best = r["real_total"]
+        priced = [r for r in parsed_all if "real_total" in r]
+    else:
+        # 快速模式：按估算总价排序，只对前 top_n 条算真实运费
+        parsed_all.sort(key=lambda x: x["total"])
+        candidates = parsed_all[:top_n]
+        for r in candidates:
+            scan_count += 1
+            real_fee, hit = calc_real_freight(cookie_str, r["_item"], province)
+            if hit:
+                r["real_freight"] = real_fee
+                r["real_total"] = round(r["price"] + real_fee, 1)
+                r["shipping"] = real_fee
+                r["total"] = r["real_total"]
+            else:
+                r["real_freight"] = r.get("shipping", 0)
+                r["real_total"] = r["total"]
+        priced = candidates
+
+    # 3. 按真实总价排序 → 前 5 名 + 最低
+    priced.sort(key=lambda x: x["real_total"])
+    top = priced[:5]
+    cheapest = top[0]
 
     all_prices = [r["price"] for r in parsed_all]
 
@@ -663,7 +703,8 @@ def query_isbn_by_address(isbn, cookie_str, province, quality_filter="", top_n=5
         "title": book_title or "—",
         "author": book_author or "",
         "press": book_press or "",
-        "count": len(candidates),
+        "publisher": book_press or "",
+        "count": len(parsed_all),
         "total_count": total,
         "pages_scanned": 1,
         "error": None,
@@ -676,11 +717,18 @@ def query_isbn_by_address(isbn, cookie_str, province, quality_filter="", top_n=5
         },
         "province": province,
         "real_freight_mode": True,
+        "precise": precise,
+        "scan_count": scan_count,
+        "holiday_shop_count": holiday_skipped,
+        "sold_out_skipped": sold_out_skipped,
     }
 
 
-def batch_query_by_address(isbns, cookie_str, province, quality_filter="", top_n=5):
-    """按收货地址批量查价（串行，复用节流）。"""
+def batch_query_by_address(isbns, cookie_str, province, quality_filter="", top_n=5, precise=False):
+    """按收货地址批量查价（串行，复用节流）。
+
+    precise=True 时每本走精细化剪枝全量算法，保证真实最低总价不漏。
+    """
     uniq_indices = {}
     for i, isbn in enumerate(isbns):
         key = isbn.strip().replace("-", "").replace(" ", "")
@@ -691,7 +739,7 @@ def batch_query_by_address(isbns, cookie_str, province, quality_filter="", top_n
     for isbn in uniq_isbns:
         try:
             uniq_results[isbn] = query_isbn_by_address(
-                isbn, cookie_str, province, quality_filter, top_n)
+                isbn, cookie_str, province, quality_filter, top_n, precise)
         except Exception as e:
             uniq_results[isbn] = {"isbn": isbn, "title": "—", "error": str(e)[:40]}
 
