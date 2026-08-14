@@ -140,6 +140,7 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
         <button class="btn btn-outline" id="btnParseAddr" onclick="parseAddr()" style="white-space:nowrap">📍 解析</button>
       </div>
       <div style="margin-top:6px">
+        <label style="display:flex;align-items:center;gap:4px;font-size:.72rem;color:#f472b6;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="chkDefault" checked> 设为孔夫子<strong>默认</strong>收货地址</label>
         <button class="btn btn-primary" id="btnAddAddr" onclick="addAddrKFZ()" style="white-space:nowrap;display:none;width:100%;padding:9px 0">📦 添加到孔夫子收货地址</button>
       </div>
       <div id="addrResult" style="font-size:.75rem;color:#d48aa9;margin-top:5px"></div>
@@ -259,6 +260,7 @@ function cp(){var b=id('pc');if(b)b.remove();Q.click()}
 
 // === 收货地址解析 ===
 var _addrProvince='';  // 全局：解析出的省份
+var _addrUserArea='';  // 全局：收货地区编码（cityId/provId，查价用 userArea）
 var _addrInfo=null;    // 全局：官方解析出的完整地址信息
 function parseAddr(){
   var val=(id('addrInput').value||'').trim();
@@ -272,7 +274,7 @@ function parseAddr(){
     .then(function(d){
       if(d.province){
         _addrProvince=d.province;
-        res.innerHTML='✅ 已识别省份：<strong>'+d.province+'</strong> · 查价将按该省精确计算真实运费、确认全局最低（会稍慢）';
+        res.innerHTML='✅ 已识别省份：<strong>'+d.province+'</strong> · 查价将按该收货地址精确算真实运费（秒级）';
         res.style.color='#10b981';
       }else{
         _addrProvince='';
@@ -285,9 +287,11 @@ function parseAddr(){
         .then(function(d2){
           if(d2.success){
             _addrInfo=d2;
+            _addrUserArea=d2.cityId||d2.provId||'';
             if(btnAdd)btnAdd.style.display='inline-block';
           }else{
             _addrInfo=null;
+            _addrUserArea='';
             if(btnAdd)btnAdd.style.display='none';
           }
         })
@@ -311,7 +315,7 @@ function addAddrKFZ(){
     area:String(area),
     address:_addrInfo.address||'',
     zipCode:_addrInfo.zipCode||'',
-    isDefault:0
+    isDefault:(id('chkDefault')&&id('chkDefault').checked)?1:0
   };
   btn.disabled=1;btn.textContent='⏳ 添加中...';
   fj('/api/address/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
@@ -351,11 +355,12 @@ Q.onclick=function(){
   E.innerHTML='<div class="summary"><div class="s-card blue"><div class="n">'+is.length+'</div><div class="l">查询中</div></div><div class="s-card green"><div class="n"><span id="batchSec">0</span>s</div><div class="l">已用时</div></div></div>';
   var tm=setInterval(function(){var el=id('batchSec');if(el)el.textContent=((Date.now()-st)/1000).toFixed(1)},500);
 
-  // 有收货地址 → 精细化查价（按真实运费逐店比价，保证全局最低）
+  // 有收货地址 → 精确查价（搜索接口带 userArea，按该地址算真实运费，秒级）
   if(_addrProvince){
     var u2='/api/batch_query_address?isbns='+is.map(function(s){return encodeURIComponent(s)}).join(',')+'&province='+encodeURIComponent(_addrProvince)+'&precise=1';
+    if(_addrUserArea)u2+='&user_area='+encodeURIComponent(_addrUserArea);
     if(ql)u2+='&quality='+encodeURIComponent(ql);
-    ss('⏳ 精细化查价中（按 '+_addrProvince+' 真实运费逐店比价，确认最低，会稍慢）...','loading');
+    ss('⏳ 精确查价中（按 '+_addrProvince+' 收货地址算真实运费）...','loading');
     fj(u2).then(function(d){
       clearInterval(tm);
       if(d.error){ss('❌ '+d.error,'error');R=0;Q.disabled=0;return}
@@ -366,7 +371,7 @@ Q.onclick=function(){
       sh(L);
       addToday();
       R=0;Q.disabled=0;
-      ss('✅ 完成！查到 '+ok.length+'/'+L.length+' 本 · 已按 '+_addrProvince+' 精确比价确认最低 · 用时 '+((Date.now()-st)/1000).toFixed(1)+'s','done')
+      ss('✅ 完成！查到 '+ok.length+'/'+L.length+' 本 · 已按 '+_addrProvince+' 收货地址精确算运费确认最低 · 用时 '+((Date.now()-st)/1000).toFixed(1)+'s','done')
     }).catch(function(e){
       clearInterval(tm);
       ss('❌ 网络错误','error');R=0;Q.disabled=0
@@ -413,7 +418,7 @@ function sh(data){
   // 精细化模式横幅：按买家地址真实运费逐店比价，确认全局最低
   if(_addrProvince&&data.length&&data[0].precise){
     var sc=0;data.forEach(function(r){sc+=r.scan_count||0});
-    html+='<div class="card" style="border:2px solid #7c3aed;background:#f5f3ff;margin-bottom:10px;padding:10px 14px;font-size:.8rem;color:#5b21b6;font-weight:600">🧭 精细化模式：已按 <strong>'+_addrProvince+'</strong> 的真实运费逐店比价，确认每本全局最低总价（共 '+sc+' 家店精确计算，保证不漏）</div>';
+    html+='<div class="card" style="border:2px solid #7c3aed;background:#f5f3ff;margin-bottom:10px;padding:10px 14px;font-size:.8rem;color:#5b21b6;font-weight:600">🧭 精确模式：已按 <strong>'+_addrProvince+'</strong> 收货地址的真实运费确认每本最低总价（'+sc+' 家店，秒级，保证不漏）</div>';
   }
   // 顶部对账行：查到 X 本 · 总价；以下 N 本搜索不到
   var tot=0;pd.forEach(function(r){tot+=r.cheapest.total});

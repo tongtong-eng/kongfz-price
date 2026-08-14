@@ -175,7 +175,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return
             quality_filter = q.get("quality", [""])[0]
             precise = q.get("precise", [""])[0] in ("1", "true", "yes")
-            result = query_isbn_by_address(isbn, cookie, province, quality_filter, precise=precise)
+            user_area = q.get("user_area", [""])[0]
+            result = query_isbn_by_address(isbn, cookie, province, quality_filter, user_area, precise=precise)
             self.send_json(result)
         elif path.startswith("/api/batch_query_address"):
             # 按收货地址算真实运费的批量查价（需在 /api/batch_query 之前匹配）
@@ -198,7 +199,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return
             quality_filter = q.get("quality", [""])[0]
             precise = q.get("precise", [""])[0] in ("1", "true", "yes")
-            results = batch_query_by_address(isbns, cookie, province, quality_filter, precise=precise)
+            user_area = q.get("user_area", [""])[0]
+            results = batch_query_by_address(isbns, cookie, province, quality_filter, user_area, precise=precise)
             self.send_json({"results": results, "count": len(results)})
         elif path.startswith("/api/parse_address"):
             # 解析地址里的省份
