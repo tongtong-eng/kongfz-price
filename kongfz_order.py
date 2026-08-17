@@ -72,14 +72,15 @@ def search_by_phone(cookie_str, phone, page=1, page_size=50):
             "page_size": page_size,
         }
     """
-    body = {"mobile": phone, "page": page, "pageSize": page_size}
+    body = {"mobilePhone": phone, "page": page, "pageSize": page_size}
     data = _call_api(cookie_str, body)
 
     if not data.get("status"):
         return {"error": data.get("errMessage", "查询失败"), "orders": [], "total": 0}
 
     raw_orders = data.get("result", {}).get("list", [])
-    total = data.get("result", {}).get("totalCount") or len(raw_orders)
+    pager = data.get("result", {}).get("pager") or {}
+    total = pager.get("total") or len(raw_orders)
 
     orders = []
     for o in raw_orders:
@@ -90,7 +91,7 @@ def search_by_phone(cookie_str, phone, page=1, page_size=50):
             "status": o.get("orderStatusName", o.get("orderStatus", "")),
             "order_status": o.get("orderStatus", ""),
             "receiver_name": o.get("receiverName", ""),
-            "mobile": o.get("mobile", ""),
+            "mobile": o.get("phoneNum", ""),
             "address": (o.get("provName") or "") + (o.get("cityName") or "") + (o.get("areaName") or "") + (o.get("address") or ""),
             "shipping_company": o.get("shippingCom", ""),
             "shipment_num": o.get("shipmentNum", ""),
