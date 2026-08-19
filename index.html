@@ -110,7 +110,7 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
     <div class="hero-bow">🎀</div>
     <div class="hero-title">孔夫子查价</div>
     <div class="hero-date" id="heroDate"></div>
-    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v4.5 · 去掉总价显示</div>
+    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v4.6 · 复制给买家恢复总价</div>
     <div class="hero-stats">
       <div class="h-stat" onclick="scrollTo(0,0)"><div class="hs-n" id="statToday">0</div><div class="hs-l">今日查价</div></div>
       <div class="h-stat" onclick="showTrack()"><div class="hs-n">📦</div><div class="hs-l">快递追踪</div></div>
@@ -502,7 +502,9 @@ function copyToBuyer(){
   var ok=L.filter(function(r){return r.cheapest}), ng=L.filter(function(r){return r.error});
   var lines=[];
   if(ok.length){
-    lines.push('查到 '+ok.length+' 本');
+    var tot=0; ok.forEach(function(r){tot+=r.cheapest.price+r.cheapest.shipping});
+    var totalSug=pkgSuggest(tot,ok.length);
+    lines.push('查到 '+ok.length+' 本 总价 ¥'+totalSug.toFixed(1));
   }
   if(ng.length){
     lines.push('  ▎ 以下 '+ng.length+' 本搜索不到：'+ng.map(function(r){return r.isbn}).join('、'));
