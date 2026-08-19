@@ -73,6 +73,7 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
 .h-item .actions{display:flex;gap:4px}
 .h-item .actions button{padding:5px 10px;border-radius:10px;border:none;cursor:pointer;font-size:.72rem;font-weight:600}
 .btn-h-q{background:linear-gradient(135deg,#f9a8d4,#fb7185);color:#fff}
+.btn-h-v{background:#2563eb;color:#fff}
 .btn-h-c{background:#f9a8d4;color:#fff}
 .btn-h-d{background:transparent;border:2px solid #ffe4f0!important;color:#e0a8c2}
 
@@ -110,7 +111,7 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
     <div class="hero-bow">🎀</div>
     <div class="hero-title">孔夫子查价</div>
     <div class="hero-date" id="heroDate"></div>
-    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v5.0 · 查价默认出整批最优价</div>
+    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v5.1 · 自动记录查价可反查</div>
     <div class="hero-stats">
       <div class="h-stat" onclick="scrollTo(0,0)"><div class="hs-n" id="statToday">0</div><div class="hs-l">今日查价</div></div>
       <div class="h-stat" onclick="showTrack()"><div class="hs-n">📦</div><div class="hs-l">快递追踪</div></div>
@@ -198,7 +199,7 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
 <div class="toast" id="toast"></div>
 
 <script>
-var R=false,L=[],I=id('inputArea'),S=id('status'),E=id('results'),N=id('empty'),Q=id('btnQuery');
+var R=false,L=[],I=id('inputArea'),S=id('status'),E=id('results'),N=id('empty'),Q=id('btnQuery'),_viewHist=false;
 function id(s){return document.getElementById(s)}
 function esc(s){return(s||'').replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
 function ss(t,c){S.textContent=t;S.className=c||''}
@@ -459,6 +460,16 @@ function sh(data){
   var sb='sb_'+Date.now();E.insertAdjacentHTML('afterbegin','<div class="save-bar" id="'+sb+'"><span>💾</span><input id="si" placeholder="命名（可选）"><button class="btn-save" onclick="sH(\''+sb+'\')">保存查询</button><button class="btn-save" onclick="cpyQuote(0)" style="background:#059669;margin-left:4px">📋 我的成本</button><button class="btn-save" onclick="cpyQuote(1)" style="background:#a855f7;margin-left:2px">📤 发给买家</button><button class="btn-save" onclick="optAlloc()" style="background:#2563eb;margin-left:2px">🧮 最优分配</button></div><div id="allocBar"></div>');
   // 查价完成后自动计算整批最优分配（异步，不阻塞结果渲染）
   setTimeout(autoAlloc,50);
+  // 自动记录本次查价（供反查验证）；反查快照时跳过
+  if(!_viewHist){
+    var _pc=(data||[]).filter(function(r){return r&&r.cheapest}).length;
+    if(_pc>0){
+      setTimeout(function(){
+        var _nm='自动·'+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+        fj('/api/history/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:_nm,results:data,quality_filter:id('qualitySelect')?id('qualitySelect').value:''})}).catch(function(){})
+      },300);
+    }
+  }
 }
 
 // 加购
@@ -906,7 +917,7 @@ function loadH(){
     var el=id('histList');
     if(!d.records||!d.records.length){el.innerHTML='<div style="text-align:center;color:#c4b5d0;font-size:.8rem;padding:10px">暂无记录</div>';return}
     el.innerHTML=d.records.map(function(r){
-      return '<div class="h-item" id="hi_'+r.id+'"><div class="info"><div class="name">'+esc(r.name)+'</div><div class="meta">'+(r.created_at||'')+' · '+r.book_count+'本'+(r.priced_count?' · 🏷️ ¥'+r.total_cost.toFixed(1):'')+'</div></div><div class="actions"><button class="btn-h-q" onclick="rH(\''+r.id+'\')">🔍</button>'+(r.priced_count?'<button class="btn-h-c" onclick="cH(\''+r.id+'\')">🛒</button>':'')+'<button class="btn-h-d" onclick="dH(\''+r.id+'\')">🗑️</button></div></div>'
+      return '<div class="h-item" id="hi_'+r.id+'"><div class="info"><div class="name">'+esc(r.name)+'</div><div class="meta">'+(r.created_at||'')+' · '+r.book_count+'本'+(r.priced_count?' · 🏷️ ¥'+r.total_cost.toFixed(1):'')+'</div></div><div class="actions"><button class="btn-h-q" onclick="rH(\''+r.id+'\')">🔍</button><button class="btn-h-v" onclick="vH(\''+r.id+'\')">👁</button>'+(r.priced_count?'<button class="btn-h-c" onclick="cH(\''+r.id+'\')">🛒</button>':'')+'<button class="btn-h-d" onclick="dH(\''+r.id+'\')">🗑️</button></div></div>'
     }).join('')
   }).catch(function(){})
 }
@@ -918,6 +929,18 @@ function sH(sbId){
     if(d.success){btn.textContent='✅';btn.style.background='#10b981';fold('hist');id('histArrow')&&id('histArrow').classList.add('open');loadH()}
     else{btn.textContent='❌';setTimeout(function(){btn.disabled=0;btn.textContent='保存';btn.style.background='#f59e0b'},2000)}
   }).catch(function(){btn.textContent='❌';setTimeout(function(){btn.disabled=0;btn.textContent='保存';btn.style.background='#f59e0b'},2000)})
+}
+// 查看历史快照：用当时保存的原始结果渲染（含候选店、最优分配），不重新查价
+function vH(id){
+  fj('/api/history/get?id='+encodeURIComponent(id)).then(function(rec){
+    if(rec.error||!rec.results||!rec.results.length){toast('无数据');return}
+    _viewHist=true;
+    L=rec.results;
+    sh(L);
+    _viewHist=false;
+    scrollTo(0,0);
+    toast('已加载历史快照 · '+rec.name);
+  }).catch(function(){toast('获取失败')})
 }
 function rH(id){
   fj('/api/history/get?id='+encodeURIComponent(id)).then(function(rec){
