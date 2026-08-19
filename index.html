@@ -587,8 +587,8 @@ function showCopyModal(txt){
   var h=ta.scrollHeight+24;
   var maxH=window.innerHeight*0.55;
   ta.style.height=Math.min(h,maxH)+'px';
-  // 聚焦但不自动全选（避免移动端误触发选择）
-  setTimeout(function(){ta.focus();ta.scrollTop=0},50);
+  // 聚焦并自动全选（用户直接长按/点复制就是全量内容，不会因滚动只选中可视部分）
+  setTimeout(function(){ta.focus();try{ta.select();ta.setSelectionRange(0,txt.length)}catch(e){}ta.scrollTop=0},50);
 }
 
 // 完整复制到剪贴板（不依赖 textarea 选中，避免长文本截断）
@@ -598,37 +598,39 @@ function kfzCopy(txt,btn){
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(ok).catch(fail);
   }else if(document.execCommand){
-    // 降级：隐藏 textarea + execCommand
+    // 降级：屏幕内可见 textarea + execCommand（iOS 对屏幕外元素会失败）
     var ta=document.createElement('textarea');
     ta.value=txt;
-    ta.style.position='fixed';ta.style.left='-9999px';ta.style.top='0';
+    ta.setAttribute('readonly','');
+    ta.style.cssText='position:fixed;top:8px;left:8px;width:96vw;height:60px;font-size:12px;opacity:.01;z-index:-9999';
     document.body.appendChild(ta);
     ta.focus();ta.select();ta.setSelectionRange(0,txt.length);
-    try{
-      if(document.execCommand('copy')){document.body.removeChild(ta);ok()}
-      else{document.body.removeChild(ta);fail()}
-    }catch(e){document.body.removeChild(ta);fail()}
+    var okFlag=false;
+    try{okFlag=document.execCommand('copy')}catch(e){okFlag=false}
+    document.body.removeChild(ta);
+    if(okFlag)ok();else fail();
   }else{fail()}
 }
 
-// 复制：优先自动复制完整内容到剪贴板（不截断），失败才弹窗手动复制
+// 复制：优先 clipboard API 自动复制完整内容（不截断），
+// 降级用屏幕内可见 textarea + execCommand 同步复制（iOS 对屏幕外元素复制会失败，必须可见且在手势内执行）
 function doCopy(txt,onOk,onFail){
   var done=function(){if(onOk)onOk()};
-  var fallback=function(){showCopyModal(txt)};
+  var fb=function(){showCopyModal(txt)};
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt).then(done).catch(fallback);
+    navigator.clipboard.writeText(txt).then(done).catch(fb);
   }else if(document.execCommand){
-    // 降级：隐藏 textarea + execCommand 自动复制
     var ta=document.createElement('textarea');
     ta.value=txt;
-    ta.style.position='fixed';ta.style.left='-9999px';ta.style.top='0';
+    ta.setAttribute('readonly','');
+    ta.style.cssText='position:fixed;top:8px;left:8px;width:96vw;height:60px;font-size:12px;opacity:.01;z-index:-9999';
     document.body.appendChild(ta);
     ta.focus();ta.select();ta.setSelectionRange(0,txt.length);
-    try{
-      if(document.execCommand('copy')){document.body.removeChild(ta);done()}
-      else{document.body.removeChild(ta);fallback()}
-    }catch(e){document.body.removeChild(ta);fallback()}
-  }else{fallback()}
+    var okFlag=false;
+    try{okFlag=document.execCommand('copy')}catch(e){okFlag=false}
+    document.body.removeChild(ta);
+    if(okFlag)done();else fb();
+  }else{fb()}
 }
 // 重查
 function rq(is){I.value=is;E.innerHTML='';N.style.display='none';scrollTo(0,0);setTimeout(function(){Q.click()},300)}
