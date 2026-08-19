@@ -110,7 +110,7 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
     <div class="hero-bow">🎀</div>
     <div class="hero-title">孔夫子查价</div>
     <div class="hero-date" id="heroDate"></div>
-    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v4.8 · 查价自动出最优价</div>
+    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v4.9 · 默认原逻辑，最优分配看按钮</div>
     <div class="hero-stats">
       <div class="h-stat" onclick="scrollTo(0,0)"><div class="hs-n" id="statToday">0</div><div class="hs-l">今日查价</div></div>
       <div class="h-stat" onclick="showTrack()"><div class="hs-n">📦</div><div class="hs-l">快递追踪</div></div>
@@ -456,9 +456,7 @@ function sh(data){
     }
   });
   E.innerHTML=html;L=data;
-  var sb='sb_'+Date.now();E.insertAdjacentHTML('afterbegin','<div class="save-bar" id="'+sb+'"><span>💾</span><input id="si" placeholder="命名（可选）"><button class="btn-save" onclick="sH(\''+sb+'\')">保存查询</button><button class="btn-save" onclick="cpyQuote(0)" style="background:#059669;margin-left:4px">📋 我的成本</button><button class="btn-save" onclick="cpyQuote(1)" style="background:#a855f7;margin-left:2px">📤 发给买家</button><button class="btn-save" onclick="optAlloc()" style="background:#2563eb;margin-left:2px">🧮 最优分配</button></div><div id="allocBar"></div>');
-  // 查价完成后自动计算最优分配（异步，不阻塞结果渲染）
-  setTimeout(autoAlloc,50);
+  var sb='sb_'+Date.now();E.insertAdjacentHTML('afterbegin','<div class="save-bar" id="'+sb+'"><span>💾</span><input id="si" placeholder="命名（可选）"><button class="btn-save" onclick="sH(\''+sb+'\')">保存查询</button><button class="btn-save" onclick="cpyQuote(0)" style="background:#059669;margin-left:4px">📋 我的成本</button><button class="btn-save" onclick="cpyQuote(1)" style="background:#a855f7;margin-left:2px">📤 发给买家</button><button class="btn-save" onclick="optAlloc()" style="background:#2563eb;margin-left:2px">🧮 最优分配</button></div>');
 }
 
 // 加购
@@ -716,7 +714,8 @@ function computeAlloc(){
     var m={};
     (r.top_cheapest||[r.cheapest]).forEach(function(s){
       if(!s||!s.shopId)return;
-      if(!m[s.shopId]||s.price<m[s.shopId].price)m[s.shopId]={shopId:s.shopId,shop:s.shop,price:s.price,shipping:s.shipping,itemId:s.itemId,total:s.total};
+      // 同店多条 listing 取「总价」最低那条（书价最低的运费可能高，总价未必低）
+      if(!m[s.shopId]||s.total<m[s.shopId].total)m[s.shopId]={shopId:s.shopId,shop:s.shop,price:s.price,shipping:s.shipping,itemId:s.itemId,total:s.total};
     });
     // 候选店按总价升序保留前 4 家，控制 DP 规模（第5家单独很贵，合并也无优势）
     var arr=[];for(var sid in m)arr.push(m[sid]);
@@ -725,9 +724,12 @@ function computeAlloc(){
     arr.slice(0,4).forEach(function(it){top[it.shopId]=it});
     return top;
   });
-  // 收集店铺 + 店级运费
+  // 收集店铺 + 店级运费（取该店各书运费最小值作「一份运费」估算，不虚高）
   var shopMap={},shopList=[],shopShip={};
-  cand.forEach(function(m){for(var sid in m){if(!(sid in shopMap)){shopMap[sid]=shopList.length;shopList.push(sid);shopShip[sid]=m[sid].shipping}}});
+  cand.forEach(function(m){for(var sid in m){
+    if(!(sid in shopMap)){shopMap[sid]=shopList.length;shopList.push(sid);shopShip[sid]=m[sid].shipping}
+    else{shopShip[sid]=Math.min(shopShip[sid],m[sid].shipping)}
+  }});
   // 基线：每本各自最低总价（分开买）
   var totalSep=0;
   cand.forEach(function(m){var best=null;for(var sid in m){if(!best||m[sid].total<best.total)best=m[sid]}totalSep+=best.total});
