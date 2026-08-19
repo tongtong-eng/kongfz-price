@@ -611,8 +611,24 @@ function kfzCopy(txt,btn){
   }else{fail()}
 }
 
+// 复制：优先自动复制完整内容到剪贴板（不截断），失败才弹窗手动复制
 function doCopy(txt,onOk,onFail){
-  showCopyModal(txt);
+  var done=function(){if(onOk)onOk()};
+  var fallback=function(){showCopyModal(txt)};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done).catch(fallback);
+  }else if(document.execCommand){
+    // 降级：隐藏 textarea + execCommand 自动复制
+    var ta=document.createElement('textarea');
+    ta.value=txt;
+    ta.style.position='fixed';ta.style.left='-9999px';ta.style.top='0';
+    document.body.appendChild(ta);
+    ta.focus();ta.select();ta.setSelectionRange(0,txt.length);
+    try{
+      if(document.execCommand('copy')){document.body.removeChild(ta);done()}
+      else{document.body.removeChild(ta);fallback()}
+    }catch(e){document.body.removeChild(ta);fallback()}
+  }else{fallback()}
 }
 // 重查
 function rq(is){I.value=is;E.innerHTML='';N.style.display='none';scrollTo(0,0);setTimeout(function(){Q.click()},300)}
