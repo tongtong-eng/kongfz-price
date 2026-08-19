@@ -110,7 +110,7 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
     <div class="hero-bow">🎀</div>
     <div class="hero-title">孔夫子查价</div>
     <div class="hero-date" id="heroDate"></div>
-    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v4.7 · 全店最优分配</div>
+    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v4.8 · 查价自动出最优价</div>
     <div class="hero-stats">
       <div class="h-stat" onclick="scrollTo(0,0)"><div class="hs-n" id="statToday">0</div><div class="hs-l">今日查价</div></div>
       <div class="h-stat" onclick="showTrack()"><div class="hs-n">📦</div><div class="hs-l">快递追踪</div></div>
@@ -456,7 +456,9 @@ function sh(data){
     }
   });
   E.innerHTML=html;L=data;
-  var sb='sb_'+Date.now();E.insertAdjacentHTML('afterbegin','<div class="save-bar" id="'+sb+'"><span>💾</span><input id="si" placeholder="命名（可选）"><button class="btn-save" onclick="sH(\''+sb+'\')">保存查询</button><button class="btn-save" onclick="cpyQuote(0)" style="background:#059669;margin-left:4px">📋 我的成本</button><button class="btn-save" onclick="cpyQuote(1)" style="background:#a855f7;margin-left:2px">📤 发给买家</button><button class="btn-save" onclick="optAlloc()" style="background:#2563eb;margin-left:2px">🧮 最优分配</button></div>');
+  var sb='sb_'+Date.now();E.insertAdjacentHTML('afterbegin','<div class="save-bar" id="'+sb+'"><span>💾</span><input id="si" placeholder="命名（可选）"><button class="btn-save" onclick="sH(\''+sb+'\')">保存查询</button><button class="btn-save" onclick="cpyQuote(0)" style="background:#059669;margin-left:4px">📋 我的成本</button><button class="btn-save" onclick="cpyQuote(1)" style="background:#a855f7;margin-left:2px">📤 发给买家</button><button class="btn-save" onclick="optAlloc()" style="background:#2563eb;margin-left:2px">🧮 最优分配</button></div><div id="allocBar"></div>');
+  // 查价完成后自动计算最优分配（异步，不阻塞结果渲染）
+  setTimeout(autoAlloc,50);
 }
 
 // 加购
@@ -703,10 +705,11 @@ function showImgModal(dataUrl){
 }
 
 // ── 全店最优分配：把每本书分到某家店，让「书价和+运费和」全局最小 ──
-var _allocPlan=null;
-function optAlloc(){
+var _allocPlan=null,_allocRes=null;
+// 纯计算：返回 {n,totalSep,optTotal,saving,groups}，同时更新 _allocPlan/_allocRes
+function computeAlloc(){
   var ok=L.filter(function(r){return r.cheapest&&r.top_cheapest&&r.top_cheapest.length});
-  if(!ok.length){toast('无候选店数据');return}
+  if(!ok.length)return null;
   var n=ok.length;
   // 每本候选店：按 shopId 去重，同店取书价最低
   var cand=ok.map(function(r){
@@ -741,8 +744,34 @@ function optAlloc(){
     groups[a.shopId].items.push({title:ok[i].title||ok[i].isbn,price:a.price,shipping:a.shipping,total:a.total,itemId:a.itemId,bookIdx:i});
   });
   _allocPlan=plan.map(function(a){return a?{itemId:a.itemId,shopId:a.shopId}:null});
-  showAllocModal({n:n,totalSep:totalSep,optTotal:optTotal,saving:saving,groups:groups});
+  _allocRes={n:n,totalSep:totalSep,optTotal:optTotal,saving:saving,groups:groups};
+  return _allocRes;
 }
+// 手动按钮：计算 + 弹窗
+function optAlloc(){
+  var res=computeAlloc();
+  if(!res){toast('无候选店数据');return}
+  showAllocModal(res);
+}
+// 查价完成后自动：把最优分配结果内联显示在结果顶部（不弹窗）
+function autoAlloc(){
+  var bar=document.getElementById('allocBar');
+  if(!bar)return;
+  var ok=L.filter(function(r){return r.cheapest&&r.top_cheapest&&r.top_cheapest.length});
+  if(ok.length<2){bar.innerHTML='';return}
+  var res=computeAlloc();
+  if(!res){return}
+  var h='';
+  if(res.saving>0){
+    h='<div style="margin:8px 0 12px;padding:10px 12px;border-radius:10px;border:2px solid #bbf7d0;background:#f0fdf4;font-size:.85rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">'+
+      '<span>🧮 最优分配：分开买 <s style="color:#c4b5d0">¥'+res.totalSep.toFixed(1)+'</s> → <b style="color:#10b981">¥'+res.optTotal.toFixed(1)+'</b> <span style="color:#fb7185;font-weight:700">省 ¥'+res.saving.toFixed(1)+'</span></span>'+
+      '<span style="display:flex;gap:6px;flex-wrap:wrap"><button onclick="showAllocDetail()" style="padding:5px 12px;border-radius:8px;border:none;background:#2563eb;color:#fff;cursor:pointer;font-size:.8rem;font-weight:600">查看方案</button><button onclick="baOpt()" style="padding:5px 12px;border-radius:8px;border:none;background:#059669;color:#fff;cursor:pointer;font-size:.8rem;font-weight:600">🛒 按此方案加购</button></span></div>';
+  }else{
+    h='<div style="margin:8px 0 12px;padding:10px 12px;border-radius:10px;border:2px solid #ffe4f0;background:#fffafc;font-size:.8rem;color:#d48aa9">🧮 最优分配：本批无同店合并节省，分开买 ¥'+res.totalSep.toFixed(1)+' 已是最优</div>';
+  }
+  bar.innerHTML=h;
+}
+function showAllocDetail(){if(_allocRes)showAllocModal(_allocRes)}
 
 // 位掩码 DP 精确求解（n≤16）
 function allocExact(cand,n,shopMap,shopList,shopShip){
