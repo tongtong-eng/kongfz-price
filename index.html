@@ -110,7 +110,7 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
     <div class="hero-bow">🎀</div>
     <div class="hero-title">孔夫子查价</div>
     <div class="hero-date" id="heroDate"></div>
-    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v4.2 · 复制给买家隐藏图片按钮</div>
+    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v4.3 · Cookie 移到最下方</div>
     <div class="hero-stats">
       <div class="h-stat" onclick="scrollTo(0,0)"><div class="hs-n" id="statToday">0</div><div class="hs-l">今日查价</div></div>
       <div class="h-stat" onclick="showTrack()"><div class="hs-n">📦</div><div class="hs-l">快递追踪</div></div>
@@ -147,7 +147,18 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
       <div id="addrResult" style="font-size:.75rem;color:#d48aa9;margin-top:5px"></div>
     </div>
 
-  <!-- Cookie 状态条 -->
+  <div class="card">
+    <div class="fold-header" onclick="fold('hist')">
+      <div class="card-title" style="margin-bottom:0">📋 历史记录</div>
+      <span class="arrow" id="histArrow">▶</span>
+    </div>
+    <div class="fold-body" id="fold_hist"><div id="histList" style="margin-top:4px"><div style="text-align:center;color:#c4b5d0;font-size:.8rem;padding:10px">暂无</div></div></div>
+  </div>
+
+  <div id="results"></div>
+  <div id="empty" class="empty-state">📝 输入 ISBN 后点查最低价</div>
+
+  <!-- Cookie 状态条 + 设置（移到页面最下面，不挡价格） -->
   <div id="cookieBar" onclick="fold('cookie')">
     <span id="cookIcon">🟢</span> <span id="cookText"></span> <span id="cookAct" style="font-size:.75rem;color:#9d8bb0;float:right">→</span>
   </div>
@@ -174,17 +185,6 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
       </div>
     </div>
   </div>
-
-  <div class="card">
-    <div class="fold-header" onclick="fold('hist')">
-      <div class="card-title" style="margin-bottom:0">📋 历史记录</div>
-      <span class="arrow" id="histArrow">▶</span>
-    </div>
-    <div class="fold-body" id="fold_hist"><div id="histList" style="margin-top:4px"><div style="text-align:center;color:#c4b5d0;font-size:.8rem;padding:10px">暂无</div></div></div>
-  </div>
-
-  <div id="results"></div>
-  <div id="empty" class="empty-state">📝 输入 ISBN 后点查最低价</div>
 </div>
 
 <div class="bottom-nav">
