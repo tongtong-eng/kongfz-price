@@ -110,7 +110,7 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
     <div class="hero-bow">🎀</div>
     <div class="hero-title">孔夫子查价</div>
     <div class="hero-date" id="heroDate"></div>
-    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v4.6 · 复制给买家恢复总价</div>
+    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v4.7 · 全店最优分配</div>
     <div class="hero-stats">
       <div class="h-stat" onclick="scrollTo(0,0)"><div class="hs-n" id="statToday">0</div><div class="hs-l">今日查价</div></div>
       <div class="h-stat" onclick="showTrack()"><div class="hs-n">📦</div><div class="hs-l">快递追踪</div></div>
@@ -456,7 +456,7 @@ function sh(data){
     }
   });
   E.innerHTML=html;L=data;
-  var sb='sb_'+Date.now();E.insertAdjacentHTML('afterbegin','<div class="save-bar" id="'+sb+'"><span>💾</span><input id="si" placeholder="命名（可选）"><button class="btn-save" onclick="sH(\''+sb+'\')">保存查询</button><button class="btn-save" onclick="cpyQuote(0)" style="background:#059669;margin-left:4px">📋 我的成本</button><button class="btn-save" onclick="cpyQuote(1)" style="background:#a855f7;margin-left:2px">📤 发给买家</button></div>');
+  var sb='sb_'+Date.now();E.insertAdjacentHTML('afterbegin','<div class="save-bar" id="'+sb+'"><span>💾</span><input id="si" placeholder="命名（可选）"><button class="btn-save" onclick="sH(\''+sb+'\')">保存查询</button><button class="btn-save" onclick="cpyQuote(0)" style="background:#059669;margin-left:4px">📋 我的成本</button><button class="btn-save" onclick="cpyQuote(1)" style="background:#a855f7;margin-left:2px">📤 发给买家</button><button class="btn-save" onclick="optAlloc()" style="background:#2563eb;margin-left:2px">🧮 最优分配</button></div>');
 }
 
 // 加购
@@ -700,6 +700,166 @@ function showImgModal(dataUrl){
     '</div>';
   m.appendChild(box);
   document.body.appendChild(m);
+}
+
+// ── 全店最优分配：把每本书分到某家店，让「书价和+运费和」全局最小 ──
+var _allocPlan=null;
+function optAlloc(){
+  var ok=L.filter(function(r){return r.cheapest&&r.top_cheapest&&r.top_cheapest.length});
+  if(!ok.length){toast('无候选店数据');return}
+  var n=ok.length;
+  // 每本候选店：按 shopId 去重，同店取书价最低
+  var cand=ok.map(function(r){
+    var m={};
+    (r.top_cheapest||[r.cheapest]).forEach(function(s){
+      if(!s||!s.shopId)return;
+      if(!m[s.shopId]||s.price<m[s.shopId].price)m[s.shopId]={shop:s.shop,price:s.price,shipping:s.shipping,itemId:s.itemId,total:s.total};
+    });
+    // 候选店按总价升序保留前 4 家，控制 DP 规模（第5家单独很贵，合并也无优势）
+    var arr=[];for(var sid in m)arr.push(m[sid]);
+    arr.sort(function(a,b){return a.total-b.total});
+    var top={};
+    arr.slice(0,4).forEach(function(it){top[it.shopId]=it});
+    return top;
+  });
+  // 收集店铺 + 店级运费
+  var shopMap={},shopList=[],shopShip={};
+  cand.forEach(function(m){for(var sid in m){if(!(sid in shopMap)){shopMap[sid]=shopList.length;shopList.push(sid);shopShip[sid]=m[sid].shipping}}});
+  // 基线：每本各自最低总价（分开买）
+  var totalSep=0;
+  cand.forEach(function(m){var best=null;for(var sid in m){if(!best||m[sid].total<best.total)best=m[sid]}totalSep+=best.total});
+  // 求解：≤16 本精确位掩码 DP，更多用贪心
+  var plan,optTotal;
+  if(n<=16){var r=allocExact(cand,n,shopMap,shopList,shopShip);plan=r.plan;optTotal=r.total}
+  else{var r=allocGreedy(cand,n,shopShip);plan=r.plan;optTotal=r.total}
+  var saving=totalSep-optTotal;
+  // 按店分组展示
+  var groups={};
+  plan.forEach(function(a,i){
+    if(!a)return;
+    if(!groups[a.shopId])groups[a.shopId]={shop:a.shop,items:[]};
+    groups[a.shopId].items.push({title:ok[i].title||ok[i].isbn,price:a.price,shipping:a.shipping,total:a.total,itemId:a.itemId,bookIdx:i});
+  });
+  _allocPlan=plan.map(function(a){return a?{itemId:a.itemId,shopId:a.shopId}:null});
+  showAllocModal({n:n,totalSep:totalSep,optTotal:optTotal,saving:saving,groups:groups});
+}
+
+// 位掩码 DP 精确求解（n≤16）
+function allocExact(cand,n,shopMap,shopList,shopShip){
+  var size=1<<n,FULL=size-1,INF=1e18,i;
+  var dp=new Float64Array(size),pShop=new Int32Array(size),pSub=new Int32Array(size);
+  for(i=1;i<size;i++)dp[i]=INF;
+  for(i=0;i<size;i++){pShop[i]=-1;pSub[i]=-1}
+  // 每店覆盖的书位集
+  var covOfShop={};
+  shopList.forEach(function(sid){covOfShop[sid]=0});
+  cand.forEach(function(m,i){for(var sid in m)covOfShop[sid]|=(1<<i)});
+  for(var mask=1;mask<=FULL;mask++){
+    var i0=0;while(!(mask&(1<<i0)))i0++;
+    var i0bit=1<<i0;
+    for(var sid in cand[i0]){
+      var cov=covOfShop[sid]&mask,sub=cov;
+      while(sub){
+        if(sub&i0bit){
+          var cost=0,t=sub,mm=mask^sub;
+          while(t){var b=t&-t,k=0,bb=b;while(bb>1){bb>>=1;k++}cost+=cand[k][sid].price;t^=b}
+          cost+=shopShip[sid]||0;
+          if(dp[mm]+cost<dp[mask]){dp[mask]=dp[mm]+cost;pShop[mask]=shopMap[sid];pSub[mask]=sub}
+        }
+        sub=(sub-1)&cov;
+      }
+    }
+  }
+  // 回溯方案
+  var plan=new Array(n);plan.fill(null);
+  var mask=FULL;
+  while(mask&&pShop[mask]>=0){
+    var sid=shopList[pShop[mask]],sub=pSub[mask],t=sub;
+    while(t){var b=t&-t,k=0,bb=b;while(bb>1){bb>>=1;k++}var c=cand[k][sid];plan[k]={shopId:sid,shop:c.shop,price:c.price,shipping:c.shipping,itemId:c.itemId,total:c.total};t^=b}
+    mask^=sub;
+  }
+  return {plan:plan,total:dp[FULL]};
+}
+function shopKey(m,best){for(var sid in m){if(m[sid]===best)return sid}return ''}
+function planCost(cand,plan,shopShip){
+  var total=0,shops={};
+  plan.forEach(function(a){total+=a.price;shops[a.shopId]=1});
+  for(var sid in shops)total+=shopShip[sid]||0;
+  return total;
+}
+// 大数量降级：贪心（从各自最低店开始，反复尝试两本同店合并，全局重算成本）
+function allocGreedy(cand,n,shopShip){
+  var plan=new Array(n),i,j;
+  for(i=0;i<n;i++){
+    var best=null;
+    for(var sid in cand[i]){if(!best||cand[i][sid].total<best.total)best=cand[i][sid]}
+    var c=best;plan[i]={shopId:shopKey(cand[i],best),shop:c.shop,price:c.price,shipping:c.shipping,itemId:c.itemId,total:c.total};
+  }
+  var cur=planCost(cand,plan,shopShip),rounds=0;
+  while(rounds<3){
+    var improved=false;
+    for(i=0;i<n;i++)for(j=i+1;j<n;j++){
+      for(var sid in cand[i]){
+        if(!cand[j][sid])continue;
+        if(plan[i].shopId===sid&&plan[j].shopId===sid)continue;
+        var oi=plan[i],oj=plan[j];
+        plan[i]={shopId:sid,shop:cand[i][sid].shop,price:cand[i][sid].price,shipping:cand[i][sid].shipping,itemId:cand[i][sid].itemId,total:cand[i][sid].total};
+        plan[j]={shopId:sid,shop:cand[j][sid].shop,price:cand[j][sid].price,shipping:cand[j][sid].shipping,itemId:cand[j][sid].itemId,total:cand[j][sid].total};
+        var nc=planCost(cand,plan,shopShip);
+        if(nc<cur){cur=nc;improved=true}else{plan[i]=oi;plan[j]=oj}
+      }
+    }
+    if(!improved)break;
+    rounds++;
+  }
+  return {plan:plan,total:cur};
+}
+
+// 最优分配结果弹窗
+function showAllocModal(res){
+  var old=document.getElementById('cm');if(old)old.remove();
+  var m=document.createElement('div');
+  m.id='cm';
+  m.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
+  m.onclick=function(){m.remove()};
+  var box=document.createElement('div');
+  box.style.cssText='background:#fff;border-radius:12px;padding:16px;max-width:520px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 4px 20px rgba(0,0,0,.2);overflow-y:auto';
+  box.onclick=function(e){e.stopPropagation()};
+  var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>🧮 最优分配</strong><span onclick="document.getElementById(\'cm\').remove()" style="font-size:1.3rem;cursor:pointer;color:#c4b5d0;padding:0 4px">✕</span></div>';
+  h+='<div style="font-size:1rem;font-weight:700;color:#0f172a;margin-bottom:4px">分开买 <s style="color:#c4b5d0;font-weight:400">¥'+res.totalSep.toFixed(1)+'</s> → <span style="color:#10b981">¥'+res.optTotal.toFixed(1)+'</span>'+(res.saving>0?' <span style="color:#fb7185">省 ¥'+res.saving.toFixed(1)+'</span>':'')+'</div>';
+  h+='<div style="font-size:.75rem;color:#d48aa9;margin-bottom:10px">⚠️ 运费按「一单一份」估算，下单前请核对实际运费</div>';
+  var gi=0;
+  for(var sid in res.groups){
+    var g=res.groups[sid];gi++;
+    h+='<div style="background:#f8fafc;border-radius:8px;padding:8px 10px;margin-bottom:8px">';
+    h+='<div style="font-size:.8rem;font-weight:700;color:#a855f7;margin-bottom:4px">🏪 '+esc(g.shop)+'</div>';
+    g.items.forEach(function(it){
+      h+='<div style="font-size:.8rem;color:#3f3f46;padding:2px 0;display:flex;justify-content:space-between;gap:8px"><span style="flex:1">'+esc(it.title)+'</span><span style="white-space:nowrap;color:#fb7185">¥'+it.total.toFixed(1)+'</span></div>';
+    });
+    h+='</div>';
+  }
+  h+='<div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;flex-wrap:wrap">'+
+     '<button onclick="baOpt()" style="padding:8px 20px;border-radius:8px;border:none;background:#059669;color:#fff;cursor:pointer;font-weight:600;font-size:.9rem">🛒 按此方案加购</button>'+
+     '<button onclick="document.getElementById(\'cm\').remove()" style="padding:8px 20px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#9d8bb0;cursor:pointer;font-size:.85rem">关闭</button>'+
+     '</div>';
+  box.innerHTML=h;
+  m.appendChild(box);document.body.appendChild(m);
+}
+
+// 按最优分配方案一键加购
+function baOpt(){
+  var list=_allocPlan?_allocPlan.filter(function(a){return a&&a.itemId&&a.shopId}):[];
+  if(!list.length){toast('无可加购商品');return}
+  toast('开始按最优方案加购 '+list.length+' 本');
+  function nx(i,ok,ng){
+    if(i>=list.length){toast('✅ 加购完成 '+ok+'/'+list.length+(ng?' ('+ng+'失败)':''));return}
+    var it=list[i];
+    fj('/api/addtocart?itemId='+it.itemId+'&shopId='+it.shopId).then(function(d){
+      if(d.success)ok++;else ng++;
+      setTimeout(function(){nx(i+1,ok,ng)},1200);
+    }).catch(function(){ng++;setTimeout(function(){nx(i+1,ok,ng)},1200)})
+  }
+  nx(0,0,0);
 }
 // 重查
 function rq(is){I.value=is;E.innerHTML='';N.style.display='none';scrollTo(0,0);setTimeout(function(){Q.click()},300)}
