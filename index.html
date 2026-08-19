@@ -110,7 +110,7 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
     <div class="hero-bow">🎀</div>
     <div class="hero-title">孔夫子查价</div>
     <div class="hero-date" id="heroDate"></div>
-    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v3 · 复制修复版</div>
+    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v4 · 报价清单图片版</div>
     <div class="hero-stats">
       <div class="h-stat" onclick="scrollTo(0,0)"><div class="hs-n" id="statToday">0</div><div class="hs-l">今日查价</div></div>
       <div class="h-stat" onclick="showTrack()"><div class="hs-n">📦</div><div class="hs-l">快递追踪</div></div>
@@ -583,6 +583,7 @@ function showCopyModal(txt,onCopied){
     '<textarea id="'+id+'" style="width:100%;min-height:120px;padding:10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.85rem;font-family:monospace;outline:none;resize:none;white-space:pre-wrap;word-break:break-all;overflow-y:auto;line-height:1.5;background:#fff;color:#000;-webkit-text-fill-color:#000" readonly></textarea>'+
     '<div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;flex-wrap:wrap">'+
       '<button onclick="kfzCopy(document.getElementById(\''+id+'\').value,this)" style="padding:8px 24px;border-radius:8px;border:none;background:#f9a8d4;color:#fff;cursor:pointer;font-weight:500;font-size:.9rem">📋 一键复制</button>'+
+      '<button onclick="txtToImage(document.getElementById(\''+id+'\').value,\'孔夫子报价清单\')" style="padding:8px 24px;border-radius:8px;border:none;background:linear-gradient(135deg,#a855f7,#fb7185);color:#fff;cursor:pointer;font-weight:500;font-size:.9rem">🖼️ 生成清单图片</button>'+
       '<button onclick="document.getElementById(\'cm\').remove()" style="padding:8px 20px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#9d8bb0;cursor:pointer;font-size:.85rem">关闭</button>'+
     '</div>';
   m.appendChild(box);
@@ -631,6 +632,75 @@ function doCopy(txt,onOk,onFail){
     try{navigator.clipboard.writeText(txt).catch(function(){})}catch(e){}
   }
   showCopyModal(txt,onOk);
+}
+
+// 文本转清单图片（canvas 绘制，长按保存后发闲鱼，图片不受文字长度限制）
+function txtToImage(txt,title){
+  if(!txt){toast('无内容');return}
+  var lines=txt.split('\n');
+  var W=680,pad=28,lineH=32,headH=104,bottomH=36;
+  // 用离屏 canvas 量宽度做自动换行
+  var c0=document.createElement('canvas'),ctx0=c0.getContext('2d');
+  ctx0.font='17px -apple-system,"PingFang SC",sans-serif';
+  var max=W-pad*2,rows=[];
+  lines.forEach(function(ln){
+    if(!ln){rows.push('');return}
+    if(ctx0.measureText(ln).width<=max){rows.push(ln);return}
+    var cur='';
+    for(var i=0;i<ln.length;i++){
+      if(ctx0.measureText(cur+ln[i]).width>max){rows.push(cur);cur=ln[i]}
+      else cur+=ln[i];
+    }
+    if(cur)rows.push(cur);
+  });
+  var H=bottomH+headH+rows.length*lineH;
+  var c=document.createElement('canvas');
+  c.width=W;c.height=H;
+  var ctx=c.getContext('2d');
+  // 白底
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  // 顶部渐变条
+  var g=ctx.createLinearGradient(0,0,W,0);
+  g.addColorStop(0,'#f9a8d4');g.addColorStop(1,'#a855f7');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,10);
+  // 标题
+  ctx.fillStyle='#b0567f';
+  ctx.font='bold 24px -apple-system,"PingFang SC",sans-serif';
+  ctx.fillText(title||'报价清单',pad,52);
+  // 副标题：本数 + 字数
+  ctx.fillStyle='#d48aa9';
+  ctx.font='15px -apple-system,"PingFang SC",sans-serif';
+  ctx.fillText('共 '+lines.length+' 本 · '+txt.length+' 字',pad,76);
+  // 分割线
+  ctx.strokeStyle='#ffe4f0';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(pad,92);ctx.lineTo(W-pad,92);ctx.stroke();
+  // 内容行
+  ctx.fillStyle='#3f3f46';
+  ctx.font='17px -apple-system,"PingFang SC",sans-serif';
+  var y=92+36;
+  rows.forEach(function(r){ctx.fillText(r,pad,y);y+=lineH});
+  showImgModal(c.toDataURL('image/png'));
+}
+
+// 展示清单图片弹窗（提示长按保存，再发闲鱼）
+function showImgModal(dataUrl){
+  var old=document.getElementById('cm');
+  if(old)old.remove();
+  var m=document.createElement('div');
+  m.id='cm';
+  m.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
+  m.onclick=function(){m.remove()};
+  var box=document.createElement('div');
+  box.style.cssText='background:#fff;border-radius:12px;padding:16px;max-width:520px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 4px 20px rgba(0,0,0,.2)';
+  box.onclick=function(e){e.stopPropagation()};
+  box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>🖼️ 报价清单图片</strong><span onclick="document.getElementById(\'cm\').remove()" style="font-size:1.3rem;cursor:pointer;color:#c4b5d0;padding:0 4px">✕</span></div>'+
+    '<div style="font-size:.85rem;font-weight:600;color:#a855f7;background:#f3e8ff;border-radius:8px;padding:7px 10px;margin-bottom:8px">👉 长按下方图片 → 点「存储图像」保存到相册 → 去闲鱼发这张图（图片不受字数限制）</div>'+
+    '<img src="'+dataUrl+'" style="width:100%;border-radius:8px;border:1px solid #ffe4f0;flex:1;min-height:0;object-fit:contain" alt="报价清单">'+
+    '<div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">'+
+      '<button onclick="document.getElementById(\'cm\').remove()" style="padding:8px 20px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#9d8bb0;cursor:pointer;font-size:.85rem">关闭</button>'+
+    '</div>';
+  m.appendChild(box);
+  document.body.appendChild(m);
 }
 // 重查
 function rq(is){I.value=is;E.innerHTML='';N.style.display='none';scrollTo(0,0);setTimeout(function(){Q.click()},300)}
