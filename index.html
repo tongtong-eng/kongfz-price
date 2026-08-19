@@ -713,7 +713,7 @@ function optAlloc(){
     var m={};
     (r.top_cheapest||[r.cheapest]).forEach(function(s){
       if(!s||!s.shopId)return;
-      if(!m[s.shopId]||s.price<m[s.shopId].price)m[s.shopId]={shop:s.shop,price:s.price,shipping:s.shipping,itemId:s.itemId,total:s.total};
+      if(!m[s.shopId]||s.price<m[s.shopId].price)m[s.shopId]={shopId:s.shopId,shop:s.shop,price:s.price,shipping:s.shipping,itemId:s.itemId,total:s.total};
     });
     // 候选店按总价升序保留前 4 家，控制 DP 规模（第5家单独很贵，合并也无优势）
     var arr=[];for(var sid in m)arr.push(m[sid]);
