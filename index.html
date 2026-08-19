@@ -110,6 +110,7 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
     <div class="hero-bow">🎀</div>
     <div class="hero-title">孔夫子查价</div>
     <div class="hero-date" id="heroDate"></div>
+    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v3 · 复制修复版</div>
     <div class="hero-stats">
       <div class="h-stat" onclick="scrollTo(0,0)"><div class="hs-n" id="statToday">0</div><div class="hs-l">今日查价</div></div>
       <div class="h-stat" onclick="showTrack()"><div class="hs-n">📦</div><div class="hs-l">快递追踪</div></div>
@@ -561,8 +562,10 @@ function cpyFail(){
   var txt='📋 以下 '+fail.length+' 本书号搜索不到：\n'+fail.join('\n');
   doCopy(txt,function(){toast('✅ 已复制 '+fail.length+' 个异常书号，可直接转发')},function(){prompt('📋 异常书号（'+fail.length+' 个），复制后关闭：',txt)})
 }
-// 全功能复制弹窗
-function showCopyModal(txt){
+// 全功能复制弹窗：打开即自动全选，长按→「拷贝」是 iOS 上 100% 可靠的复制路径（不依赖任何剪贴板 API，不会截断）
+var _copyToast=null;
+function showCopyModal(txt,onCopied){
+  _copyToast=onCopied||null;
   var old=document.getElementById('cm');
   if(old)old.remove();
   var m=document.createElement('div');
@@ -573,7 +576,10 @@ function showCopyModal(txt){
   box.style.cssText='background:#fff;border-radius:12px;padding:16px;max-width:500px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 4px 20px rgba(0,0,0,.2)';
   box.onclick=function(e){e.stopPropagation()};
   var id='ct_'+Date.now();
-  box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>📋 复制内容</strong><span onclick="document.getElementById(\'cm\').remove()" style="font-size:1.3rem;cursor:pointer;color:#c4b5d0;padding:0 4px">✕</span></div>'+
+  var n=txt.split('\n').length;
+  box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><strong>📋 复制内容</strong><span onclick="document.getElementById(\'cm\').remove()" style="font-size:1.3rem;cursor:pointer;color:#c4b5d0;padding:0 4px">✕</span></div>'+
+    '<div style="font-size:.75rem;color:#9d8bb0;margin-bottom:6px">共 '+n+' 行 · '+txt.length+' 字 · 已全部选中</div>'+
+    '<div style="font-size:.85rem;font-weight:600;color:#a855f7;background:#f3e8ff;border-radius:8px;padding:7px 10px;margin-bottom:8px">👉 长按下方文字，点「拷贝」即可全部复制（已自动全选）</div>'+
     '<textarea id="'+id+'" style="width:100%;min-height:120px;padding:10px;border:1px solid #e2e8f0;border-radius:8px;font-size:.85rem;font-family:monospace;outline:none;resize:none;white-space:pre-wrap;word-break:break-all;overflow-y:auto;line-height:1.5;background:#fff;color:#000;-webkit-text-fill-color:#000" readonly></textarea>'+
     '<div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;flex-wrap:wrap">'+
       '<button onclick="kfzCopy(document.getElementById(\''+id+'\').value,this)" style="padding:8px 24px;border-radius:8px;border:none;background:#f9a8d4;color:#fff;cursor:pointer;font-weight:500;font-size:.9rem">📋 一键复制</button>'+
@@ -587,50 +593,44 @@ function showCopyModal(txt){
   var h=ta.scrollHeight+24;
   var maxH=window.innerHeight*0.55;
   ta.style.height=Math.min(h,maxH)+'px';
-  // 聚焦并自动全选（用户直接长按/点复制就是全量内容，不会因滚动只选中可视部分）
+  // 聚焦并自动全选（用户直接长按→拷贝就是全量内容，不会因滚动只选中可视部分）
   setTimeout(function(){ta.focus();try{ta.select();ta.setSelectionRange(0,txt.length)}catch(e){}ta.scrollTop=0},50);
 }
 
-// 完整复制到剪贴板（不依赖 textarea 选中，避免长文本截断）
+// 一键复制（弹窗内按钮）：成功即关闭弹窗 + 提示
 function kfzCopy(txt,btn){
-  var ok=function(){btn.textContent='✅ 已复制';setTimeout(function(){document.getElementById('cm').remove()},600)};
-  var fail=function(){prompt('📋 手动复制：',txt);setTimeout(function(){document.getElementById('cm').remove()},600)};
+  var done=function(){
+    btn.textContent='✅ 已复制';
+    setTimeout(function(){
+      var cm=document.getElementById('cm');if(cm)cm.remove();
+      if(_copyToast)_copyToast();
+    },400);
+  };
+  var fail=function(){toast('⚠️ 复制未成功，请长按上方文字后点「拷贝」')};
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt).then(ok).catch(fail);
+    navigator.clipboard.writeText(txt).then(done).catch(fail);
   }else if(document.execCommand){
     // 降级：屏幕内可见 textarea + execCommand（iOS 对屏幕外元素会失败）
     var ta=document.createElement('textarea');
     ta.value=txt;
     ta.setAttribute('readonly','');
-    ta.style.cssText='position:fixed;top:8px;left:8px;width:96vw;height:60px;font-size:12px;opacity:.01;z-index:-9999';
+    ta.style.cssText='position:fixed;top:8px;left:8px;width:96vw;height:60px;font-size:12px;opacity:.01;z-index:2147483647';
     document.body.appendChild(ta);
     ta.focus();ta.select();ta.setSelectionRange(0,txt.length);
     var okFlag=false;
     try{okFlag=document.execCommand('copy')}catch(e){okFlag=false}
     document.body.removeChild(ta);
-    if(okFlag)ok();else fail();
+    if(okFlag)done();else fail();
   }else{fail()}
 }
 
-// 复制：优先 clipboard API 自动复制完整内容（不截断），
-// 降级用屏幕内可见 textarea + execCommand 同步复制（iOS 对屏幕外元素复制会失败，必须可见且在手势内执行）
+// 复制：尽力自动复制到剪贴板（部分 iOS 会截断，仅作便利，不依赖它）+
+// 始终弹出预览框，框内文字已自动全选，长按→「拷贝」保证完整复制
 function doCopy(txt,onOk,onFail){
-  var done=function(){if(onOk)onOk()};
-  var fb=function(){showCopyModal(txt)};
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt).then(done).catch(fb);
-  }else if(document.execCommand){
-    var ta=document.createElement('textarea');
-    ta.value=txt;
-    ta.setAttribute('readonly','');
-    ta.style.cssText='position:fixed;top:8px;left:8px;width:96vw;height:60px;font-size:12px;opacity:.01;z-index:-9999';
-    document.body.appendChild(ta);
-    ta.focus();ta.select();ta.setSelectionRange(0,txt.length);
-    var okFlag=false;
-    try{okFlag=document.execCommand('copy')}catch(e){okFlag=false}
-    document.body.removeChild(ta);
-    if(okFlag)done();else fb();
-  }else{fb()}
+    try{navigator.clipboard.writeText(txt).catch(function(){})}catch(e){}
+  }
+  showCopyModal(txt,onOk);
 }
 // 重查
 function rq(is){I.value=is;E.innerHTML='';N.style.display='none';scrollTo(0,0);setTimeout(function(){Q.click()},300)}
