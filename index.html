@@ -110,7 +110,7 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
     <div class="hero-bow">🎀</div>
     <div class="hero-title">孔夫子查价</div>
     <div class="hero-date" id="heroDate"></div>
-    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v4.3 · Cookie 移到最下方</div>
+    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v4.5 · 去掉总价显示</div>
     <div class="hero-stats">
       <div class="h-stat" onclick="scrollTo(0,0)"><div class="hs-n" id="statToday">0</div><div class="hs-l">今日查价</div></div>
       <div class="h-stat" onclick="showTrack()"><div class="hs-n">📦</div><div class="hs-l">快递追踪</div></div>
@@ -421,11 +421,10 @@ function sh(data){
     var sc=0;data.forEach(function(r){sc+=r.scan_count||0});
     html+='<div class="card" style="border:2px solid #7c3aed;background:#f5f3ff;margin-bottom:10px;padding:10px 14px;font-size:.8rem;color:#5b21b6;font-weight:600">🧭 精确模式：已按 <strong>'+_addrProvince+'</strong> 收货地址的真实运费确认每本最低总价（扫'+(data[0].pages||5)+'页 · '+sc+' 家店，保证不漏）</div>';
   }
-  // 顶部对账行：查到 X 本 · 总价；以下 N 本搜索不到
-  var tot=0;pd.forEach(function(r){tot+=r.cheapest.total});
+  // 顶部对账行：查到 X 本；以下 N 本搜索不到
   if(pd.length||fl.length){
     html+='<div class="card" style="border:2px solid #ffe4f0;background:#fff;margin-bottom:10px;padding:14px">';
-    if(pd.length)html+='<div style="font-size:1.02rem;font-weight:700;color:#0f172a">查到 <span style="color:#fb7185">'+pd.length+'</span> 本 <span style="color:#c4b5d0;font-weight:400;margin-left:6px">总价</span> <span style="color:#10b981;font-weight:800">¥'+tot.toFixed(1)+'</span></div>';
+    if(pd.length)html+='<div style="font-size:1.02rem;font-weight:700;color:#0f172a">查到 <span style="color:#fb7185">'+pd.length+'</span> 本</div>';
     if(fl.length){
       html+='<div style="font-size:.82rem;color:#ef4444;margin-top:8px;font-weight:600">▎ 以下 '+fl.length+' 本搜索不到：</div>';
       fl.forEach(function(f){html+='<span class="fail-chip" onclick="rq(\''+f.isbn+'\')">🔍 '+f.isbn+' <span style="color:#fca5a5">('+esc(f.error||'')+')</span></span>'});
@@ -503,9 +502,7 @@ function copyToBuyer(){
   var ok=L.filter(function(r){return r.cheapest}), ng=L.filter(function(r){return r.error});
   var lines=[];
   if(ok.length){
-    var tot=0; ok.forEach(function(r){tot+=r.cheapest.price+r.cheapest.shipping});
-    var totalSug=pkgSuggest(tot,ok.length);
-    lines.push('查到 '+ok.length+' 本 总价 ¥'+totalSug.toFixed(1));
+    lines.push('查到 '+ok.length+' 本');
   }
   if(ng.length){
     lines.push('  ▎ 以下 '+ng.length+' 本搜索不到：'+ng.map(function(r){return r.isbn}).join('、'));
