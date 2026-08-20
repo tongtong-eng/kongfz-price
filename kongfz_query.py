@@ -254,7 +254,7 @@ def _build_result(isbn, items, total_found=0):
 
 # ── 核心查价 ───────────────────────────────────
 
-def _query_api(isbn, cookie_str, quality_filter="", user_area="", pages=1):
+def _query_api(isbn, cookie_str, quality_filter="", user_area="", pages=1, smart_stop=False):
     """
     执行 API 请求：sortType=5 总价升序，复用线程级 HTTPS 连接。
     返回 (items_list, total_count) 或 (None, error_msg)。
@@ -269,6 +269,8 @@ def _query_api(isbn, cookie_str, quality_filter="", user_area="", pages=1):
     """
     all_items = []
     total_found = 0
+    best_total = None
+    no_improve = 0
 
     def _do_request(page):
         """请求指定页，返回 (data, error_msg)"""
@@ -332,6 +334,25 @@ def _query_api(isbn, cookie_str, quality_filter="", user_area="", pages=1):
         total_found = t or total_found
         if items:
             all_items.extend(items)
+            # 智能提前停止：最低总价连续 2 页无改善即停，避免无意义翻页
+            if smart_stop:
+                page_min = None
+                for it in items:
+                    if _is_unreliable_shop(it) or it.get("isSoldOut"):
+                        continue
+                    r = _parse_item(it)
+                    if r is None:
+                        continue
+                    if page_min is None or r["total"] < page_min:
+                        page_min = r["total"]
+                if page_min is not None:
+                    if best_total is None or page_min < best_total - 1e-9:
+                        best_total = page_min
+                        no_improve = 0
+                    else:
+                        no_improve += 1
+                        if no_improve >= 2:
+                            break
         # 该页不足一页 = 没有更多了
         if len(items) < PAGE_SIZE:
             break
@@ -351,7 +372,7 @@ def _query_api(isbn, cookie_str, quality_filter="", user_area="", pages=1):
 def query_isbn(isbn, cookie_str, quality_filter=""):
     """
     查询单个 ISBN，返回最低价 + 价格区间。
-    使用 sortType=3 价格升序，仅查首页 50 条，
+    sortType=5 总价升序 + 智能翻页（最多 5 页，最低总价连续 2 页无改善即停），
     本地按总价（含运费）重排序确保最低总价准确。
     """
     isbn = isbn.strip().replace("-", "").replace(" ", "")
@@ -362,7 +383,7 @@ def query_isbn(isbn, cookie_str, quality_filter=""):
     if cached:
         return cached
 
-    items, total = _query_api(isbn, cookie_str, quality_filter)
+    items, total = _query_api(isbn, cookie_str, quality_filter, pages=5, smart_stop=True)
 
     if items is None:
         return {"isbn": isbn, "title": "—", "error": total}
@@ -488,7 +509,7 @@ def query_isbn_by_address(isbn, cookie_str, province, quality_filter="", user_ar
         return {"isbn": isbn, "title": "—", "error": "格式不对"}
 
     # 1. 搜索（带 userArea → 搜索接口按收货地址算真实运费；翻 pages 页扩大候选）
-    items, total = _query_api(isbn, cookie_str, quality_filter, user_area=user_area, pages=pages)
+    items, total = _query_api(isbn, cookie_str, quality_filter, user_area=user_area, pages=pages, smart_stop=True)
     if items is None:
         return {"isbn": isbn, "title": "—", "error": total}
     if not items:
