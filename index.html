@@ -111,7 +111,7 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
     <div class="hero-bow">🎀</div>
     <div class="hero-title">孔夫子查价</div>
     <div class="hero-date" id="heroDate"></div>
-    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v5.2 · 移除最优分配</div>
+    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v5.3 · 地址一键清空</div>
     <div class="hero-stats">
       <div class="h-stat" onclick="scrollTo(0,0)"><div class="hs-n" id="statToday">0</div><div class="hs-l">今日查价</div></div>
       <div class="h-stat" onclick="showTrack()"><div class="hs-n">📦</div><div class="hs-l">快递追踪</div></div>
@@ -140,6 +140,7 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
       <div style="display:flex;gap:6px">
         <input id="addrInput" type="text" placeholder="粘贴买家收货地址，如：刘齐倚 17340298250 重庆市奉节县诗仙西路137号" style="flex:1;min-width:0;padding:8px 10px;border:2px solid #ffe4f0;border-radius:10px;font-size:.8rem;outline:none;background:#fff" onkeydown="if(event.key==='Enter')parseAddr()">
         <button class="btn btn-outline" id="btnParseAddr" onclick="parseAddr()" style="white-space:nowrap">📍 解析</button>
+        <button class="btn btn-outline" onclick="clearAddr()" style="white-space:nowrap;color:#fb7185">🗑️ 清空</button>
       </div>
       <div style="margin-top:6px">
         <label style="display:flex;align-items:center;gap:4px;font-size:.72rem;color:#f472b6;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="chkDefault" checked> 设为孔夫子<strong>默认</strong>收货地址</label>
@@ -264,6 +265,14 @@ function cp(){var b=id('pc');if(b)b.remove();Q.click()}
 var _addrProvince='';  // 全局：解析出的省份
 var _addrUserArea='';  // 全局：收货地区编码（cityId/provId，查价用 userArea）
 var _addrInfo=null;    // 全局：官方解析出的完整地址信息
+// 一键清空收货地址：回到普通查价
+function clearAddr(){
+  var inp=id('addrInput');if(inp)inp.value='';
+  _addrProvince='';_addrUserArea='';_addrInfo=null;
+  var res=id('addrResult');if(res)res.innerHTML='已清空，查价回到普通模式（不按地址算运费）';
+  var ba=id('btnAddAddr');if(ba)ba.style.display='none';
+  toast('已清空收货地址');
+}
 function parseAddr(){
   var val=(id('addrInput').value||'').trim();
   var res=id('addrResult');
