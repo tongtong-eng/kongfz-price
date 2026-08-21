@@ -513,8 +513,10 @@ function clearAllCart(){
 }
 
 // 报价规则：单本利润=max(22%进价,5元)；打包利润=max(22%合计,保底)，保底=n>=5?20:n==4?15:5*n，封顶30元
-function singleSuggest(c){return Math.round((c+Math.max(0.22*c,5))*100)/100}
-function pkgSuggest(T,n){var p=Math.max(0.22*T,n>=5?20:n===4?15:5*n);if(p>30)p=30;return Math.round((T+p)*100)/100}
+// 孔夫子手续费按成交价收 2%：报价=(成本+利润)/0.98，扣费后净利严格保住 22%/保底/封顶
+var _KFEE=0.02;
+function singleSuggest(c){return Math.round((c+Math.max(0.22*c,5))/(1-_KFEE)*100)/100}
+function pkgSuggest(T,n){var p=Math.max(0.22*T,n>=5?20:n===4?15:5*n);if(p>30)p=30;return Math.round((T+p)/(1-_KFEE)*100)/100}
 
 // 复制给买家：简短汇总话术
 function copyToBuyer(){
@@ -549,7 +551,7 @@ function cpyQuote(forBuyer){
       lines.push(i+'. '+(r.title||'无书名'));
       lines.push('   ISBN: '+r.isbn);
       lines.push('   最低进价: ¥'+p.toFixed(1)+'+¥'+s.toFixed(1)+'=¥'+t.toFixed(1));
-      lines.push('   建议售价: ¥'+sug.toFixed(1)+' (22%或保底5元)');
+      lines.push('   建议售价: ¥'+sug.toFixed(1)+' (22%或保底5元·含2%费)');
     }
   });
   lines.push('');
@@ -557,7 +559,7 @@ function cpyQuote(forBuyer){
   if(forBuyer){
     lines.push('打包总价: ¥'+pkgSuggest(totalCost,ok.length).toFixed(1)+'（比单买优惠）');
   }else{
-    lines.push('总进价: ¥'+totalCost.toFixed(1)+'  打包建议售价: ¥'+pkgSuggest(totalCost,ok.length).toFixed(1)+' (22%起·封顶30元)');
+    lines.push('总进价: ¥'+totalCost.toFixed(1)+'  打包建议售价: ¥'+pkgSuggest(totalCost,ok.length).toFixed(1)+' (22%起·封顶30元·含2%费)');
   }
   var label=forBuyer?'报价单已复制，可直接发给买家':'已复制成本报价单';
   doCopy(lines.join('\n'),function(){toast('✅ '+label)},function(){prompt('📋 '+(forBuyer?'报价单':'成本单')+'，复制后关闭：',lines.join('\n'))});
