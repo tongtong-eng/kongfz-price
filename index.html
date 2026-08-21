@@ -527,6 +527,7 @@ function copyToBuyer(){
     var tot=0; ok.forEach(function(r){tot+=r.cheapest.price+r.cheapest.shipping});
     var totalSug=pkgSuggest(tot,ok.length);
     lines.push('查到 '+ok.length+' 本 总价 ¥'+totalSug.toFixed(1));
+    lines.push('  ▎ 以下是查到的书号，请核对');
     ok.forEach(function(r){lines.push('  '+r.isbn)});
   }
   if(ng.length){
