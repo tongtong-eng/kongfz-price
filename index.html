@@ -526,10 +526,12 @@ function copyToBuyer(){
   if(ok.length){
     var tot=0; ok.forEach(function(r){tot+=r.cheapest.price+r.cheapest.shipping});
     var totalSug=pkgSuggest(tot,ok.length);
-    lines.push('查到 '+ok.length+' 本（书号：'+ok.map(function(r){return r.isbn}).join('、')+'）总价 ¥'+totalSug.toFixed(1));
+    lines.push('查到 '+ok.length+' 本 总价 ¥'+totalSug.toFixed(1));
+    ok.forEach(function(r){lines.push('  书号：'+r.isbn)});
   }
   if(ng.length){
-    lines.push('  ▎ 以下 '+ng.length+' 本搜索不到：'+ng.map(function(r){return r.isbn}).join('、'));
+    lines.push('  ▎ 以下 '+ng.length+' 本搜索不到：');
+    ng.forEach(function(r){lines.push('  '+r.isbn)});
   }
   doCopy(lines.join('\n'),function(){toast('✅ 已复制，可直接发给买家')},function(){prompt('📋 复制给买家：',lines.join('\n'))},false);
 }
