@@ -110,6 +110,12 @@ def _cache_set(isbn, quality_filter="", result=None):
 # ── 常量 ──────────────────────────────────────
 API_HOST = "https://search.kongfz.com"
 API_PATH = "/pc-gw/search-web/client/pc/product/keyword/list"
+
+# 禁用书号清单：这些书号不查询、直接标记为「不卖」
+# 遇到清单里的书号，查价直接返回"不卖"，不会向孔夫子发请求
+NO_SELL_ISBNS = {
+    "9771674678260",  # 用户明确不想卖这本书
+}
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
     "Accept": "application/json, text/plain, */*",
@@ -378,6 +384,10 @@ def query_isbn(isbn, cookie_str, quality_filter=""):
     isbn = isbn.strip().replace("-", "").replace(" ", "")
     if not re.match(r'^\d{10,13}$', isbn):
         return {"isbn": isbn, "title": "—", "error": "格式不对"}
+
+    # 禁用书号：不查询，直接标记为「不卖」
+    if isbn in NO_SELL_ISBNS:
+        return {"isbn": isbn, "title": "—", "error": "不卖"}
 
     cached = _cache_get(isbn, quality_filter)
     if cached:
