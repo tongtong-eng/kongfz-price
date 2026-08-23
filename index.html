@@ -1136,9 +1136,50 @@ function showTrack(){
   h+='<div class="card"><div class="card-title">📱 搜手机号查快递</div>';
   h+='<div style="display:flex;gap:8px"><input id="tkPhone" type="text" placeholder="粘贴买家收货信息自动识别手机号" oninput="tkPhoneAuto()" onkeydown="if(event.key==\'Enter\')tkSearch()" style="flex:1;padding:13px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:1rem;outline:none"><button id="tkBtn" onclick="tkSearch()" style="padding:13px 22px;border-radius:8px;border:none;background:#a855f7;color:#fff;font-weight:600;font-size:1rem;cursor:pointer">🔍 查询</button></div>';
   h+='<div id="tkHint" style="font-size:.78rem;color:#c4b5d0;margin-top:10px;line-height:1.5">直接粘贴买家收货信息（如「15996231420 栖霞区马群…」）自动识别手机号查订单</div>';
-  h+='</div><div id="tkRes"></div>';
+  h+='</div><div id="tkMonitor" style="margin-bottom:10px"></div><div id="tkRes"></div>';
   cont.innerHTML=h;
+  loadOrderMonitor();
   setTimeout(function(){id('tkPhone').focus()},100);
+}
+
+// 全自动订单异常监控：打开快递页时自动加载，显示取消/延迟发货横幅
+function loadOrderMonitor(){
+  var el=id('tkMonitor');if(!el)return;
+  el.innerHTML='<div style="text-align:center;padding:10px;color:#c4b5d0;font-size:.78rem">⏳ 正在检查订单异常...</div>';
+  fetch('/api/order/monitor?delay_days=3')
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if(d.error){el.innerHTML='';return}
+      var cancels=d.cancelled||[], delays=d.delayed||[];
+      if(!cancels.length&&!delays.length){
+        el.innerHTML='<div style="border:1px solid #d1fae5;background:#ecfdf5;border-radius:12px;padding:10px 14px;font-size:.82rem;color:#047857;display:flex;align-items:center;gap:8px">✅ 已检查 <strong>'+d.scanned+'</strong> 笔订单，无取消或延迟发货异常</div>';
+        return;
+      }
+      var h='<div style="border:2px solid #fca5a5;background:#fef2f2;border-radius:12px;padding:12px 14px">';
+      h+='<div style="font-weight:700;color:#dc2626;font-size:.9rem">🚨 发现 '+cancels.length+' 个取消订单'+(delays.length?' · '+delays.length+' 个延迟发货':'')+'</div>';
+      h+='<div style="font-size:.72rem;color:#b91c1c;margin-top:6px">已扫描 <strong>'+d.scanned+'</strong> 笔订单，请及时处理以下异常：</div>';
+      if(cancels.length){
+        h+='<div style="margin-top:8px;font-size:.78rem;color:#dc2626"><div style="font-weight:600">❌ 商家取消订单：</div>';
+        cancels.slice(0,10).forEach(function(o){
+          var its=(o.items||[]).map(function(it){return it.name||''}).join('、')||'';
+          h+='<div style="margin-top:4px">· '+(o.receiver_name||'')+(o.shop_name?' ['+o.shop_name+']':'')+' '+its+'</div>';
+        });
+        if(cancels.length>10)h+='<div style="color:#9ca3af">… 等共 '+cancels.length+' 个</div>';
+        h+='</div>';
+      }
+      if(delays.length){
+        h+='<div style="margin-top:8px;font-size:.78rem;color:#b45309"><div style="font-weight:600">⚠️ 延迟发货订单（超3天未发货）：</div>';
+        delays.slice(0,10).forEach(function(o){
+          var its=(o.items||[]).map(function(it){return it.name||''}).join('、')||'';
+          h+='<div style="margin-top:4px">· '+(o.receiver_name||'')+' ['+(o.shop_name||'')+'] '+its+'（已'+o.delay_days+'天）</div>';
+        });
+        if(delays.length>10)h+='<div style="color:#9ca3af">… 等共 '+delays.length+' 个</div>';
+        h+='</div>';
+      }
+      h+='</div>';
+      el.innerHTML=h;
+    })
+    .catch(function(){el.innerHTML=''});
 }
 
 var _tkOrders=[],_tkPage=1,_tkPhone='';

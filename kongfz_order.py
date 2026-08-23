@@ -126,3 +126,83 @@ def get_order_count(cookie_str):
     if data.get("status"):
         return data.get("result", {})
     return {}
+
+
+# 异常订单监控：自动翻页拉全量订单，识别"卖家取消"和"延迟发货"
+CANCEL_STATUSES = ("SellerClosedBeforePay", "Canceled", "Closed", "PaidRefunded")
+DELAY_THRESHOLD_SECONDS = 3 * 24 * 3600  # 超过3天未发货视为延迟
+
+
+def monitor_orders(cookie_str, delay_days=3, max_pages=88, page_size=50):
+    """
+    翻页拉取全部订单，识别异常：
+      - 已取消：orderStatus 命中取消状态（卖家取消/退款完成）
+      - 延迟发货：处于"等待卖家发货"且下单超过 delay_days 天
+
+    返回：
+      {
+        "scanned": 扫描订单总数,
+        "cancelled": [取消订单列表],
+        "delayed":   [延迟发货订单列表],
+        "ok_count": 正常订单数,
+        "error":     出错信息(可选)
+      }
+    """
+    from datetime import datetime
+    cancel = []
+    delayed = []
+    scanned = 0
+    try:
+        for page in range(1, max_pages + 1):
+            body = {"page": page, "size": page_size, "mobilePhone": ""}
+            data = _call_api(cookie_str, body)
+            if not data.get("status"):
+                return {"error": data.get("errMessage", "查询失败"), "scanned": scanned,
+                        "cancelled": cancel, "delayed": delayed}
+            raw = data.get("result", {}).get("list", [])
+            if not raw:
+                break  # 拉完了
+            for o in raw:
+                scanned += 1
+                status = o.get("orderStatus", "") or ""
+                status_name = o.get("orderStatusName", "") or ""
+                order = {
+                    "order_id": o.get("orderId"),
+                    "shop_name": o.get("shopName", ""),
+                    "status": status_name,
+                    "order_status": status,
+                    "receiver_name": o.get("receiverName", ""),
+                    "created_time": o.get("createdTime", 0),
+                    "amount": o.get("paidOrderAmount", ""),
+                    "items": [
+                        {"name": i.get("itemName", ""), "isbn": i.get("isbn") or i.get("itemSn", "")}
+                        for i in o.get("items", [])
+                    ],
+                }
+                # 取消订单：状态命中取消集合 或 状态名含"取消/退款完成"
+                if status in CANCEL_STATUSES or "取消" in status_name or "退款完成" in status_name:
+                    cancel.append(order)
+                    continue
+                # 延迟发货：等待卖家发货 且 超时
+                if status in ("PaidToShip",) or "等待卖家发货" in status_name:
+                    ct = o.get("createdTime", 0)
+                    if ct:
+                        try:
+                            ct_f = float(ct)
+                            if ct_f > 1e12:  # 毫秒转秒
+                                ct_f = ct_f / 1000.0
+                            elapsed = time.time() - ct_f
+                            if elapsed > delay_days * 24 * 3600:
+                                order["delay_days"] = round(elapsed / 86400, 1)
+                                delayed.append(order)
+                        except (TypeError, ValueError):
+                            pass
+            # 到最后一页就停
+            pager = data.get("result", {}).get("pager", {})
+            if page >= (pager.get("pages") or max_pages):
+                break
+    except Exception as e:
+        return {"error": str(e)[:60], "scanned": scanned, "cancelled": cancel, "delayed": delayed}
+
+    return {"scanned": scanned, "cancelled": cancel, "delayed": delayed,
+            "ok_count": scanned - len(cancel) - len(delayed)}

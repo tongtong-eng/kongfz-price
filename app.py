@@ -30,8 +30,14 @@ from datetime import datetime
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 _PARENT = os.path.dirname(BASE_DIR)
+# 优先导入本目录（云版）模块，避免与 /Users/tong 下的本地版同名模块冲突
+# 强制把 BASE_DIR 放到 sys.path 最前（先移除再插入，确保排第一）
+for _p in list(sys.path):
+    if _p == BASE_DIR:
+        sys.path.remove(_p)
+sys.path.insert(0, BASE_DIR)
 if _PARENT not in sys.path:
-    sys.path.insert(0, _PARENT)
+    sys.path.append(_PARENT)
 
 from kongfz_cookie import (
     load_cookie, save_cookie, test_cookie, get_cookie_info,
@@ -44,7 +50,7 @@ from kongfz_query import (
     _get_max_workers,
 )
 from kongfz_address import cleanup_addresses, MAX_ADDRESSES, parse_address_text, add_address, delete_address, list_addresses
-from kongfz_order import search_by_phone
+from kongfz_order import search_by_phone, monitor_orders
 
 # ── 配置 ──────────────────────────────────────────────────
 PORT = int(os.environ.get("PORT", 5000))
@@ -411,6 +417,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
             page = int(q.get("page", ["1"])[0])
             result = search_by_phone(cookie, phone, page=page)
             self.send_json(result)
+        elif path.startswith("/api/order/monitor"):
+            # 全自动订单监控：翻页拉全量订单，识别取消/延迟发货
+            cookie = load_cookie()
+            if not cookie:
+                self.send_json({"error": "Cookie 未找到，请先设置 Cookie"})
+                return
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            delay = int(q.get("delay_days", ["3"])[0] or 3)
+            force = q.get("force", [""])[0] in ("1", "true", "yes")
+            result = get_monitor_result(cookie, delay_days=delay, force=force)
+            self.send_json(result)
         elif path.startswith("/api/history/list"):
             data = load_history()
             summaries = []
@@ -766,6 +783,48 @@ def _background_addr_cleanup():
         pass
 
 
+# ── 订单异常监控（缓存 + 后台定时刷新） ─────────────────────
+_MONITOR_CACHE = {"data": None, "ts": 0}
+_MONITOR_INTERVAL = 600  # 10 分钟刷新一次
+
+def get_monitor_result(cookie_str, delay_days=3, force=False):
+    """返回订单监控结果，带10分钟缓存。force=True 强制重新扫描。"""
+    import time as _t
+    now = _t.time()
+    if not force and _MONITOR_CACHE["data"] is not None and now - _MONITOR_CACHE["ts"] < _MONITOR_INTERVAL:
+        return _MONITOR_CACHE["data"]
+    try:
+        result = monitor_orders(cookie_str, delay_days=delay_days)
+        if not result.get("error"):  # 只有成功才缓存，失败保留旧数据
+            _MONITOR_CACHE["data"] = result
+            _MONITOR_CACHE["ts"] = now
+        return result
+    except Exception as e:
+        result = _MONITOR_CACHE["data"] or {"error": str(e)[:60], "cancelled": [], "delayed": []}
+        result = dict(result)
+        result["error"] = str(e)[:60]
+        return result
+
+
+def _background_order_monitor():
+    """后台定时扫描订单异常，预热监控缓存（启动后执行，失败静默）"""
+    cookie = load_cookie()
+    if not cookie:
+        return
+    try:
+        time.sleep(5)  # 启动后稍等再扫描，避免与启动流程竞争
+        get_monitor_result(cookie, delay_days=3, force=True)
+        c = _MONITOR_CACHE["data"] or {}
+        nc = len(c.get("cancelled", []))
+        nd = len(c.get("delayed", []))
+        if nc or nd:
+            print(f"  🚨 订单监控：发现 {nc} 个取消订单、{nd} 个延迟发货订单")
+        else:
+            print(f"  ✅ 订单监控：扫描 {c.get('scanned',0)} 单，无异常")
+    except Exception:
+        pass
+
+
 # ── 启动 ───────────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -785,6 +844,9 @@ if __name__ == "__main__":
         # 地址清理改为后台执行，不阻塞启动
         t = threading.Thread(target=_background_addr_cleanup, daemon=True)
         t.start()
+        # 订单异常监控：后台定时扫描（取消/延迟发货）
+        t2 = threading.Thread(target=_background_order_monitor, daemon=True)
+        t2.start()
 
     print("  📡 健康检查端点: /api/health")
     print("  💨 Gzip 压缩: 已启用（>1KB 自动压缩）")
