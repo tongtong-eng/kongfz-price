@@ -1271,15 +1271,15 @@ function trackStatus(o){
   }
   if(!o.shipment_num) return {text:'未发货',cls:'#c4b5d0'};
   var lg=o.logistic||[];
-  if(!lg.length) return {text:'在途',cls:'#a855f7'};
+  if(!lg.length) return {text:'在途',cls:'#3b82f6'};
   var last=lg[lg.length-1];
   var s=(last.status||''),c=last.code;
   if(c===3||s.indexOf('签收')>=0) return {text:'已签收',cls:'#10b981'};
-  if(c===412||s.indexOf('待取')>=0||s.indexOf('超时')>=0||s.indexOf('暂存')>=0||s.indexOf('驿站')>=0) return {text:'待领取',cls:'#f59e0b'};
-  if(c===5||s.indexOf('派送')>=0) return {text:'派送中',cls:'#f59e0b'};
+  if(c===412||s.indexOf('待取')>=0||s.indexOf('超时')>=0||s.indexOf('暂存')>=0||s.indexOf('驿站')>=0) return {text:'待领取',cls:'#eab308'};
+  if(c===5||s.indexOf('派送')>=0) return {text:'派送中',cls:'#f97316'};
   if(c===1||s.indexOf('揽收')>=0) return {text:'已揽收',cls:'#a855f7'};
-  if(c===0||s.indexOf('运输')>=0||s.indexOf('转运')>=0) return {text:'运输中',cls:'#a855f7'};
-  return {text:'在途',cls:'#a855f7'};
+  if(c===0||s.indexOf('运输')>=0||s.indexOf('转运')>=0) return {text:'运输中',cls:'#3b82f6'};
+  return {text:'在途',cls:'#3b82f6'};
 }
 
 // 一键复制单条物流：公司 + 单号 + 状态
