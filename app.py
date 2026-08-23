@@ -795,6 +795,7 @@ def _background_addr_cleanup():
 _MONITOR_CACHE = {"data": None, "ts": 0}
 _MONITOR_INTERVAL = 600  # 10 分钟刷新一次
 _HANDLED_FILE = os.path.join(DATA_DIR, "kongfz_handled_orders.json")
+MONITOR_LOOKBACK_DAYS = 5  # 只显示最近5天下单的异常订单
 
 
 def _load_handled():
@@ -847,12 +848,13 @@ def get_monitor_result(cookie_str, delay_days=3, force=False):
 
 
 def _filter_monitor(result):
-    """过滤监控结果：只保留今天0点后下单的异常，过滤已处理的取消订单。"""
-    from datetime import datetime
+    """过滤监控结果：只保留最近 N 天下单的异常，过滤已处理的取消订单。"""
+    from datetime import datetime, timedelta
     result = dict(result)
-    # 今天0点的时间戳（本地时区，秒级）
-    today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    today_ts = today_start.timestamp()
+    # 只显示最近 MONITOR_LOOKBACK_DAYS 天下单的异常（默认5天）
+    lookback = MONITOR_LOOKBACK_DAYS
+    start_dt = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=lookback - 1)
+    start_ts = start_dt.timestamp()
     handled = _load_handled()
 
     cancels = []
@@ -864,8 +866,8 @@ def _filter_monitor(result):
                 ct_f = ct_f / 1000.0
         except (TypeError, ValueError):
             continue
-        # 只要今天开始的
-        if ct_f < today_ts:
+        # 只要最近 N 天开始的
+        if ct_f < start_ts:
             continue
         # 过滤已处理
         if str(o.get("order_id")) in handled:
@@ -881,7 +883,7 @@ def _filter_monitor(result):
                 ct_f = ct_f / 1000.0
         except (TypeError, ValueError):
             continue
-        if ct_f < today_ts:
+        if ct_f < start_ts:
             continue
         if str(o.get("order_id")) in handled:
             continue
