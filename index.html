@@ -1207,18 +1207,28 @@ function renderTkOrders(el, d){
       h+='<div style="font-family:monospace;font-size:.9rem;color:#f472b6;font-weight:700;word-break:break-all">📮 '+(o.shipping_company?o.shipping_company+' ':'')+tn+'</div>';
       h+='</div>';
     }else{
-      h+='<div style="flex:1;min-width:160px;line-height:1.4"><span style="font-size:.85rem;color:#e0a8c2">📮 尚未发货</span></div>';
+      var noShipTxt=(st&&st.text==='已取消')?'已取消':'尚未发货';
+      var noShipCls=(st&&st.text==='已取消')?'#9ca3af':'#e0a8c2';
+      h+='<div style="flex:1;min-width:160px;line-height:1.4"><span style="font-size:.85rem;color:'+noShipCls+'">📮 '+noShipTxt+'</span></div>';
     }
     h+='<span style="font-size:.85rem;font-weight:600;color:#a9446f;white-space:nowrap;padding-top:2px">👤 '+(o.receiver_name||'收件人')+'</span>';
+    // 下单时间（created_time 为秒级时间戳）
+    var cts=o.created_time||0;
+    var ct='';
+    if(cts){var d=new Date(cts*1000);ct=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+    h+='<span style="font-size:.72rem;color:#c4b5d0;white-space:nowrap;padding-top:3px">🕒 '+(ct||'')+'</span>';
     h+='</div>';
 
     // 第二行：物流状态标签 + 复制按钮（间距拉开）
     h+='<div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">';
-    if(hasTrack){
+    if(st.text==='已取消'){
+      h+='<span style="font-size:.72rem;padding:3px 10px;border-radius:12px;color:#fff;background:'+st.cls+'">'+st.text+'</span>';
+      h+='<span style="font-size:.7rem;color:#9ca3af">订单已取消</span>';
+    }else if(hasTrack){
       h+='<span style="font-size:.72rem;padding:3px 10px;border-radius:12px;color:#fff;background:'+st.cls+'">'+st.text+'</span>';
       h+='<span onclick="copyTrack('+i+')" style="padding:5px 12px;border-radius:8px;background:#f9a8d4;color:#fff;font-size:.75rem;cursor:pointer;font-weight:600">📋 复制物流</span>';
     }else{
-      h+='<span style="font-size:.72rem;padding:3px 10px;border-radius:12px;color:#fff;background:#e0a8c2">未发货</span>';
+      h+='<span style="font-size:.72rem;padding:3px 10px;border-radius:12px;color:#fff;background:#e0a8c2">'+st.text+'</span>';
     }
     h+='</div>';
 
@@ -1252,8 +1262,13 @@ function copyTkNum(tn){
   }else{prompt('📋 复制快递单号：',tn)}
 }
 
-// 物流状态判断：未发货 / 已揽收 / 运输中 / 派送中 / 待领取 / 已签收
+// 物流状态判断：未发货 / 已揽收 / 运输中 / 派送中 / 待领取 / 已签收 / 已取消
 function trackStatus(o){
+  // 取消订单优先判断：order_status 或中文状态名含取消/关闭/退款
+  var stName=(o.status||'')+(o.order_status||'');
+  if(stName.indexOf('取消')>=0||stName.indexOf('关闭')>=0||stName.indexOf('退款')>=0||stName.indexOf('Closed')>=0||stName.indexOf('Cancel')>=0||stName.indexOf('CANCEL')>=0){
+    return {text:'已取消',cls:'#9ca3af'};
+  }
   if(!o.shipment_num) return {text:'未发货',cls:'#c4b5d0'};
   var lg=o.logistic||[];
   if(!lg.length) return {text:'在途',cls:'#a855f7'};
