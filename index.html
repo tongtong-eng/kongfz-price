@@ -1160,10 +1160,10 @@ function fmtTime(ts){
 }
 
 // 全自动订单异常监控：打开快递页时自动加载，显示取消/延迟发货横幅
-function loadOrderMonitor(){
+function loadOrderMonitor(force){
   var el=id('tkMonitor');if(!el)return;
   el.innerHTML='<div style="text-align:center;padding:10px;color:#c4b5d0;font-size:.78rem">⏳ 正在检查订单异常...</div>';
-  fetch('/api/order/monitor?delay_days=3')
+  fetch('/api/order/monitor?delay_days=3'+(force?'&force=1':''))
     .then(function(r){return r.json()})
     .then(function(d){
       if(d.error){el.innerHTML='';return}
@@ -1207,11 +1207,10 @@ function loadOrderMonitor(){
 // 标记异常订单已处理，刷新横幅
 function markHandled(orderId){
   if(!orderId){toast('缺少订单号');return}
-  if(!confirm('确认已处理这笔取消订单？之后不再显示为异常'))return;
   fetch('/api/order/mark_handled?order_id='+encodeURIComponent(orderId))
     .then(function(r){return r.json()})
     .then(function(d){
-      if(d.success){toast('✅ 已标记处理');loadOrderMonitor()}
+      if(d.success){toast('✅ 已标记处理，不再显示');loadOrderMonitor(true)}
       else{toast('❌ '+(d.error||'标记失败'))}
     })
     .catch(function(){toast('网络错误')});
