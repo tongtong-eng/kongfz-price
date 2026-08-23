@@ -1142,6 +1142,16 @@ function showTrack(){
   setTimeout(function(){id('tkPhone').focus()},100);
 }
 
+// 秒级时间戳 → 显示日期
+function fmtTime(ts){
+  if(!ts)return '';
+  var t=Number(ts);
+  if(t>1e12)t=t/1000; // 毫秒转秒
+  var d=new Date(t*1000);
+  if(isNaN(d.getTime()))return '';
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
 // 全自动订单异常监控：打开快递页时自动加载，显示取消/延迟发货横幅
 function loadOrderMonitor(){
   var el=id('tkMonitor');if(!el)return;
@@ -1162,7 +1172,8 @@ function loadOrderMonitor(){
         h+='<div style="margin-top:8px;font-size:.78rem;color:#dc2626"><div style="font-weight:600">❌ 商家取消订单：</div>';
         cancels.slice(0,10).forEach(function(o){
           var its=(o.items||[]).map(function(it){return it.name||''}).join('、')||'';
-          h+='<div style="margin-top:4px">· '+(o.receiver_name||'')+(o.shop_name?' ['+o.shop_name+']':'')+' '+its+'</div>';
+          var tm=fmtTime(o.created_time);
+          h+='<div style="margin-top:4px">· <span style="color:#9ca3af">'+tm+'</span> '+(o.receiver_name||'')+(o.shop_name?' ['+o.shop_name+']':'')+' '+its+'</div>';
         });
         if(cancels.length>10)h+='<div style="color:#9ca3af">… 等共 '+cancels.length+' 个</div>';
         h+='</div>';
@@ -1171,7 +1182,8 @@ function loadOrderMonitor(){
         h+='<div style="margin-top:8px;font-size:.78rem;color:#b45309"><div style="font-weight:600">⚠️ 延迟发货订单（超3天未发货）：</div>';
         delays.slice(0,10).forEach(function(o){
           var its=(o.items||[]).map(function(it){return it.name||''}).join('、')||'';
-          h+='<div style="margin-top:4px">· '+(o.receiver_name||'')+' ['+(o.shop_name||'')+'] '+its+'（已'+o.delay_days+'天）</div>';
+          var tm=fmtTime(o.created_time);
+          h+='<div style="margin-top:4px">· <span style="color:#9ca3af">'+tm+'</span> '+(o.receiver_name||'')+' ['+(o.shop_name||'')+'] '+its+'（已'+o.delay_days+'天）</div>';
         });
         if(delays.length>10)h+='<div style="color:#9ca3af">… 等共 '+delays.length+' 个</div>';
         h+='</div>';
