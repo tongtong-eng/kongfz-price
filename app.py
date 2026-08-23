@@ -287,8 +287,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.send_json({"error": "无有效 ISBN"})
                 return
             quality_filter = q.get("quality", [""])[0]
-            # sortType=3 价格升序 + quality_filter 品相过滤
-            results = batch_query(isbns, cookie, quality_filter, max_concurrent=20)
+            # 与 SSE 流式版统一限流策略：用 _get_max_workers() 自适应并发（失败自动降速）
+            results = batch_query(isbns, cookie, quality_filter, max_concurrent=_get_max_workers())
             self.send_json({"results": results, "count": len(results)})
         elif path.startswith("/api/clearcart"):
             cookie = load_cookie()
