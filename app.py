@@ -428,6 +428,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
             force = q.get("force", [""])[0] in ("1", "true", "yes")
             result = get_monitor_result(cookie, delay_days=delay, force=force)
             self.send_json(result)
+        elif path.startswith("/api/order/mark_handled"):
+            # 标记异常订单已处理，不再显示
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            oid = q.get("order_id", [""])[0]
+            if not oid:
+                self.send_json({"error": "缺少 order_id 参数"})
+                return
+            self.send_json(mark_order_handled(oid))
         elif path.startswith("/api/history/list"):
             data = load_history()
             summaries = []
@@ -786,24 +794,103 @@ def _background_addr_cleanup():
 # ── 订单异常监控（缓存 + 后台定时刷新） ─────────────────────
 _MONITOR_CACHE = {"data": None, "ts": 0}
 _MONITOR_INTERVAL = 600  # 10 分钟刷新一次
+_HANDLED_FILE = os.path.join(DATA_DIR, "kongfz_handled_orders.json")
+
+
+def _load_handled():
+    """已处理的取消订单 ID 集合（持久化到 JSON）"""
+    if os.path.exists(_HANDLED_FILE):
+        try:
+            with open(_HANDLED_FILE, "r", encoding="utf-8") as f:
+                d = json.load(f)
+            return set(d if isinstance(d, list) else [])
+        except Exception:
+            pass
+    return set()
+
+
+def _save_handled(s):
+    try:
+        os.makedirs(os.path.dirname(_HANDLED_FILE), exist_ok=True)
+        with open(_HANDLED_FILE, "w", encoding="utf-8") as f:
+            json.dump(sorted(s), f, ensure_ascii=False)
+    except Exception:
+        pass
+
+
+def mark_order_handled(order_id):
+    """标记一个订单已处理，不再显示为异常。返回当前已处理总数。"""
+    s = _load_handled()
+    s.add(str(order_id))
+    _save_handled(s)
+    return {"success": True, "handled_count": len(s)}
+
 
 def get_monitor_result(cookie_str, delay_days=3, force=False):
-    """返回订单监控结果，带10分钟缓存。force=True 强制重新扫描。"""
+    """返回订单监控结果，带10分钟缓存。force=True 强制重新扫描。
+    只保留"今天开始"的异常订单，且过滤已处理的取消订单。"""
     import time as _t
     now = _t.time()
     if not force and _MONITOR_CACHE["data"] is not None and now - _MONITOR_CACHE["ts"] < _MONITOR_INTERVAL:
-        return _MONITOR_CACHE["data"]
+        return _filter_monitor(_MONITOR_CACHE["data"])
     try:
         result = monitor_orders(cookie_str, delay_days=delay_days)
         if not result.get("error"):  # 只有成功才缓存，失败保留旧数据
             _MONITOR_CACHE["data"] = result
             _MONITOR_CACHE["ts"] = now
-        return result
+        return _filter_monitor(result)
     except Exception as e:
         result = _MONITOR_CACHE["data"] or {"error": str(e)[:60], "cancelled": [], "delayed": []}
         result = dict(result)
         result["error"] = str(e)[:60]
-        return result
+        return _filter_monitor(result)
+
+
+def _filter_monitor(result):
+    """过滤监控结果：只保留今天0点后下单的异常，过滤已处理的取消订单。"""
+    from datetime import datetime
+    result = dict(result)
+    # 今天0点的时间戳（本地时区，秒级）
+    today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    today_ts = today_start.timestamp()
+    handled = _load_handled()
+
+    cancels = []
+    for o in result.get("cancelled", []):
+        ct = o.get("created_time", 0) or 0
+        try:
+            ct_f = float(ct)
+            if ct_f > 1e12:
+                ct_f = ct_f / 1000.0
+        except (TypeError, ValueError):
+            continue
+        # 只要今天开始的
+        if ct_f < today_ts:
+            continue
+        # 过滤已处理
+        if str(o.get("order_id")) in handled:
+            continue
+        cancels.append(o)
+
+    delays = []
+    for o in result.get("delayed", []):
+        ct = o.get("created_time", 0) or 0
+        try:
+            ct_f = float(ct)
+            if ct_f > 1e12:
+                ct_f = ct_f / 1000.0
+        except (TypeError, ValueError):
+            continue
+        if ct_f < today_ts:
+            continue
+        if str(o.get("order_id")) in handled:
+            continue
+        delays.append(o)
+
+    result["cancelled"] = cancels
+    result["delayed"] = delays
+    result["handled_count"] = len(handled)
+    return result
 
 
 def _background_order_monitor():
