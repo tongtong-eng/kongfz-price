@@ -72,7 +72,7 @@ def search_by_phone(cookie_str, phone, page=1, page_size=50):
             "page_size": page_size,
         }
     """
-    body = {"mobilePhone": phone, "page": page, "pageSize": page_size}
+    body = {"mobilePhone": phone, "page": page, "pageSize": page_size, "size": page_size}
     data = _call_api(cookie_str, body)
 
     if not data.get("status"):
