@@ -466,7 +466,7 @@ function sh(data){
     }
   });
   E.innerHTML=html;L=data;
-  var sb='sb_'+Date.now();E.insertAdjacentHTML('afterbegin','<div class="save-bar" id="'+sb+'"><span>💾</span><input id="si" placeholder="命名（可选）"><button class="btn-save" onclick="sH(\''+sb+'\')">保存查询</button><button class="btn-save" onclick="cpyQuote(0)" style="background:#059669;margin-left:4px">📋 我的成本</button><button class="btn-save" onclick="cpyQuote(1)" style="background:#a855f7;margin-left:2px">📤 发给买家</button></div>');
+  var sb='sb_'+Date.now();E.insertAdjacentHTML('afterbegin','<div class="save-bar" id="'+sb+'"><span>💾</span><input id="si" placeholder="命名（可选）"><button class="btn-save" onclick="sH(\''+sb+'\')">保存查询</button><button class="btn-save" onclick="cpyQuote(0)" style="background:#059669;margin-left:4px">📋 我的成本</button><button class="btn-save" onclick="showBuyerFormat()" style="background:#a855f7;margin-left:2px">📤 发给买家</button></div>');
   // 自动记录本次查价（供反查验证）；反查快照时跳过
   if(!_viewHist){
     var _pc=(data||[]).filter(function(r){return r&&r.cheapest}).length;
@@ -537,8 +537,8 @@ function copyToBuyer(){
   doCopy(lines.join('\n'),function(){toast('✅ 已复制，可直接发给买家')},function(){prompt('📋 复制给买家：',lines.join('\n'))},false);
 }
 
-// 复制报价单：forBuyer=1 精简版（给买家），否则详细版（自用）
-function cpyQuote(forBuyer){
+// 复制报价单：forBuyer=1 发给买家（支持含价/不含价），否则详细版（自用）
+function cpyQuote(forBuyer, withPrice){
   var ok=L.filter(function(r){return r.cheapest});
   if(!ok.length){toast('无有效数据');return}
   var lines=[], i=0, totalCost=0;
@@ -548,8 +548,8 @@ function cpyQuote(forBuyer){
     totalCost+=t;
     if(forBuyer){
       lines.push(i+'. '+(r.title||'无书名'));
-      lines.push('   ISBN: '+r.isbn);
-      lines.push('   ¥'+sug.toFixed(1));
+      lines.push('   '+r.isbn);
+      if(withPrice)lines.push('   ¥'+sug.toFixed(1));
     }else{
       lines.push(i+'. '+(r.title||'无书名'));
       lines.push('   ISBN: '+r.isbn);
@@ -560,12 +560,39 @@ function cpyQuote(forBuyer){
   lines.push('');
   lines.push('合计: '+ok.length+' 本');
   if(forBuyer){
-    lines.push('打包总价: ¥'+pkgSuggest(totalCost,ok.length).toFixed(1)+'（比单买优惠）');
+    if(withPrice)lines.push('打包总价: ¥'+pkgSuggest(totalCost,ok.length).toFixed(1)+'（比单买优惠）');
   }else{
     lines.push('总进价: ¥'+totalCost.toFixed(1)+'  打包建议售价: ¥'+pkgSuggest(totalCost,ok.length).toFixed(1)+' (22%起·封顶30元·含2%费)');
   }
   var label=forBuyer?'报价单已复制，可直接发给买家':'已复制成本报价单';
   doCopy(lines.join('\n'),function(){toast('✅ '+label)},function(){prompt('📋 '+(forBuyer?'报价单':'成本单')+'，复制后关闭：',lines.join('\n'))});
+}
+
+// 发给买家格式选择弹层
+function showBuyerFormat(){
+  if(!L||!L.length){toast('无数据');return}
+  var ok=L.filter(function(r){return r.cheapest});
+  if(!ok.length){toast('无有效数据');return}
+  var old=document.getElementById('bfmt');
+  if(old)old.remove();
+  var m=document.createElement('div');
+  m.id='bfmt';
+  m.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
+  m.onclick=function(){m.remove()};
+  var box=document.createElement('div');
+  box.style.cssText='background:#fff;border-radius:12px;padding:20px;max-width:360px;width:100%;box-shadow:0 4px 20px rgba(0,0,0,.2)';
+  box.onclick=function(e){e.stopPropagation()};
+  box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><strong style="font-size:1rem">📤 选择发给买家的格式</strong><span onclick="document.getElementById(\'bfmt\').remove()" style="font-size:1.3rem;cursor:pointer;color:#c4b5d0">✕</span></div>'+
+    '<button onclick="cpyQuote(1,true);this.closest(\'#bfmt\').remove()" style="width:100%;text-align:left;padding:14px;border-radius:10px;border:2px solid #e2e8f0;background:#fff;cursor:pointer;margin-bottom:10px">'+
+      '<div style="font-weight:600;color:#0f172a">📚 书名 + 书号 + 价格</div>'+
+      '<div style="font-size:.75rem;color:#9d8bb0;margin-top:3px">例：1. 物理治疗学<br>&nbsp;&nbsp;&nbsp;9787117261050<br>&nbsp;&nbsp;&nbsp;¥16.5</div>'+
+    '</button>'+
+    '<button onclick="cpyQuote(1,false);this.closest(\'#bfmt\').remove()" style="width:100%;text-align:left;padding:14px;border-radius:10px;border:2px solid #e2e8f0;background:#fff;cursor:pointer">'+
+      '<div style="font-weight:600;color:#0f172a">📚 书名 + 书号</div>'+
+      '<div style="font-size:.75rem;color:#9d8bb0;margin-top:3px">例：1. 物理治疗学<br>&nbsp;&nbsp;&nbsp;9787117261050</div>'+
+    '</button>';
+  m.appendChild(box);
+  document.body.appendChild(m);
 }
 
 // 单本报价（发给买家）
