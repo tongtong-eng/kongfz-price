@@ -1404,26 +1404,39 @@ function foldTk(i){
   b.style.padding=b.style.padding==='10px 12px'?'0 12px':'10px 12px';
 }
 
-// 发给买家的物流信息：只写发货的书号、对应本数、快递公司、快递单号
+// 发给买家的物流信息：全部订单——有单号的写书号、本数、快递公司、快递单号；未发货的标注
 function copyToBuyerTrack(){
+  if(!_tkOrders.length){toast('无订单');return}
   var has=_tkOrders.filter(function(o){return o.shipment_num});
-  if(!has.length){toast('无物流可复制');return}
+  var noShip=_tkOrders.filter(function(o){return !o.shipment_num});
   var lines=[];
-  has.forEach(function(o,i){
-    var items=o.items||[];
-    // 按书号聚合本数（同书号多本合并）
-    var byIsbn={};
-    items.forEach(function(it){
-      var isbn=(it.isbn||'').trim()||'无书号';
-      byIsbn[isbn]=(byIsbn[isbn]||0)+1;
+  if(has.length){
+    has.forEach(function(o,i){
+      var items=o.items||[];
+      // 按书号聚合本数（同书号多本合并）
+      var byIsbn={};
+      items.forEach(function(it){
+        var isbn=(it.isbn||'').trim()||'无书号';
+        byIsbn[isbn]=(byIsbn[isbn]||0)+1;
+      });
+      var bookPart=Object.keys(byIsbn).map(function(isbn){
+        var qty=byIsbn[isbn];
+        return isbn+'('+qty+'本)';
+      }).join('、')||'无书号';
+      lines.push('📦 包裹'+(i+1)+' '+(o.shipping_company||'快递')+' 单号:'+o.shipment_num);
+      lines.push('   '+bookPart);
     });
-    var bookPart=Object.keys(byIsbn).map(function(isbn){
-      var qty=byIsbn[isbn];
-      return isbn+'('+qty+'本)';
-    }).join('、')||'无书号';
-    lines.push('📦 包裹'+(i+1)+' '+(o.shipping_company||'快递')+' 单号:'+o.shipment_num);
-    lines.push('   '+bookPart);
-  });
+  }
+  if(noShip.length){
+    lines.push('⏳ 以下 '+noShip.length+' 单尚未发货：');
+    noShip.forEach(function(o){
+      var items=o.items||[];
+      var byIsbn={};
+      items.forEach(function(it){var isbn=(it.isbn||'').trim()||'无书号';byIsbn[isbn]=(byIsbn[isbn]||0)+1;});
+      var bookPart=Object.keys(byIsbn).map(function(isbn){return isbn+'('+byIsbn[isbn]+'本)';}).join('、')||'无书号';
+      lines.push('   ⏳ '+bookPart+'（未发货）');
+    });
+  }
   var txt=lines.join('\n');
   doCopy(txt,function(){toast('✅ 已复制，可直接发给买家')},function(){prompt('📋 发给买家：',txt)});
 }
