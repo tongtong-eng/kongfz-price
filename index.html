@@ -1310,6 +1310,7 @@ function renderTkOrders(el, d){
     // 第三行：书籍（行间距拉开，长书名自动换行）
     if(items.length){
       h+='<div style="margin-top:12px;border-top:1px dashed #ffe4f0;padding-top:10px">';
+      h+='<div style="font-size:.72rem;color:#a9446f;font-weight:600;margin-bottom:4px">📚 共 '+items.length+' 本书</div>';
       items.forEach(function(it){
         var isbn=it.isbn||'';
         h+='<div style="padding:5px 0;font-size:.84rem;line-height:1.5;word-break:break-all">';
@@ -1318,6 +1319,8 @@ function renderTkOrders(el, d){
         h+='</div>';
       });
       h+='</div>';
+    }else{
+      h+='<div style="margin-top:12px;border-top:1px dashed #ffe4f0;padding-top:10px;font-size:.78rem;color:#c4b5d0">📚 0 本（无书籍信息）</div>';
     }
 
     h+='</div>';
