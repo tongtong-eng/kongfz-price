@@ -1157,27 +1157,28 @@ function selfCheck(){
 function loc(){location.reload()}
 
 // === 快递查号 ===
-var _tkTab='monitor'; // 当前Tab: monitor=异常监控, query=订单查询
+var _tkTab='query'; // 当前Tab: monitor=异常监控, query=订单查询
 function showTrack(){
   var cont=document.querySelector('.container');
   var h='<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button onclick="loc()" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:.8rem;cursor:pointer">← 返回查价</button><strong style="font-size:.9rem">📦 物流中心</strong></div>';
   // Tab 导航
   h+='<div style="display:flex;gap:8px;margin-bottom:10px">';
-  h+='<button id="tabMonitorBtn" onclick="switchTkTab(\'monitor\')" style="flex:1;padding:11px;border-radius:10px;border:none;background:#a855f7;color:#fff;font-weight:600;font-size:.9rem;cursor:pointer">🚨 异常监控</button>';
-  h+='<button id="tabQueryBtn" onclick="switchTkTab(\'query\')" style="flex:1;padding:11px;border-radius:10px;border:none;background:#e2e8f0;color:#9d8bb0;font-weight:600;font-size:.9rem;cursor:pointer">📦 订单查询</button>';
+  h+='<button id="tabMonitorBtn" onclick="switchTkTab(\'monitor\')" style="flex:1;padding:11px;border-radius:10px;border:none;background:#e2e8f0;color:#9d8bb0;font-weight:600;font-size:.9rem;cursor:pointer">🚨 异常监控</button>';
+  h+='<button id="tabQueryBtn" onclick="switchTkTab(\'query\')" style="flex:1;padding:11px;border-radius:10px;border:none;background:#a855f7;color:#fff;font-weight:600;font-size:.9rem;cursor:pointer">📦 订单查询</button>';
   h+='</div>';
-  // 异常监控内容
-  h+='<div id="tkTabMonitor">';
+  // 异常监控内容（初始隐藏）
+  h+='<div id="tkTabMonitor" style="display:none">';
   h+='<div id="tkMonitor"></div>';
   h+='</div>';
-  // 订单查询内容（初始隐藏）
-  h+='<div id="tkTabQuery" style="display:none">';
+  // 订单查询内容（默认显示）
+  h+='<div id="tkTabQuery">';
   h+='<div class="card"><div class="card-title">📱 搜手机号查快递</div>';
   h+='<div style="display:flex;gap:8px"><input id="tkPhone" type="text" placeholder="粘贴买家收货信息自动识别手机号" oninput="tkPhoneAuto()" onkeydown="if(event.key==\'Enter\')tkSearch()" style="flex:1;padding:13px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:1rem;outline:none"><button onclick="clearTrackInput()" title="清空输入框" style="padding:13px 16px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#9d8bb0;font-size:1rem;cursor:pointer;flex-shrink:0">🧹</button><button id="tkBtn" onclick="tkSearch()" style="padding:13px 22px;border-radius:8px;border:none;background:#a855f7;color:#fff;font-weight:600;font-size:1rem;cursor:pointer">🔍 查询</button></div>';
   h+='<div id="tkHint" style="font-size:.78rem;color:#c4b5d0;margin-top:10px;line-height:1.5">直接粘贴买家收货信息（如「15996231420 栖霞区马群…」）自动识别手机号查订单</div>';
   h+='</div><div id="tkRes"></div>';
   h+='</div>';
   cont.innerHTML=h;
+  // 默认进订单查询，但也预加载异常监控数据
   loadOrderMonitor();
   setTimeout(function(){id('tkPhone').focus()},100);
 }
