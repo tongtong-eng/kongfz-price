@@ -1187,60 +1187,77 @@ function fmtTime(ts){
 }
 
 // 全自动订单异常监控：打开快递页时自动加载，显示取消/延迟发货横幅
+var _monitorData=null;
+function renderMonitor(d){
+  var el=id('tkMonitor');if(!el)return;
+  if(d.error){el.innerHTML='';return}
+  _monitorData=d;
+  var cancels=d.cancelled||[], delays=d.delayed||[];
+  if(!cancels.length&&!delays.length){
+    el.innerHTML='<div style="border:1px solid #d1fae5;background:#ecfdf5;border-radius:12px;padding:10px 14px;font-size:.82rem;color:#047857;display:flex;align-items:center;gap:8px">✅ 已检查 <strong>'+d.scanned+'</strong> 笔订单，无取消或延迟发货异常</div>';
+    return;
+  }
+  var h='<div style="border:2px solid #fca5a5;background:#fef2f2;border-radius:12px;padding:12px 14px">';
+  h+='<div style="font-weight:700;color:#dc2626;font-size:.9rem">🚨 发现 '+cancels.length+' 个取消订单'+(delays.length?' · '+delays.length+' 个延迟发货':'')+'</div>';
+  h+='<div style="font-size:.72rem;color:#b91c1c;margin-top:6px">已扫描 <strong>'+d.scanned+'</strong> 笔订单，请及时处理以下异常：</div>';
+  if(cancels.length){
+    h+='<div style="margin-top:8px;font-size:.78rem;color:#dc2626"><div style="font-weight:600">❌ 商家取消订单：</div>';
+    cancels.slice(0,10).forEach(function(o){
+      var its=(o.items||[]).map(function(it){return it.name||''}).join('、')||'';
+      var tm=fmtTime(o.created_time);
+      h+='<div style="margin-top:4px;display:flex;justify-content:space-between;align-items:center;gap:8px">';
+      h+='<div style="flex:1;min-width:0">· <span style="color:#9ca3af">'+tm+'</span> '+(o.receiver_name||'')+(o.shop_name?' ['+o.shop_name+']':'')+' '+its+'</div>';
+      h+='<button onclick="markHandled(\''+(o.order_id||'')+'\')" style="flex-shrink:0;padding:3px 10px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-size:.7rem;cursor:pointer;font-weight:600">✅ 已处理</button>';
+      h+='</div>';
+    });
+    if(cancels.length>10)h+='<div style="color:#9ca3af">… 等共 '+cancels.length+' 个</div>';
+    h+='</div>';
+  }
+  if(delays.length){
+    h+='<div style="margin-top:8px;font-size:.78rem;color:#b45309"><div style="font-weight:600">⚠️ 延迟发货订单（超3天未发货）：</div>';
+    delays.slice(0,10).forEach(function(o){
+      var its=(o.items||[]).map(function(it){return it.name||''}).join('、')||'';
+      var tm=fmtTime(o.created_time);
+      h+='<div style="margin-top:4px">· <span style="color:#9ca3af">'+tm+'</span> '+(o.receiver_name||'')+' ['+(o.shop_name||'')+'] '+its+'（已'+o.delay_days+'天）</div>';
+    });
+    if(delays.length>10)h+='<div style="color:#9ca3af">… 等共 '+delays.length+' 个</div>';
+    h+='</div>';
+  }
+  h+='</div>';
+  el.innerHTML=h;
+}
+
 function loadOrderMonitor(force){
   var el=id('tkMonitor');if(!el)return;
   el.innerHTML='<div style="text-align:center;padding:10px;color:#c4b5d0;font-size:.78rem">⏳ 正在检查订单异常...</div>';
   fetch('/api/order/monitor?delay_days=3'+(force?'&force=1':''))
     .then(function(r){return r.json()})
-    .then(function(d){
-      if(d.error){el.innerHTML='';return}
-      var cancels=d.cancelled||[], delays=d.delayed||[];
-      if(!cancels.length&&!delays.length){
-        el.innerHTML='<div style="border:1px solid #d1fae5;background:#ecfdf5;border-radius:12px;padding:10px 14px;font-size:.82rem;color:#047857;display:flex;align-items:center;gap:8px">✅ 已检查 <strong>'+d.scanned+'</strong> 笔订单，无取消或延迟发货异常</div>';
-        return;
-      }
-      var h='<div style="border:2px solid #fca5a5;background:#fef2f2;border-radius:12px;padding:12px 14px">';
-      h+='<div style="font-weight:700;color:#dc2626;font-size:.9rem">🚨 发现 '+cancels.length+' 个取消订单'+(delays.length?' · '+delays.length+' 个延迟发货':'')+'</div>';
-      h+='<div style="font-size:.72rem;color:#b91c1c;margin-top:6px">已扫描 <strong>'+d.scanned+'</strong> 笔订单，请及时处理以下异常：</div>';
-      if(cancels.length){
-        h+='<div style="margin-top:8px;font-size:.78rem;color:#dc2626"><div style="font-weight:600">❌ 商家取消订单：</div>';
-        cancels.slice(0,10).forEach(function(o){
-          var its=(o.items||[]).map(function(it){return it.name||''}).join('、')||'';
-          var tm=fmtTime(o.created_time);
-          h+='<div style="margin-top:4px;display:flex;justify-content:space-between;align-items:center;gap:8px">';
-          h+='<div style="flex:1;min-width:0">· <span style="color:#9ca3af">'+tm+'</span> '+(o.receiver_name||'')+(o.shop_name?' ['+o.shop_name+']':'')+' '+its+'</div>';
-          h+='<button onclick="markHandled(\''+(o.order_id||'')+'\')" style="flex-shrink:0;padding:3px 10px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-size:.7rem;cursor:pointer;font-weight:600">✅ 已处理</button>';
-          h+='</div>';
-        });
-        if(cancels.length>10)h+='<div style="color:#9ca3af">… 等共 '+cancels.length+' 个</div>';
-        h+='</div>';
-      }
-      if(delays.length){
-        h+='<div style="margin-top:8px;font-size:.78rem;color:#b45309"><div style="font-weight:600">⚠️ 延迟发货订单（超3天未发货）：</div>';
-        delays.slice(0,10).forEach(function(o){
-          var its=(o.items||[]).map(function(it){return it.name||''}).join('、')||'';
-          var tm=fmtTime(o.created_time);
-          h+='<div style="margin-top:4px">· <span style="color:#9ca3af">'+tm+'</span> '+(o.receiver_name||'')+' ['+(o.shop_name||'')+'] '+its+'（已'+o.delay_days+'天）</div>';
-        });
-        if(delays.length>10)h+='<div style="color:#9ca3af">… 等共 '+delays.length+' 个</div>';
-        h+='</div>';
-      }
-      h+='</div>';
-      el.innerHTML=h;
-    })
+    .then(function(d){renderMonitor(d)})
     .catch(function(){el.innerHTML=''});
 }
 
 // 标记异常订单已处理，刷新横幅
 function markHandled(orderId){
   if(!orderId){toast('缺少订单号');return}
+  var btn=event&&event.target?event.target:null;
+  if(btn){btn.disabled=1;btn.textContent='...'}
   fetch('/api/order/mark_handled?order_id='+encodeURIComponent(orderId))
     .then(function(r){return r.json()})
     .then(function(d){
-      if(d.success){toast('✅ 已标记处理，不再显示');loadOrderMonitor(true)}
-      else{toast('❌ '+(d.error||'标记失败'))}
+      if(d.success){
+        toast('✅ 已标记处理，不再显示');
+        // 1. 立即本地移除该订单并重渲染（秒级生效）
+        if(_monitorData){
+          _monitorData.cancelled=(_monitorData.cancelled||[]).filter(function(o){return String(o.order_id)!==String(orderId)});
+          _monitorData.delayed=(_monitorData.delayed||[]).filter(function(o){return String(o.order_id)!==String(orderId)});
+          renderMonitor(_monitorData);
+        }
+        // 2. 异步后台强制刷新（更新服务端缓存）
+        setTimeout(function(){loadOrderMonitor(true)},300);
+      }
+      else{toast('❌ '+(d.error||'标记失败'));if(btn){btn.disabled=0;btn.textContent='✅ 已处理'}}
     })
-    .catch(function(){toast('网络错误')});
+    .catch(function(){toast('网络错误');if(btn){btn.disabled=0;btn.textContent='✅ 已处理'}});
 }
 
 var _tkOrders=[],_tkPage=1,_tkPhone='';

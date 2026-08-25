@@ -820,10 +820,14 @@ def _save_handled(s):
 
 
 def mark_order_handled(order_id):
-    """标记一个订单已处理，不再显示为异常。返回当前已处理总数。"""
+    """标记一个订单已处理，不再显示为异常。返回当前已处理总数。
+    同时清空监控缓存，确保下次查询立即生效（不用等10分钟缓存）。"""
     s = _load_handled()
     s.add(str(order_id))
     _save_handled(s)
+    # 清空监控缓存，让下次 get_monitor_result 重新扫描拿到最新 handled 记录
+    _MONITOR_CACHE["data"] = None
+    _MONITOR_CACHE["ts"] = 0
     return {"success": True, "handled_count": len(s)}
 
 
