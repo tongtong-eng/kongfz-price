@@ -115,6 +115,7 @@ API_PATH = "/pc-gw/search-web/client/pc/product/keyword/list"
 # 遇到清单里的书号，查价直接返回"不卖"，不会向孔夫子发请求
 NO_SELL_ISBNS = {
     "9771674678260",  # 用户明确不想卖这本书
+    "9771674678253",  # 用户明确不想卖这本书
 }
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
