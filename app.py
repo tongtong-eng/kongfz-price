@@ -470,6 +470,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return
             delete_history_record(rid)
             self.send_json({"success": True})
+        elif path.startswith("/api/version"):
+            # 返回当前版本标识（从 index.html 的版本号里读 commit），前端用它检测缓存并自动刷新
+            ver = ""
+            try:
+                with open(HTML_FILE, "r", encoding="utf-8") as f:
+                    m = re.search(r"id=\"appVer\"[^>]*>.*?\(([0-9a-f]{7})\)", f.read())
+                    if m:
+                        ver = m.group(1)
+            except Exception:
+                ver = ""
+            self.send_json({"version": ver, "ts": datetime.now().strftime("%H:%M:%S")})
         elif path.startswith("/api/self_check"):
             self._do_self_check()
         elif path.startswith("/api/"):

@@ -111,7 +111,7 @@ select{padding:5px 8px;border:2px solid #ffe4f0;border-radius:10px;font-size:.82
     <div class="hero-bow">🎀</div>
     <div class="hero-title">孔夫子查价</div>
     <div class="hero-date" id="heroDate"></div>
-    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v5.3 · 地址一键清空</div>
+    <div style="font-size:.66rem;color:#f0a6c8;margin:-6px 0 8px" id="appVer">前端 v6.0 · 查价提速+物流监控 (7f8d473)</div>
     <div class="hero-stats">
       <div class="h-stat" onclick="scrollTo(0,0)"><div class="hs-n" id="statToday">0</div><div class="hs-l">今日查价</div></div>
       <div class="h-stat" onclick="showTrack()"><div class="hs-n">📦</div><div class="hs-l">快递追踪</div></div>
@@ -205,6 +205,35 @@ function id(s){return document.getElementById(s)}
 function esc(s){return(s||'').replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
 function ss(t,c){S.textContent=t;S.className=c||''}
 function fj(u,o){return fetch(u,o||{}).then(function(r){return r.json()})}
+
+// ── iOS Safari 缓存根治：版本自检 + bfcache 处理 ──
+// 页面被从 bfcache 恢复时（返回键），强制重新加载
+window.addEventListener('pageshow',function(e){
+  if(e.persisted){location.reload()}
+});
+// 版本自检：后端返回当前 git commit，与页面自身版本号对比，
+// 不一致说明缓存了旧版 → 自动刷新拉新。用 sessionStorage 防死循环。
+(function(){
+  var verEl=document.getElementById('appVer');
+  var pageVer=(verEl?verEl.textContent:'').match(/\(([0-9a-f]{7})\)/);
+  pageVer=pageVer?pageVer[1]:'';
+  if(!pageVer)return;
+  try{
+    fj('/api/version').then(function(d){
+      var srvVer=(d&&d.version||'').match(/^([0-9a-f]{7})/);
+      srvVer=srvVer?srvVer[1]:'';
+      if(pageVer&&srvVer&&pageVer!==srvVer){
+        var mark='kfz_refreshed_'+srvVer;
+        try{
+          if(sessionStorage.getItem(mark))return; // 已刷新过，防死循环
+          sessionStorage.setItem(mark,'1');
+        }catch(e){}
+        console.log('[版本更新] '+pageVer+'→'+srvVer+'，自动刷新');
+        location.reload();
+      }
+    }).catch(function(){});
+  }catch(e){}
+})();
 
 // 折叠
 function fold(n){
