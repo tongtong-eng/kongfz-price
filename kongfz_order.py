@@ -104,6 +104,7 @@ def search_by_phone(cookie_str, phone, page=1, page_size=50):
                     "isbn": i.get("isbn", "") or i.get("itemSn", ""),
                     "price": i.get("price", "0"),
                     "quality": i.get("quality", ""),
+                    "number": i.get("number", 1) or 1,  # 本数（可能>1）
                 }
                 for i in items
             ],
