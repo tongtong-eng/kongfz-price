@@ -1209,8 +1209,9 @@ function showTrack(){
   var h='<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button onclick="loc()" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:.8rem;cursor:pointer">← 返回查价</button><strong style="font-size:.9rem">📦 物流中心</strong></div>';
   // Tab 导航
   h+='<div style="display:flex;gap:8px;margin-bottom:10px">';
-  h+='<button id="tabMonitorBtn" onclick="switchTkTab(\'monitor\')" style="flex:1;padding:11px;border-radius:10px;border:none;background:#e2e8f0;color:#9d8bb0;font-weight:600;font-size:.9rem;cursor:pointer">🚨 异常监控</button>';
-  h+='<button id="tabQueryBtn" onclick="switchTkTab(\'query\')" style="flex:1;padding:11px;border-radius:10px;border:none;background:#a855f7;color:#fff;font-weight:600;font-size:.9rem;cursor:pointer">📦 订单查询</button>';
+  h+='<button id="tabMonitorBtn" onclick="switchTkTab(\'monitor\')" style="flex:1;padding:11px;border-radius:10px;border:none;background:#e2e8f0;color:#9d8bb0;font-weight:600;font-size:.9rem;cursor:pointer">🚨 异常</button>';
+  h+='<button id="tabQueryBtn" onclick="switchTkTab(\'query\')" style="flex:1;padding:11px;border-radius:10px;border:none;background:#a855f7;color:#fff;font-weight:600;font-size:.9rem;cursor:pointer">📦 查询</button>';
+  h+='<button id="tabSumBtn" onclick="switchTkTab(\'sum\')" style="flex:1;padding:11px;border-radius:10px;border:none;background:#e2e8f0;color:#9d8bb0;font-weight:600;font-size:.9rem;cursor:pointer">📊 汇总</button>';
   h+='</div>';
   // 异常监控内容（初始隐藏）
   h+='<div id="tkTabMonitor" style="display:none">';
@@ -1223,6 +1224,10 @@ function showTrack(){
   h+='<div id="tkHint" style="font-size:.78rem;color:#c4b5d0;margin-top:10px;line-height:1.5">直接粘贴买家收货信息（如「15996231420 栖霞区马群…」）自动识别手机号查订单</div>';
   h+='</div><div id="tkRes"></div>';
   h+='</div>';
+  // 汇总表内容（初始隐藏）
+  h+='<div id="tkTabSum" style="display:none">';
+  h+='<div id="tkSumRes"><div style="text-align:center;padding:20px;color:#c4b5d0;font-size:.85rem">先在上方「📦 查询」搜手机号，再切到本页查看汇总表</div></div>';
+  h+='</div>';
   cont.innerHTML=h;
   // 默认进订单查询，但也预加载异常监控数据
   loadOrderMonitor();
@@ -1232,20 +1237,64 @@ function showTrack(){
 // 切换Tab
 function switchTkTab(tab){
   _tkTab=tab;
-  var mBtn=id('tabMonitorBtn'),qBtn=id('tabQueryBtn');
-  var mt=id('tkTabMonitor'),qt=id('tkTabQuery');
+  var mBtn=id('tabMonitorBtn'),qBtn=id('tabQueryBtn'),sBtn=id('tabSumBtn');
+  var mt=id('tkTabMonitor'),qt=id('tkTabQuery'),st=id('tkTabSum');
   if(!mBtn||!mt)return;
+  // 重置所有Tab按钮样式
+  [mBtn,qBtn,sBtn].forEach(function(b){if(b){b.style.background='#e2e8f0';b.style.color='#9d8bb0'}});
+  mt.style.display='none';qt.style.display='none';st.style.display='none';
   if(tab==='monitor'){
     mBtn.style.background='#a855f7';mBtn.style.color='#fff';
-    qBtn.style.background='#e2e8f0';qBtn.style.color='#9d8bb0';
-    mt.style.display='';qt.style.display='none';
+    mt.style.display='';
     loadOrderMonitor();
+  }else if(tab==='sum'){
+    sBtn.style.background='#a855f7';sBtn.style.color='#fff';
+    st.style.display='';
+    renderTkSummary();
   }else{
     qBtn.style.background='#a855f7';qBtn.style.color='#fff';
-    mBtn.style.background='#e2e8f0';mBtn.style.color='#9d8bb0';
-    qt.style.display='';mt.style.display='none';
+    qt.style.display='';
     setTimeout(function(){id('tkPhone').focus()},100);
   }
+}
+
+// 汇总表：把当前查询的订单渲染成统计表格
+function renderTkSummary(){
+  var el=id('tkSumRes');if(!el)return;
+  if(!_tkOrders.length){
+    el.innerHTML='<div style="text-align:center;padding:20px;color:#c4b5d0;font-size:.85rem">📭 还没有订单数据，请先在「📦 查询」搜手机号</div>';
+    return;
+  }
+  var h='<div class="card"><div class="card-title">📊 订单汇总表（'+_tkOrders.length+' 笔）</div>';
+  h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.78rem">';
+  h+='<thead><tr style="background:#cfffff;color:#0f172a;font-weight:700">';
+  h+='<th style="padding:8px 6px;border:1px solid #d0d5dd;text-align:center">状态</th>';
+  h+='<th style="padding:8px 6px;border:1px solid #d0d5dd;text-align:center">快递</th>';
+  h+='<th style="padding:8px 6px;border:1px solid #d0d5dd;text-align:center">单号</th>';
+  h+='<th style="padding:8px 6px;border:1px solid #d0d5dd;text-align:center">收货人</th>';
+  h+='<th style="padding:8px 6px;border:1px solid #d0d5dd;text-align:center">商品</th>';
+  h+='<th style="padding:8px 6px;border:1px solid #d0d5dd;text-align:center">数量</th>';
+  h+='<th style="padding:8px 6px;border:1px solid #d0d5dd;text-align:center">下单</th>';
+  h+='</tr></thead><tbody>';
+  _tkOrders.forEach(function(o){
+    var st=trackStatus(o);
+    var stColor=st.cls;
+    var items=o.items||[];
+    var itemNames=items.map(function(it){return it.name||''}).join('、')||'—';
+    var qtys=items.length;
+    var tm=fmtTime(o.created_time);
+    h+='<tr style="border-bottom:1px solid #f1f5f9">';
+    h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:center"><span style="color:'+stColor+';font-weight:600">'+esc(st.text)+'</span></td>';
+    h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:center">'+esc(o.shipping_company||'—')+'</td>';
+    h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:center;font-family:monospace;font-size:.72rem">'+esc(o.shipment_num||'—')+'</td>';
+    h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:center">'+esc(o.receiver_name||'—')+'</td>';
+    h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:left;word-break:break-all">'+esc(itemNames)+'</td>';
+    h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:center">'+qtys+'</td>';
+    h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:center;font-size:.7rem">'+tm+'</td>';
+    h+='</tr>';
+  });
+  h+='</tbody></table></div></div>';
+  el.innerHTML=h;
 }
 
 // 一键清空搜手机号输入框
