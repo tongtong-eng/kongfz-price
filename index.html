@@ -489,8 +489,25 @@ function ac(iid,sid,btn){
 }
 function ba(){
   var is=L.filter(function(r){return r.cheapest&&r.cheapest.itemId&&r.cheapest.shopId});if(!is.length){toast('无商品');return}
-  var btn=document.querySelector('[onclick="ba()"]');btn.disabled=1;btn.textContent='⏳ 0/'+is.length;var ok=0,ng=0;
-  function nx(i){if(i>=is.length){btn.textContent='✅ '+ok+'/'+is.length+(ng?' ('+ng+'失败)':'');btn.style.background=ok>0?'#059669':'#fb7185';toast('已完成 '+ok+'/'+is.length);return}btn.textContent='⏳ '+(i+1)+'/'+is.length;fj('/api/addtocart?itemId='+is[i].cheapest.itemId+'&shopId='+is[i].cheapest.shopId).then(function(d){if(d.success)ok++;else ng++;setTimeout(function(){nx(i+1)},1200)}).catch(function(){ng++;setTimeout(function(){nx(i+1)},1200)})}nx(0)
+  var btn=document.querySelector('[onclick="ba()"]');btn.disabled=1;btn.textContent='⏳ 0/'+is.length;var ok=0,ng=0,idx=0,CONC=2;
+  // 并发2的滑动窗口：孔夫子对同一Cookie并发敏感（记忆：并发3触发限流），用2最稳，比串行快约1倍
+  function worker(){
+    while(idx<is.length){
+      var i=idx++;
+      fj('/api/addtocart?itemId='+is[i].cheapest.itemId+'&shopId='+is[i].cheapest.shopId)
+        .then(function(d){if(d.success)ok++;else ng++;done(i)})
+        .catch(function(){ng++;done(i)});
+    }
+  }
+  var finished=0;
+  function done(){
+    finished++;
+    btn.textContent='⏳ '+finished+'/'+is.length;
+    if(finished>=is.length){
+      btn.textContent='✅ '+ok+'/'+is.length+(ng?' ('+ng+'失败)':'');btn.style.background=ok>0?'#059669':'#fb7185';toast('已完成 '+ok+'/'+is.length);
+    }
+  }
+  for(var w=0;w<CONC;w++)worker();
 }
 
 // 一键清空所有购物车
