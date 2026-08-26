@@ -161,12 +161,13 @@ def _is_unreliable_shop(item):
     # 2. 店主 30 天未登录（可能发不出货）
     if item.get("shop30DaysNotLogin"):
         return True
-    # 3. 成交率过低（< 80%，发货可靠性差）
+    # 3. 成交率过低（< 70%，发货可靠性差）。阈值从80%降到70%：
+    #    保留笨牛书店(77%)这类能正常发货但成交率略低的低价店，避免漏掉最低价
     rate_str = item.get("shopSuccessOrderRate", "") or ""
     m = re.search(r'(\d+)%', rate_str)
     if m:
         rate = int(m.group(1))
-        if rate < 80:
+        if rate < 70:
             return True
     return False
 
