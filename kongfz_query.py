@@ -48,7 +48,7 @@ def _record_success():
 # ── 请求节流（降低触发孔夫子限流概率） ──────────
 _THROTTLE_LOCK = threading.Lock()
 _LAST_REQUEST_TS = [0.0]
-_REQUEST_INTERVAL = 0.6  # 每次请求间隔 600ms
+_REQUEST_INTERVAL = 0.4  # 每次请求间隔 400ms（提速：原600ms，出站从1.67次/秒提到2.5次/秒）
 
 def _throttle():
     """全局节流：每个请求间隔至少 300ms"""
