@@ -1265,7 +1265,7 @@ function renderTkSummary(){
     el.innerHTML='<div style="text-align:center;padding:20px;color:#c4b5d0;font-size:.85rem">📭 还没有订单数据，请先在「📦 查询」搜手机号</div>';
     return;
   }
-  var h='<div class="card"><div class="card-title">📊 订单汇总表（'+_tkOrders.length+' 笔）</div>';
+  var h='<div class="card"><div class="card-title">📊 订单汇总表（'+_tkOrders.length+' 笔）<button onclick="exportSummaryImg()" style="margin-left:8px;padding:5px 12px;border-radius:8px;border:none;background:#10b981;color:#fff;font-size:.75rem;cursor:pointer;font-weight:600">🖼️ 一键导出图片</button></div>';
   h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.78rem">';
   h+='<thead><tr style="background:#cfffff;color:#0f172a;font-weight:700">';
   h+='<th style="padding:8px 6px;border:1px solid #d0d5dd;text-align:center">状态</th>';
@@ -1295,6 +1295,29 @@ function renderTkSummary(){
   });
   h+='</tbody></table></div></div>';
   el.innerHTML=h;
+}
+
+// 一键导出所有订单为图片：生成文本→txtToImage转图片弹窗展示
+function exportSummaryImg(){
+  if(!_tkOrders.length){toast('无订单数据');return}
+  var lines=[];
+  lines.push('📦 订单汇总（'+_tkOrders.length+' 笔订单）');
+  lines.push('━━━━━━━━━━━━━━━');
+  _tkOrders.forEach(function(o,i){
+    var st=trackStatus(o);
+    var items=o.items||[];
+    var itemNames=items.map(function(it){return it.name||''}).join('、')||'—';
+    var qtys=sumQty(items);
+    var tm=fmtTime(o.created_time);
+    lines.push('【'+(i+1)+'】'+st.text+' · '+(o.shipping_company||'快递'));
+    lines.push('单号：'+(o.shipment_num||'—'));
+    lines.push('收货：'+(o.receiver_name||'—'));
+    lines.push('商品：'+itemNames);
+    lines.push('数量：'+qtys+'本');
+    lines.push('下单：'+tm);
+    if(i<_tkOrders.length-1)lines.push('─────────');
+  });
+  txtToImage(lines.join('\n'),'订单汇总表');
 }
 
 // 一键清空搜手机号输入框
