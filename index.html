@@ -1306,17 +1306,20 @@ function exportSummaryImg(){
   _tkOrders.forEach(function(o,i){
     var st=trackStatus(o);
     var items=o.items||[];
-    var itemNames=items.map(function(it){return it.name||''}).join('、')||'—';
     var qtys=sumQty(items);
-    var tm=fmtTime(o.created_time);
     lines.push('【'+(i+1)+'】'+st.text+' · '+(o.shipping_company||'快递'));
     lines.push('单号：'+(o.shipment_num||'—'));
     lines.push('收货：'+(o.receiver_name||'—'));
-    lines.push('商品：'+itemNames);
-    lines.push('数量：'+qtys+'本');
-    lines.push('下单：'+tm);
+    lines.push('商品：');
+    (items||[]).forEach(function(it){
+      var q=it.number?Number(it.number):1;
+      lines.push('   '+(it.name||'?')+(q>1?' ×'+q+'本':''));
+    });
     if(i<_tkOrders.length-1)lines.push('─────────');
   });
+  lines.push('━━━━━━━━━━━━━━━');
+  lines.push('⚠️ 每个快递单号对应上面的书籍和件数，');
+  lines.push('收货时请按单号核对，无误再签收。');
   txtToImage(lines.join('\n'),'订单汇总表');
 }
 
