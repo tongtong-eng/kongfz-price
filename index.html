@@ -1277,25 +1277,55 @@ function renderTkSummary(){
   h+='<th style="padding:8px 6px;border:1px solid #d0d5dd;text-align:center">数量</th>';
   h+='<th style="padding:8px 6px;border:1px solid #d0d5dd;text-align:center">下单</th>';
   h+='</tr></thead><tbody>';
-  _tkOrders.forEach(function(o){
+  _tkOrders.forEach(function(o,oi){
     var st=trackStatus(o);
     var stColor=st.cls;
     var items=o.items||[];
     var itemNames=items.map(function(it){return it.name||''}).join('、')||'—';
     var qtys=sumQty(items);
     var tm=fmtTime(o.created_time);
+    var hasTrack=o.shipment_num&&o.shipment_num.length>0;
     h+='<tr style="border-bottom:1px solid #f1f5f9">';
     h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:center"><span style="color:'+stColor+';font-weight:600">'+esc(st.text)+'</span></td>';
     h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:center">'+esc(o.shipping_company||'—')+'</td>';
-    h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:center;font-family:monospace;font-size:.72rem">'+esc(o.shipment_num||'—')+'</td>';
+    h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:center;font-family:monospace;font-size:.72rem">'+esc(o.shipment_num||'—')+(hasTrack?' <span onclick="toggleSumTrack('+oi+')" style="cursor:pointer;color:#a855f7;font-weight:600;font-size:.7rem">🗺️</span>':'')+'</td>';
     h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:center">'+esc(o.receiver_name||'—')+'</td>';
     h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:left;word-break:break-all">'+esc(itemNames)+'</td>';
     h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:center">'+qtys+'</td>';
     h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:center;font-size:.7rem">'+tm+'</td>';
     h+='</tr>';
+    // 物流轨迹展开行
+    if(hasTrack){
+      h+='<tr id="sumtk_'+oi+'" style="display:none;background:#faf5ff"><td colspan="7" style="padding:10px;border:1px solid #eef2f7">';
+      var lg=o.logistic||[];
+      if(lg.length){
+        h+='<div style="max-height:240px;overflow-y:auto">';
+        lg.forEach(function(l){
+          var t=l.time||l.ftime||'';
+          var status=l.status||'';
+          var loc=l.location||'';
+          var sc=status.indexOf('签收')>=0?'#10b981':(status.indexOf('派送')>=0?'#f97316':'#a855f7');
+          h+='<div style="display:flex;gap:8px;padding:5px 0;border-left:2px solid '+sc+';padding-left:10px;margin-left:4px">';
+          h+='<div style="flex-shrink:0;width:118px;font-size:.68rem;color:#9d8bb0">'+esc(t)+'</div>';
+          h+='<div style="flex:1;min-width:0"><div style="font-size:.75rem;font-weight:600;color:'+sc+'">'+esc(status||'')+'</div>'+(loc?'<div style="font-size:.68rem;color:#c4b5d0">'+esc(loc)+'</div>':'')+(l.context?'<div style="font-size:.7rem;color:#6b7280;line-height:1.4">'+esc(l.context)+'</div>':'')+'</div>';
+          h+='</div>';
+        });
+        h+='</div>';
+      }else{
+        h+='<div style="font-size:.75rem;color:#c4b5d0">暂无物流轨迹</div>';
+      }
+      h+='</td></tr>';
+    }
   });
   h+='</tbody></table></div></div>';
   el.innerHTML=h;
+}
+
+// 切换汇总表某行的物流轨迹
+function toggleSumTrack(i){
+  var el=id('sumtk_'+i);
+  if(!el)return;
+  el.style.display=el.style.display==='none'?'':'none';
 }
 
 // 一键导出所有订单为图片：生成文本→txtToImage转图片弹窗展示
