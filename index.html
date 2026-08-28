@@ -1267,6 +1267,21 @@ function renderTkSummary(){
     return;
   }
   var h='<div class="card"><div class="card-title">📊 订单汇总表（'+_tkOrders.length+' 笔）<button onclick="exportSummaryImg()" style="margin-left:8px;padding:5px 12px;border-radius:8px;border:none;background:#10b981;color:#fff;font-size:.75rem;cursor:pointer;font-weight:600">🖼️ 一键导出图片</button></div>';
+  // 状态分组统计
+  var cntS=0,cntT=0,cntP=0,cntO=0;
+  _tkOrders.forEach(function(o){
+    var t=trackStatus(o).text;
+    if(t==='已签收')cntS++;
+    else if(t==='待领取'||t==='驿站'||t==='暂存')cntP++;
+    else if(o.shipment_num&&t!=='已取消')cntT++;
+    else cntO++;
+  });
+  h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px">';
+  h+='<div style="border:1px solid #d1fae5;background:#f0fdf4;border-radius:8px;padding:6px;text-align:center"><div style="font-size:1rem;font-weight:700;color:#10b981">'+cntS+'</div><div style="font-size:.65rem;color:#6b7280">✅ 已签收</div></div>';
+  h+='<div style="border:1px solid #dbeafe;background:#eff6ff;border-radius:8px;padding:6px;text-align:center"><div style="font-size:1rem;font-weight:700;color:#3b82f6">'+cntT+'</div><div style="font-size:.65rem;color:#6b7280">🚚 在途</div></div>';
+  h+='<div style="border:1px solid #fef3c7;background:#fffbeb;border-radius:8px;padding:6px;text-align:center"><div style="font-size:1rem;font-weight:700;color:#eab308">'+cntP+'</div><div style="font-size:.65rem;color:#6b7280">📮 驿站未取</div></div>';
+  h+='<div style="border:1px solid #f3e8ff;background:#faf5ff;border-radius:8px;padding:6px;text-align:center"><div style="font-size:1rem;font-weight:700;color:#a855f7">'+cntO+'</div><div style="font-size:.65rem;color:#6b7280">其他</div></div>';
+  h+='</div>';
   h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.78rem">';
   h+='<thead><tr style="background:#cfffff;color:#0f172a;font-weight:700">';
   h+='<th style="padding:8px 6px;border:1px solid #d0d5dd;text-align:center">状态</th>';
@@ -1286,7 +1301,9 @@ function renderTkSummary(){
     var tm=fmtTime(o.created_time);
     var hasTrack=o.shipment_num&&o.shipment_num.length>0;
     h+='<tr style="border-bottom:1px solid #f1f5f9">';
-    h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:center"><span style="color:'+stColor+';font-weight:600">'+esc(st.text)+'</span></td>';
+    // 状态列：待领取显示为"驿站未取"更直观
+    var dispText=st.text==='待领取'?'驿站未取':st.text;
+    h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:center"><span style="color:'+stColor+';font-weight:600">'+esc(dispText)+'</span></td>';
     h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:center">'+esc(o.shipping_company||'—')+'</td>';
     h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:center;font-family:monospace;font-size:.72rem">'+esc(o.shipment_num||'—')+(hasTrack?' <span onclick="toggleSumTrack('+oi+')" style="cursor:pointer;color:#a855f7;font-weight:600;font-size:.7rem">🗺️</span>':'')+'</td>';
     h+='<td style="padding:6px;border:1px solid #eef2f7;text-align:center">'+esc(o.receiver_name||'—')+'</td>';
