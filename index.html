@@ -1509,10 +1509,35 @@ function renderTkOrders(el, d){
     }else if(hasTrack){
       h+='<span style="font-size:.72rem;padding:3px 10px;border-radius:12px;color:#fff;background:'+st.cls+'">'+st.text+'</span>';
       h+='<span onclick="copyTrack('+i+')" style="padding:5px 12px;border-radius:8px;background:#f9a8d4;color:#fff;font-size:.75rem;cursor:pointer;font-weight:600">📋 复制物流</span>';
+      h+='<span onclick="toggleTrackDetail('+i+')" style="padding:5px 12px;border-radius:8px;border:1px solid #a855f7;background:#fff;color:#a855f7;font-size:.75rem;cursor:pointer;font-weight:600" id="tkdBtn_'+i+'">🗺️ 物流轨迹</span>';
     }else{
       h+='<span style="font-size:.72rem;padding:3px 10px;border-radius:12px;color:#fff;background:#e0a8c2">'+st.text+'</span>';
     }
     h+='</div>';
+
+    // 物流轨迹展开区（默认隐藏）
+    if(hasTrack){
+      h+='<div id="tkd_'+i+'" style="display:none;margin-top:10px;border-top:1px dashed #ffe4f0;padding-top:10px;max-height:280px;overflow-y:auto;background:#faf5ff;border-radius:10px;padding:10px">';
+      var lg=o.logistic||[];
+      if(lg.length){
+        lg.forEach(function(l,li){
+          var t=l.time||l.ftime||'';
+          var status=l.status||'';
+          var loc=l.location||'';
+          var stColor=status.indexOf('签收')>=0?'#10b981':(status.indexOf('派送')>=0?'#f97316':'#a855f7');
+          h+='<div style="display:flex;gap:8px;padding:6px 0;border-left:2px solid '+stColor+';padding-left:10px;margin-left:4px">';
+          h+='<div style="flex-shrink:0;width:118px;font-size:.68rem;color:#9d8bb0">'+esc(t)+'</div>';
+          h+='<div style="flex:1;min-width:0">';
+          h+='<div style="font-size:.75rem;font-weight:600;color:'+stColor+'">'+esc(status||'')+'</div>';
+          if(loc)h+='<div style="font-size:.68rem;color:#c4b5d0">'+esc(loc)+'</div>';
+          if(l.context)h+='<div style="font-size:.72rem;color:#6b7280;margin-top:2px;line-height:1.5">'+esc(l.context)+'</div>';
+          h+='</div></div>';
+        });
+      }else{
+        h+='<div style="font-size:.75rem;color:#c4b5d0;padding:6px">暂无物流轨迹</div>';
+      }
+      h+='</div>';
+    }
 
     // 第三行：书籍（行间距拉开，长书名自动换行）
     if(items.length){
@@ -1565,6 +1590,15 @@ function trackStatus(o){
   if(c===1||s.indexOf('揽收')>=0) return {text:'已揽收',cls:'#a855f7'};
   if(c===0||s.indexOf('运输')>=0||s.indexOf('转运')>=0) return {text:'运输中',cls:'#3b82f6'};
   return {text:'在途',cls:'#3b82f6'};
+}
+
+// 展开/收起物流轨迹
+function toggleTrackDetail(i){
+  var el=id('tkd_'+i),btn=id('tkdBtn_'+i);
+  if(!el)return;
+  var show=el.style.display==='none';
+  el.style.display=show?'':'none';
+  if(btn)btn.textContent=show?'🗺️ 收起轨迹':'🗺️ 物流轨迹';
 }
 
 // 一键复制单条物流：公司 + 单号 + 状态
