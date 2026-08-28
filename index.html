@@ -1646,16 +1646,25 @@ function trackStatus(o){
   if(stName.indexOf('取消')>=0||stName.indexOf('关闭')>=0||stName.indexOf('退款')>=0||stName.indexOf('Closed')>=0||stName.indexOf('Cancel')>=0||stName.indexOf('CANCEL')>=0){
     return {text:'已取消',cls:'#9ca3af'};
   }
+  // 未发货：无单号 或 订单状态是等待卖家发货(PaidToShip)
   if(!o.shipment_num) return {text:'未发货',cls:'#c4b5d0'};
+  var os=o.order_status||'';
+  if(os==='PaidToShip'||stName.indexOf('等待卖家发货')>=0) return {text:'未发货',cls:'#c4b5d0'};
+  // logistic 是倒序：logistic[0] 是最新状态。用它判断当前最终状态。
   var lg=o.logistic||[];
-  if(!lg.length) return {text:'在途',cls:'#3b82f6'};
-  var last=lg[lg.length-1];
-  var s=(last.status||''),c=last.code;
-  if(c===3||s.indexOf('签收')>=0) return {text:'已签收',cls:'#10b981'};
-  if(c===412||s.indexOf('待取')>=0||s.indexOf('超时')>=0||s.indexOf('暂存')>=0||s.indexOf('驿站')>=0) return {text:'待领取',cls:'#eab308'};
-  if(c===5||s.indexOf('派送')>=0) return {text:'派送中',cls:'#f97316'};
-  if(c===1||s.indexOf('揽收')>=0) return {text:'已揽收',cls:'#a855f7'};
-  if(c===0||s.indexOf('运输')>=0||s.indexOf('转运')>=0) return {text:'运输中',cls:'#3b82f6'};
+  if(lg.length){
+    var newest=lg[0];
+    var ns=(newest.status||''),nc=newest.code;
+    if(nc===3||ns.indexOf('签收')>=0) return {text:'已签收',cls:'#10b981'};
+    if(nc===412||nc===13||ns.indexOf('待取')>=0||ns.indexOf('暂存')>=0||ns.indexOf('驿站')>=0||ns.indexOf('超时未取')>=0) return {text:'驿站未取',cls:'#eab308'};
+    if(nc===5||ns.indexOf('派送')>=0) return {text:'派送中',cls:'#f97316'};
+    if(nc===1||ns.indexOf('揽收')>=0) return {text:'已揽收',cls:'#a855f7'};
+    if(nc===0||nc===2||ns.indexOf('运输')>=0||ns.indexOf('转运')>=0||ns.indexOf('发货')>=0) return {text:'在途',cls:'#3b82f6'};
+    return {text:'在途',cls:'#3b82f6'};
+  }
+  // 没有轨迹但订单是待收货 → 在途
+  var os=o.order_status||'';
+  if(os==='ShippedToReceipt'||stName.indexOf('待收货')>=0) return {text:'在途',cls:'#3b82f6'};
   return {text:'在途',cls:'#3b82f6'};
 }
 
