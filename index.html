@@ -1452,7 +1452,14 @@ function markHandled(orderId){
     .catch(function(){toast('网络错误');if(btn){btn.disabled=0;btn.textContent='✅ 已处理'}});
 }
 
-var _tkOrders=[],_tkPage=1,_tkPhone='';
+var _tkOrders=[],_tkPage=1,_tkPhone='',_tkFilter='';
+
+// 设置订单状态筛选并重新渲染
+function setTkFilter(f){
+  _tkFilter=f;
+  var el=id('tkRes');
+  if(el)renderTkOrders(el,{orders:_tkOrders,total:_tkOrders.length});
+}
 
 // 粘贴/输入含手机号的文本时自动识别手机号并查询
 function tkPhoneAuto(){
@@ -1495,13 +1502,26 @@ function tkSearch(page){
 }
 
 function renderTkOrders(el, d){
-  var orders=d.orders||[];
+  var allOrders=d.orders||[];
+  // 按状态筛选
+  var orders=allOrders;
+  if(_tkFilter==='signed')orders=allOrders.filter(function(o){return trackStatus(o).text==='已签收'});
+  else if(_tkFilter==='intransit')orders=allOrders.filter(function(o){var t=trackStatus(o).text;return t!=='已签收'&&t!=='已取消'&&o.shipment_num});
+  else if(_tkFilter==='pickup')orders=allOrders.filter(function(o){var t=trackStatus(o).text;return t==='待领取'||t==='驿站'||t==='暂存'});
+  else if(_tkFilter==='notpick')orders=allOrders.filter(function(o){var t=trackStatus(o).text;return (t==='已签收'&&o.shipment_num&&!(o.picked_up))||t==='待领取'||t==='驿站'||t==='暂存'});
   var hasTrackCount=orders.filter(function(o){return o.shipment_num}).length;
-  var h='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px"><span style="font-size:.78rem;color:#9d8bb0">共找到 <strong>'+d.total+'</strong> 条订单 · <strong>'+hasTrackCount+'</strong> 条有物流</span>';
+  var h='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px"><span style="font-size:.78rem;color:#9d8bb0">共找到 <strong>'+d.total+'</strong> 条订单 · 显示 <strong>'+orders.length+'</strong> 条</span>';
   if(hasTrackCount){
     h+='<button onclick="copyAllTrack()" style="padding:7px 14px;border-radius:8px;border:none;background:#a855f7;color:#fff;font-weight:600;font-size:.8rem;cursor:pointer">📋 一键复制全部物流</button>';
     h+='<button onclick="copyToBuyerTrack()" style="padding:7px 14px;border-radius:8px;border:none;background:#10b981;color:#fff;font-weight:600;font-size:.8rem;cursor:pointer">📤 发给买家</button>';
   }
+  h+='</div>';
+  // 状态筛选按钮
+  h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">';
+  h+='<button onclick="setTkFilter(\'\')" style="padding:6px 12px;border-radius:16px;border:none;background:'+(_tkFilter===''?'#a855f7':'#e2e8f0')+';color:'+(_tkFilter===''?'#fff':'#9d8bb0')+';font-size:.75rem;cursor:pointer;font-weight:600">全部 '+allOrders.length+'</button>';
+  h+='<button onclick="setTkFilter(\'signed\')" style="padding:6px 12px;border-radius:16px;border:none;background:'+(_tkFilter==='signed'?'#10b981':'#e2e8f0')+';color:'+(_tkFilter==='signed'?'#fff':'#9d8bb0')+';font-size:.75rem;cursor:pointer;font-weight:600">✅ 已签收 '+allOrders.filter(function(o){return trackStatus(o).text==='已签收'}).length+'</button>';
+  h+='<button onclick="setTkFilter(\'intransit\')" style="padding:6px 12px;border-radius:16px;border:none;background:'+(_tkFilter==='intransit'?'#3b82f6':'#e2e8f0')+';color:'+(_tkFilter==='intransit'?'#fff':'#9d8bb0')+';font-size:.75rem;cursor:pointer;font-weight:600">🚚 在途 '+allOrders.filter(function(o){var t=trackStatus(o).text;return t!=='已签收'&&t!=='已取消'&&o.shipment_num}).length+'</button>';
+  h+='<button onclick="setTkFilter(\'pickup\')" style="padding:6px 12px;border-radius:16px;border:none;background:'+(_tkFilter==='pickup'?'#eab308':'#e2e8f0')+';color:'+(_tkFilter==='pickup'?'#fff':'#9d8bb0')+';font-size:.75rem;cursor:pointer;font-weight:600">📮 驿站未取 '+allOrders.filter(function(o){var t=trackStatus(o).text;return t==='待领取'||t==='驿站'||t==='暂存'}).length+'</button>';
   h+='</div>';
 
   orders.forEach(function(o,i){
