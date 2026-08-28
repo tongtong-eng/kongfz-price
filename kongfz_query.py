@@ -117,6 +117,11 @@ NO_SELL_ISBNS = {
     "9771674678260",  # 用户明确不想卖这本书
     "9771674678253",  # 用户明确不想卖这本书
 }
+
+# 黑名单店铺：用户拉黑的店铺，买不了任何书，查价时一律排除
+BLACKLIST_SHOPS = {
+    "1275519",  # 用户拉黑：这家店买不了任何书
+}
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
     "Accept": "application/json, text/plain, */*",
@@ -152,9 +157,12 @@ def _parse_item(item):
 
 def _is_unreliable_shop(item):
     """
-    判断店铺是否"不可靠"（休假/发不出货/经营异常）。
+    判断店铺是否"不可靠"（休假/发不出货/经营异常/被拉黑）。
     返回 True 表示应排除该商品。
     """
+    # 0. 黑名单店铺：用户明确拉黑，这家店买不了任何书，一律排除
+    if str(item.get("shopId")) in BLACKLIST_SHOPS:
+        return True
     # 1. 明确标记休假的店铺
     if item.get("shopIsHoliday"):
         return True
