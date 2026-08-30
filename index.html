@@ -1213,6 +1213,7 @@ function showTrack(){
   h+='<button id="tabMonitorBtn" onclick="switchTkTab(\'monitor\')" style="flex:1;padding:11px;border-radius:10px;border:none;background:#e2e8f0;color:#9d8bb0;font-weight:600;font-size:.9rem;cursor:pointer">🚨 异常</button>';
   h+='<button id="tabQueryBtn" onclick="switchTkTab(\'query\')" style="flex:1;padding:11px;border-radius:10px;border:none;background:#a855f7;color:#fff;font-weight:600;font-size:.9rem;cursor:pointer">📦 查询</button>';
   h+='<button id="tabSumBtn" onclick="switchTkTab(\'sum\')" style="flex:1;padding:11px;border-radius:10px;border:none;background:#e2e8f0;color:#9d8bb0;font-weight:600;font-size:.9rem;cursor:pointer">📊 汇总</button>';
+  h+='<button id="tabReBtn" onclick="switchTkTab(\'reissue\')" style="flex:1;padding:11px;border-radius:10px;border:none;background:#e2e8f0;color:#9d8bb0;font-weight:600;font-size:.9rem;cursor:pointer">🔁 补发</button>';
   h+='</div>';
   // 异常监控内容（初始隐藏）
   h+='<div id="tkTabMonitor" style="display:none">';
@@ -1229,6 +1230,13 @@ function showTrack(){
   h+='<div id="tkTabSum" style="display:none">';
   h+='<div id="tkSumRes"><div style="text-align:center;padding:20px;color:#c4b5d0;font-size:.85rem">先在上方「📦 查询」搜手机号，再切到本页查看汇总表</div></div>';
   h+='</div>';
+  // 补发跟踪内容（初始隐藏）
+  h+='<div id="tkTabRe" style="display:none">';
+  h+='<div class="card"><div class="card-title">🔁 补发跟盯</div>';
+  h+='<div style="display:flex;gap:8px"><input id="tkRePhone" type="text" placeholder="输入买家手机号，自动找补发单号" onkeydown="if(event.key==\'Enter\')tkReSearch()" style="flex:1;padding:13px 14px;border:1px solid #d9efdc;border-radius:8px;font-size:1rem;outline:none"><button onclick="tkReSearch()" style="padding:13px 22px;border-radius:8px;border:none;background:#52b788;color:#fff;font-weight:600;font-size:1rem;cursor:pointer">🔍 查补发</button></div>';
+  h+='<div style="font-size:.72rem;color:#9d8bb0;margin-top:8px;line-height:1.5">自动找出该买家同书多单（重复购买=补发），确认后给出补发单号</div>';
+  h+='</div><div id="tkReRes"></div>';
+  h+='</div>';
   cont.innerHTML=h;
   // 默认进订单查询，但也预加载异常监控数据
   loadOrderMonitor();
@@ -1238,12 +1246,12 @@ function showTrack(){
 // 切换Tab
 function switchTkTab(tab){
   _tkTab=tab;
-  var mBtn=id('tabMonitorBtn'),qBtn=id('tabQueryBtn'),sBtn=id('tabSumBtn');
-  var mt=id('tkTabMonitor'),qt=id('tkTabQuery'),st=id('tkTabSum');
+  var mBtn=id('tabMonitorBtn'),qBtn=id('tabQueryBtn'),sBtn=id('tabSumBtn'),rBtn=id('tabReBtn');
+  var mt=id('tkTabMonitor'),qt=id('tkTabQuery'),st=id('tkTabSum'),rt=id('tkTabRe');
   if(!mBtn||!mt)return;
   // 重置所有Tab按钮样式
-  [mBtn,qBtn,sBtn].forEach(function(b){if(b){b.style.background='#e2e8f0';b.style.color='#9d8bb0'}});
-  mt.style.display='none';qt.style.display='none';st.style.display='none';
+  [mBtn,qBtn,sBtn,rBtn].forEach(function(b){if(b){b.style.background='#e2e8f0';b.style.color='#9d8bb0'}});
+  mt.style.display='none';qt.style.display='none';st.style.display='none';rt.style.display='none';
   if(tab==='monitor'){
     mBtn.style.background='#a855f7';mBtn.style.color='#fff';
     mt.style.display='';
@@ -1252,6 +1260,10 @@ function switchTkTab(tab){
     sBtn.style.background='#a855f7';sBtn.style.color='#fff';
     st.style.display='';
     renderTkSummary();
+  }else if(tab==='reissue'){
+    rBtn.style.background='#52b788';rBtn.style.color='#fff';
+    rt.style.display='';
+    setTimeout(function(){id('tkRePhone').focus()},100);
   }else{
     qBtn.style.background='#a855f7';qBtn.style.color='#fff';
     qt.style.display='';
@@ -1369,6 +1381,105 @@ function exportSummaryImg(){
   lines.push('⚠️ 每个快递单号对应上面的书籍和件数，');
   lines.push('收货时请按单号核对，无误再签收。');
   txtToImage(lines.join('\n'),'订单汇总表');
+}
+
+// === 补发跟盯 ===
+// 输入手机号，自动找出同书多单（重复购买=补发），确认后给出补发单号
+function tkReSearch(){
+  var p=id('tkRePhone'),btn=event&&event.target?event.target:null;
+  if(!p)return;
+  var raw=p.value.trim();
+  var m=raw.match(/1[3-9]\d{9}/);
+  var phone=m?m[0]:raw;
+  if(!phone||!/^1\d{10}$/.test(phone)){toast('请输入有效手机号');return}
+  var el=id('tkReRes');if(!el)return;
+  el.innerHTML='<div style="text-align:center;padding:20px;color:#c4b5d0">⏳ 查询中...</div>';
+  fetch('/api/order/search?phone='+encodeURIComponent(phone)+'&page=1')
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if(d.error){el.innerHTML='<div style="color:#ef4444;text-align:center;padding:14px">❌ '+d.error+'</div>';return}
+      var orders=d.orders||[];
+      if(!orders.length){el.innerHTML='<div class="empty-state" style="padding:30px">📭 该手机号无订单</div>';return}
+      renderReissue(orders);
+    })
+    .catch(function(){el.innerHTML='<div style="color:#ef4444;text-align:center;padding:14px">❌ 网络错误</div>'});
+}
+
+// 渲染同书多单（可能补发），供确认
+function renderReissue(orders){
+  var el=id('tkReRes');if(!el)return;
+  // 按ISBN聚合所有订单
+  var byIsbn={};
+  orders.forEach(function(o){
+    (o.items||[]).forEach(function(it){
+      var isbn=(it.isbn||'').trim()||'noisbn';
+      if(!byIsbn[isbn])byIsbn[isbn]=[];
+      byIsbn[isbn].push({order_id:o.order_id, ship:o.shipment_num, name:it.name||'', time:o.created_time, status:o.status});
+    });
+  });
+  // 找同书多单的
+  var dups={};
+  Object.keys(byIsbn).forEach(function(isbn){
+    if(byIsbn[isbn].length>1)dups[isbn]=byIsbn[isbn];
+  });
+  var dupCount=Object.keys(dups).length;
+  var h='<div class="card"><div class="card-title">🔁 同书多单（可能补发）'+dupCount+' 组</div>';
+  if(!dupCount){
+    h+='<div style="padding:14px;color:#9d8bb0;font-size:.82rem">未发现同书多单。若无补发则无需处理。</div>';
+    h+='</div>';
+    el.innerHTML=h;return;
+  }
+  // 每组列出各订单，让用户勾选哪笔是补发
+  var idx=0;
+  Object.keys(dups).forEach(function(isbn){
+    var items=dups[isbn];
+    // 按时间排序（旧→新）
+    items.sort(function(a,b){return (a.time||0)-(b.time||0)});
+    h+='<div style="margin-top:10px;border:1px solid #d9efdc;border-radius:12px;padding:10px">';
+    h+='<div style="font-size:.78rem;font-weight:700;color:#2d6a4f">📖 '+esc(items[0].name.slice(0,30))+'</div>';
+    h+='<div style="font-size:.68rem;color:#9d8bb0;margin-bottom:6px">ISBN '+esc(isbn)+' · '+items.length+' 笔</div>';
+    items.forEach(function(it,j){
+      var tm=fmtTime(it.time);
+      h+='<label style="display:flex;align-items:center;gap:8px;padding:6px;border:1px solid #eef2f7;border-radius:8px;margin-top:4px;cursor:pointer;background:#f7fdf7">';
+      h+='<input type="radio" name="re_'+isbn+'" value="'+it.order_id+'" '+(j===items.length-1?'checked':'')+'>';
+      h+='<div style="flex:1;min-width:0"><div style="font-size:.75rem">'+(it.ship?'📮 单号 '+esc(it.ship):'⚠️ 无单号')+'</div><div style="font-size:.65rem;color:#9d8bb0">'+esc(it.status)+' · '+tm+'</div></div>';
+      h+='</label>';
+    });
+    h+='</div>';
+  });
+  h+='<div style="margin-top:12px;text-align:center"><button onclick="tkReConfirm()" style="padding:10px 30px;border-radius:10px;border:none;background:#52b788;color:#fff;font-weight:700;font-size:.95rem;cursor:pointer">✅ 确认补发单号</button></div>';
+  h+='</div>';
+  el.innerHTML=h;
+}
+
+// 确认补发单号：收集每组的勾选，输出补发单号
+function tkReConfirm(){
+  var radios=document.querySelectorAll('#tkReRes input[type=radio]:checked');
+  if(!radios.length){toast('请选择补发单');return}
+  var lines=['🔁 补发单号确认：'];
+  var groups={};
+  var byOrder={};
+  // 从渲染的数据重建订单映射（简化：直接收集选中）
+  var orderToShip={};
+  document.querySelectorAll('#tkReRes input[type=radio]').forEach(function(r){
+    var oid=r.value;
+    // 找该订单的单号
+    var row=r.closest('label');
+    var ship='';
+    if(row){
+      var mm=row.innerText.match(/单号 (\S+)/);
+      if(mm)ship=mm[1];
+    }
+    orderToShip[oid]=ship;
+  });
+  radios.forEach(function(r){
+    var ship=orderToShip[r.value]||'（无单号）';
+    var row=r.closest('label');
+    var book=row?row.innerText.split('\n')[0].replace(/📖/,'').trim():'';
+    var line='  补发：'+(book||'')+' → 单号 '+ship;
+    lines.push(line);
+  });
+  doCopy(lines.join('\n'),function(){toast('✅ 补发单号已复制')},function(){prompt('📋 补发单号：',lines.join('\n'))});
 }
 
 // 一键清空搜手机号输入框
