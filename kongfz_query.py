@@ -121,6 +121,7 @@ NO_SELL_ISBNS = {
 # 黑名单店铺：用户拉黑的店铺，买不了任何书，查价时一律排除
 BLACKLIST_SHOPS = {
     "1275519",  # 用户拉黑：这家店买不了任何书
+    "1218623",  # 用户拉黑：休假/预售店铺，下不了单
 }
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
