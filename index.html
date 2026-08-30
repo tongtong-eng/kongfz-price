@@ -1440,9 +1440,18 @@ function renderReissue(orders){
     h+='<div style="font-size:.68rem;color:#9d8bb0;margin-bottom:6px">ISBN '+esc(isbn)+' · '+items.length+' 笔</div>';
     items.forEach(function(it,j){
       var tm=fmtTime(it.time);
-      h+='<label style="display:flex;align-items:center;gap:8px;padding:6px;border:1px solid #eef2f7;border-radius:8px;margin-top:4px;cursor:pointer;background:#f7fdf7">';
-      h+='<input type="radio" name="re_'+isbn+'" value="'+it.order_id+'" '+(j===items.length-1?'checked':'')+'>';
-      h+='<div style="flex:1;min-width:0"><div style="font-size:.75rem">'+(it.ship?'📮 单号 '+esc(it.ship):'⚠️ 无单号')+'</div><div style="font-size:.65rem;color:#9d8bb0">'+esc(it.status)+' · '+tm+'</div></div>';
+      // 退款完成的订单：明显区分（红色标记，不参与补发选择）
+      var isRefund=(it.status||'').indexOf('退款')>=0||(it.status||'').indexOf('取消')>=0;
+      var bg=isRefund?'#fef2f2':'#f7fdf7';
+      var bd=isRefund?'#fca5a5':'#eef2f7';
+      var txt=isRefund?'（退款/取消，非补发）':'';
+      h+='<label style="display:flex;align-items:center;gap:8px;padding:6px;border:1px solid '+bd+';border-radius:8px;margin-top:4px;cursor:pointer;background:'+bg+'">';
+      if(isRefund){
+        h+='<input type="radio" name="re_'+isbn+'" value="'+it.order_id+'" disabled style="opacity:.4">';
+      }else{
+        h+='<input type="radio" name="re_'+isbn+'" value="'+it.order_id+'" '+(j===items.length-1?'checked':'')+'>';
+      }
+      h+='<div style="flex:1;min-width:0"><div style="font-size:.75rem;color:'+(isRefund?'#dc2626':'#0f172a')+'">'+(it.ship?'📮 单号 '+esc(it.ship):'⚠️ 无单号')+'</div><div style="font-size:.65rem;color:'+(isRefund?'#dc2626':'#9d8bb0')+'">'+esc(it.status)+' · '+tm+' '+txt+'</div></div>';
       h+='</label>';
     });
     h+='</div>';
