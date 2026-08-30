@@ -170,6 +170,11 @@ def _is_unreliable_shop(item):
     # 2. 店主 30 天未登录（可能发不出货）
     if item.get("shop30DaysNotLogin"):
         return True
+    # 2.5 预售/延迟发货店铺：shopAvgShippingTime 是"XX月XX日前发货"而非"平均X小时发货"
+    #     说明是预售/长期延迟发货，下单后很久才发，视为不可靠排除
+    ship_time = item.get("shopAvgShippingTime", "") or ""
+    if ship_time and "小时" not in ship_time and "24小时内" not in ship_time and "当日发" not in ship_time:
+        return True
     # 3. 成交率过低（< 70%，发货可靠性差）。阈值从80%降到70%：
     #    保留笨牛书店(77%)这类能正常发货但成交率略低的低价店，避免漏掉最低价
     rate_str = item.get("shopSuccessOrderRate", "") or ""
