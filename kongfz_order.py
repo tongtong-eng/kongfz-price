@@ -154,11 +154,14 @@ def _get_cancel_by(o):
     return "other"
 
 
-def monitor_orders(cookie_str, delay_days=3, max_pages=88, page_size=50):
+def monitor_orders(cookie_str, delay_days=3, max_pages=88, page_size=50, lookback_months=2):
     """
-    翻页拉取全部订单，识别异常：
+    翻页拉取订单，识别异常：
       - 已取消：orderStatus 命中取消状态（卖家取消/退款完成）
       - 延迟发货：处于"等待卖家发货"且下单超过 delay_days 天
+
+    只扫描最近 lookback_months 个月的订单（默认2个月），超过即停止翻页，
+    避免全盘扫描 4400+ 单导致速度慢。订单API按时间倒序（最新在前）。
 
     返回：
       {
@@ -173,6 +176,9 @@ def monitor_orders(cookie_str, delay_days=3, max_pages=88, page_size=50):
     cancel = []
     delayed = []
     scanned = 0
+    # 2个月前的边界时间戳（本地时区）
+    cutoff = time.time() - lookback_months * 30 * 24 * 3600
+    _exceeded = False
     try:
         for page in range(1, max_pages + 1):
             body = {"page": page, "size": page_size, "mobilePhone": ""}
@@ -184,6 +190,18 @@ def monitor_orders(cookie_str, delay_days=3, max_pages=88, page_size=50):
             if not raw:
                 break  # 拉完了
             for o in raw:
+                # 超过2个月：订单时间早于cutoff，停止翻页（订单按时间倒序）
+                ct_raw = o.get("createdTime", 0)
+                if ct_raw:
+                    try:
+                        ct_check = float(ct_raw)
+                        if ct_check > 1e12:
+                            ct_check = ct_check / 1000.0
+                        if ct_check < cutoff:
+                            _exceeded = True
+                            break
+                    except (TypeError, ValueError):
+                        pass
                 scanned += 1
                 status = o.get("orderStatus", "") or ""
                 status_name = o.get("orderStatusName", "") or ""
@@ -223,6 +241,9 @@ def monitor_orders(cookie_str, delay_days=3, max_pages=88, page_size=50):
             # 到最后一页就停
             pager = data.get("result", {}).get("pager", {})
             if page >= (pager.get("pages") or max_pages):
+                break
+            # 已遇到超过2个月的订单（当前页最旧已到2个月前），停止翻页
+            if _exceeded:
                 break
     except Exception as e:
         return {"error": str(e)[:60], "scanned": scanned, "cancelled": cancel, "delayed": delayed}
