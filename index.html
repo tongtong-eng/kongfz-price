@@ -1410,17 +1410,28 @@ function renderMonitor(d){
   h+='<div style="font-weight:700;color:#dc2626;font-size:.9rem">🚨 发现 '+cancels.length+' 个取消订单'+(delays.length?' · '+delays.length+' 个延迟发货':'')+'</div>';
   h+='<div style="font-size:.72rem;color:#b91c1c;margin-top:6px">已扫描 <strong>'+d.scanned+'</strong> 笔订单，请及时处理以下异常：</div>';
   if(cancels.length){
-    h+='<div style="margin-top:8px;font-size:.78rem;color:#dc2626"><div style="font-weight:600">❌ 商家取消订单：</div>';
-    cancels.slice(0,10).forEach(function(o){
-      var its=(o.items||[]).map(function(it){return it.name||''}).join('、')||'';
-      var tm=fmtTime(o.created_time);
-      h+='<div style="margin-top:4px;display:flex;justify-content:space-between;align-items:center;gap:8px">';
-      h+='<div style="flex:1;min-width:0">· <span style="color:#9ca3af">'+tm+'</span> '+(o.receiver_name||'')+(o.shop_name?' ['+o.shop_name+']':'')+' '+its+'</div>';
-      h+='<button onclick="markHandled(\''+(o.order_id||'')+'\')" style="flex-shrink:0;padding:3px 10px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-size:.7rem;cursor:pointer;font-weight:600">✅ 已处理</button>';
-      h+='</div>';
-    });
-    if(cancels.length>10)h+='<div style="color:#9ca3af">… 等共 '+cancels.length+' 个</div>';
-    h+='</div>';
+    // 按取消来源分类：商家取消 / 你(买家)取消 / 其他
+    var cSeller=cancels.filter(function(o){return o.cancel_by==='seller'});
+    var cBuyer=cancels.filter(function(o){return o.cancel_by==='buyer'});
+    var cOther=cancels.filter(function(o){return o.cancel_by!=='seller'&&o.cancel_by!=='buyer'});
+    function renderCancelGroup(arr,label,color,icon){
+      if(!arr.length)return '';
+      var g='<div style="margin-top:8px;font-size:.78rem;color:'+color+'"><div style="font-weight:600">'+icon+' '+label+'（'+arr.length+'）：</div>';
+      arr.slice(0,10).forEach(function(o){
+        var its=(o.items||[]).map(function(it){return it.name||''}).join('、')||'';
+        var tm=fmtTime(o.created_time);
+        g+='<div style="margin-top:4px;display:flex;justify-content:space-between;align-items:center;gap:8px">';
+        g+='<div style="flex:1;min-width:0">· <span style="color:#9ca3af">'+tm+'</span> '+(o.receiver_name||'')+(o.shop_name?' ['+o.shop_name+']':'')+' '+its+'</div>';
+        g+='<button onclick="markHandled(\''+(o.order_id||'')+'\')" style="flex-shrink:0;padding:3px 10px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-size:.7rem;cursor:pointer;font-weight:600">✅ 已处理</button>';
+        g+='</div>';
+      });
+      if(arr.length>10)g+='<div style="color:#9ca3af">… 等共 '+arr.length+' 个</div>';
+      g+='</div>';
+      return g;
+    }
+    h+=renderCancelGroup(cSeller,'商家取消订单','#dc2626','❌');
+    h+=renderCancelGroup(cBuyer,'我(买家)取消的订单','#f59e0b','🙋');
+    h+=renderCancelGroup(cOther,'其他取消订单','#9ca3af','⚪');
   }
   if(delays.length){
     h+='<div style="margin-top:8px;font-size:.78rem;color:#b45309"><div style="font-weight:600">⚠️ 延迟发货订单（超3天未发货）：</div>';

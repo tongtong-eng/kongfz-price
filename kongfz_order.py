@@ -134,6 +134,26 @@ CANCEL_STATUSES = ("SellerClosedBeforePay", "Canceled", "Closed", "PaidRefunded"
 DELAY_THRESHOLD_SECONDS = 3 * 24 * 3600  # 超过3天未发货视为延迟
 
 
+def _get_cancel_by(o):
+    """判断取消订单的来源：seller=商家取消，buyer=买家(你)取消，other=其他。
+    优先看 refundInfo.actionUserType；状态为 BuyerCancelledBeforePay 明确是买家取消。
+    """
+    status = o.get("orderStatus", "") or ""
+    # 状态明确标买家取消
+    if status == "BuyerCancelledBeforePay":
+        return "buyer"
+    ri = o.get("refundInfo") or {}
+    action_type = ri.get("actionUserType") or ""
+    if action_type == "seller":
+        return "seller"
+    if action_type == "buyer":
+        return "buyer"
+    if action_type == "sys":
+        return "system"
+    # 无法判断
+    return "other"
+
+
 def monitor_orders(cookie_str, delay_days=3, max_pages=88, page_size=50):
     """
     翻页拉取全部订单，识别异常：
@@ -179,6 +199,8 @@ def monitor_orders(cookie_str, delay_days=3, max_pages=88, page_size=50):
                         {"name": i.get("itemName", ""), "isbn": i.get("isbn") or i.get("itemSn", "")}
                         for i in o.get("items", [])
                     ],
+                    # 取消来源：seller=商家取消，buyer=买家(你)取消，sys/other=系统或其他
+                    "cancel_by": _get_cancel_by(o),
                 }
                 # 取消订单：状态命中取消集合 或 状态名含"取消/退款完成"
                 if status in CANCEL_STATUSES or "取消" in status_name or "退款完成" in status_name:
