@@ -133,6 +133,8 @@ input[type=checkbox],input[type=radio]{accent-color:#f472b6}
         <option value="85~100" selected>八五品+</option>
         <option value="80~100">八品+</option>
       </select>
+      <label style="font-size:.8rem;color:#9d8bb0">数量:</label>
+      <input id="qtyInput" type="number" min="1" value="1" style="width:60px;padding:5px 8px;border:2px solid #ffd6e6;border-radius:10px;font-size:.82rem;background:#fffafc;outline:none;color:#f472b6">
       <button class="btn btn-primary" id="btnQuery">🔍 查最低价</button>
       <button class="btn btn-outline" id="btnClear">清空</button>
       <span id="status">就绪</span>
@@ -479,7 +481,7 @@ function sh(data){
   data.forEach(function(r){
     if(r.error){html+='<div class="card" style="border-left:3px solid #ef4444"><div style="font-family:monospace;font-size:.75rem;color:#c4b5d0">'+esc(r.isbn)+'</div><div style="color:#ef4444;font-size:.8rem;margin-top:2px">'+esc(r.error)+'</div></div>'}
     else if(r.cheapest){
-      html+='<div class="result-box"><div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:4px"><div class="book-title">'+esc(r.title)+'</div><span style="font-size:.7rem;color:#c4b5d0">'+esc(r.isbn)+'</span></div>';
+      html+='<div class="result-box" id="rb_'+(r.isbn||'')+'"><div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:4px"><div class="book-title">'+esc(r.title)+'</div><span style="font-size:.7rem;color:#c4b5d0">'+esc(r.isbn)+'</span></div>';
       if(r.author||r.press)html+='<div class="meta">'+esc(r.author)+(r.author&&r.press?' · ':'')+esc(r.press)+'</div>';
       // 价格参考行：最低总价(含运费)、均价、最高价
       var pr=r.price_range||{},prmin=pr.min||0,pravg=pr.avg||0,prmax=pr.max||0;
@@ -489,9 +491,9 @@ function sh(data){
       // 记账按钮
       var aun=r.author||''; var p=r.cheapest?r.cheapest.price:0; var sp=r.cheapest?r.cheapest.shipping:0;
       var items=r.top_cheapest||[r.cheapest];
-      html+='<table><thead><tr><th>#</th><th>店铺</th><th>品相</th><th style="text-align:right">书价</th><th style="text-align:right">运费</th><th style="text-align:right;color:#fb9cc4">总价</th><th></th></tr></thead><tbody>';
+      html+='<table><thead><tr><th>#</th><th>店铺</th><th>品相</th><th style="text-align:right">书价</th><th style="text-align:right">运费</th><th style="text-align:right;color:#fb9cc4">总价</th><th style="text-align:center">库存</th><th></th></tr></thead><tbody>';
       items.forEach(function(it,j){
-        html+='<tr><td>'+(j+1)+'</td><td>'+esc(it.shop)+(it.area?'<div class="meta">'+esc(it.area)+'</div>':'')+'</td><td>'+esc(it.quality_text||'—')+'</td><td style="text-align:right">¥'+it.price.toFixed(2)+'</td><td style="text-align:right">¥'+it.shipping.toFixed(1)+'</td><td style="text-align:right'+(j===0?';font-weight:700;color:#fb9cc4':'')+'">¥'+it.total.toFixed(1)+'</td><td style="text-align:center">'+(it.itemId&&it.shopId?'<button onclick="ac('+it.itemId+','+it.shopId+',this)" style="padding:2px 6px;border-radius:4px;border:1px solid #a855f7;background:transparent;color:#a855f7;cursor:pointer;font-size:.72rem">🛒</button>':'')+'</td></tr>'
+        html+='<tr><td>'+(j+1)+'</td><td>'+esc(it.shop)+(it.area?'<div class="meta">'+esc(it.area)+'</div>':'')+'</td><td>'+esc(it.quality_text||'—')+'</td><td style="text-align:right">¥'+it.price.toFixed(2)+'</td><td style="text-align:right">¥'+it.shipping.toFixed(1)+'</td><td style="text-align:right'+(j===0?';font-weight:700;color:#fb9cc4':'')+'">¥'+it.total.toFixed(1)+'</td><td style="text-align:center;font-size:.7rem" id="stk_'+(r.isbn||'')+'_'+(it.itemId||'')+'">—</td><td style="text-align:center">'+(it.itemId&&it.shopId?'<button onclick="ac('+it.itemId+','+it.shopId+',this)" style="padding:2px 6px;border-radius:4px;border:1px solid #a855f7;background:transparent;color:#a855f7;cursor:pointer;font-size:.72rem">🛒</button>':'')+'</td></tr>'
       });
       html+='</tbody></table><div style="font-size:.65rem;color:#c4b5d0;margin-top:3px">扫描'+(r.pages_scanned||1)+'页 · 在售'+r.total_count+'本'+(r.holiday_shop_count?' · 🛌 排除'+r.holiday_shop_count+'个休假/异常店铺':'')+(r.sold_out_skipped?' · 已售罄'+r.sold_out_skipped+'本':'')+(r.precise?' · 🎯 已精确比价'+r.scan_count+'家店确认最低':'')+'</div></div>'
     }
@@ -508,6 +510,69 @@ function sh(data){
       },300);
     }
   }
+  // 异步查候选店库存 + 多套总价
+  setTimeout(function(){queryStock(data);},150);
+}
+
+// 查候选店库存 + 显示多套建议价
+function queryStock(data){
+  var qtyEl=id('qtyInput');
+  var qty=parseInt((qtyEl&&qtyEl.value)||'1',10);
+  if(isNaN(qty)||qty<1)qty=1;
+  // 收集所有候选店 shopId:itemId
+  var pairs=[], seen={};
+  (data||[]).forEach(function(r){
+    if(!r||!r.cheapest)return;
+    (r.top_cheapest||[r.cheapest]).forEach(function(it){
+      if(it.itemId&&it.shopId){
+        var k=it.shopId+':'+it.itemId;
+        if(!seen[k]){seen[k]=1;pairs.push(k);}
+      }
+    });
+  });
+  if(!pairs.length)return;
+  // 限制查询数量（避免太慢）
+  var maxPairs=30;
+  var queryPairs=pairs.slice(0,maxPairs);
+  fj('/api/stock?items='+encodeURIComponent(queryPairs.join(',')))
+    .then(function(d){
+      var stock=d.stock||{};
+      // 填充每行的库存
+      (data||[]).forEach(function(r){
+        if(!r||!r.cheapest)return;
+        var items=r.top_cheapest||[r.cheapest];
+        var bestEnough=null;
+        items.forEach(function(it){
+          var cell=id('stk_'+(r.isbn||'')+'_'+(it.itemId||''));
+          if(!cell)return;
+          var s=stock[it.itemId];
+          if(s===undefined||s===null){cell.innerHTML='<span style="color:#c4b5d0">?</span>';return;}
+          if(s>=qty){
+            cell.innerHTML='<span style="color:#059669;font-weight:700">'+s+'</span>';
+            if(!bestEnough)bestEnough=it;
+          }else{
+            cell.innerHTML='<span style="color:#ef4444">'+s+'</span>';
+          }
+        });
+        // 多套建议价（用库存够的最低价店；没有则用最低价店）
+        var use=bestEnough||r.cheapest;
+        var unit=use.price+use.shipping;
+        var costTotal=unit*qty;
+        // 多套建议售价 = (总成本 + max(22%利润, 每本保底5元)) / 0.98（含2%费）
+        var profit=Math.max(0.22*costTotal, 5*qty);
+        var sug=Math.round((costTotal+profit)/(1-0.02)*100)/100;
+        var box=id('rb_'+(r.isbn||''));
+        if(box){
+          var old=box.querySelector('.mul-row');
+          if(old)old.remove();
+          var warn=bestEnough?'':'<span style="color:#ef4444">（低价店库存不足，需换店或联系卖家）</span>';
+          var html='<div class="mul-row" style="margin:6px 0;padding:6px 8px;background:#fff0f6;border:1px solid #ffd6e6;border-radius:8px;font-size:.72rem">'+
+            '🛒 买 <strong>'+qty+'</strong> 本：成本约 <strong>¥'+costTotal.toFixed(1)+'</strong> → 建议售价 <strong style="color:#e0578f">¥'+sug.toFixed(1)+'</strong> '+warn+'</div>';
+          box.insertAdjacentHTML('afterbegin',html);
+        }
+      });
+    })
+    .catch(function(){});
 }
 
 // 加购

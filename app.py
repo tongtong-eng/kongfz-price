@@ -47,7 +47,7 @@ from kongfz_cookie import (
 from kongfz_query import (
     query_isbn, batch_query, HEADERS,
     query_isbn_by_address, batch_query_by_address, _parse_province,
-    _get_max_workers,
+    _get_max_workers, batch_fetch_stock, fetch_stock,
 )
 from kongfz_address import cleanup_addresses, MAX_ADDRESSES, parse_address_text, add_address, delete_address, list_addresses
 from kongfz_order import search_by_phone, monitor_orders
@@ -263,6 +263,24 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return
             ok = delete_address(cookie, addr_id)
             self.send_json({"success": ok})
+        elif path.startswith("/api/stock"):
+            # 批量查库存：?items=shopId:itemId,shopId:itemId
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            raw = q.get("items", [""])[0]
+            if not raw:
+                self.send_json({"error": "缺少 items 参数"})
+                return
+            items = []
+            for pair in raw.split(","):
+                parts = pair.split(":")
+                if len(parts) == 2 and parts[0] and parts[1]:
+                    items.append({"shopId": parts[0], "itemId": parts[1]})
+            if not items:
+                self.send_json({"error": "items 格式错误（应为 shopId:itemId）"})
+                return
+            cookie = load_cookie() or ""
+            stock = batch_fetch_stock(items, cookie, max_workers=3)
+            self.send_json({"stock": stock, "count": len(stock)})
         elif path.startswith("/api/query"):
             cookie = load_cookie()
             if not cookie:

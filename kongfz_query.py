@@ -649,3 +649,74 @@ def batch_query_by_address(isbns, cookie_str, province, quality_filter="", user_
             uniq_results[isbn] = {"isbn": isbn, "title": "—", "error": str(e)[:40]}
 
     return [uniq_results[isbn] for isbn in isbns]
+
+
+# ── 库存查询（进商品详情页提取） ──────────────────
+# 孔夫子搜索接口不返回库存数量，但商品详情页有"库存N件"，需单独请求详情页。
+_STOCK_INTERVAL = 0.5   # 详情页请求间隔（避免WAF）
+_STOCK_LOCK = threading.Lock()
+_STOCK_LAST = [0.0]
+
+
+def _stock_throttle():
+    with _STOCK_LOCK:
+        now = time.monotonic()
+        wait = _STOCK_LAST[0] + _STOCK_INTERVAL - now
+        if wait > 0:
+            time.sleep(wait)
+        _STOCK_LAST[0] = time.monotonic()
+
+
+def fetch_stock(shop_id, item_id, cookie_str=""):
+    """进商品详情页提取库存数量。
+    返回 int（库存数）；失败返回 None。
+    """
+    if not shop_id or not item_id:
+        return None
+    url = f"https://book.kongfz.com/{shop_id}/{item_id}/"
+    _stock_throttle()
+    try:
+        headers = dict(HEADERS)
+        if cookie_str:
+            headers["Cookie"] = cookie_str
+        req = urllib.request.Request(url, headers=headers)
+        body = urllib.request.urlopen(req, timeout=15).read().decode("utf-8", errors="replace")
+        # 格式1：多库存商品 <i class="store-count">N</i>
+        m = re.search(r'store-count[^>]*>\s*(\d+)\s*<', body)
+        if m:
+            return int(m.group(1))
+        # 格式2：少库存商品 "仅N件在售，欲购从速"
+        m2 = re.search(r'仅\s*(\d+)\s*件在售', body)
+        if m2:
+            return int(m2.group(1))
+        # 格式3：库存N件（HTML标签分隔）
+        m3 = re.search(r'库存\s*<?[^>]*>?\s*(\d+)\s*件', body)
+        if m3:
+            return int(m3.group(1))
+        # 格式4：文本形式 "库存 N"
+        m4 = re.search(r'库存[^\d]{0,20}(\d+)', body)
+        if m4:
+            return int(m4.group(1))
+        # 兜底：页面有购买按钮说明在售，至少1件（二手书多为1件）
+        if '加入购物车' in body or '立即购买' in body:
+            return 1
+        return None
+    except Exception:
+        return None
+
+
+def batch_fetch_stock(items, cookie_str="", max_workers=3):
+    """批量查库存。items: [{'shopId':..,'itemId':..,'isbn':..}, ...]
+    返回 {itemId: stock 或 None}
+    """
+    from concurrent.futures import ThreadPoolExecutor
+    results = {}
+    def _one(it):
+        sid = it.get("shopId"); iid = it.get("itemId")
+        return iid, fetch_stock(sid, iid, cookie_str)
+    if not items:
+        return results
+    with ThreadPoolExecutor(max_workers=max_workers) as ex:
+        for iid, stock in ex.map(_one, items):
+            results[iid] = stock
+    return results
