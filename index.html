@@ -542,12 +542,19 @@ function queryStock(data){
         if(!r||!r.cheapest)return;
         var items=r.top_cheapest||[r.cheapest];
         var bestEnough=null;
+        var tightCnt=0;   // 库存<3的紧张店铺数
+        var lowStockShops=[];
         items.forEach(function(it){
           var cell=id('stk_'+(r.isbn||'')+'_'+(it.itemId||''));
           if(!cell)return;
           var s=stock[it.itemId];
           if(s===undefined||s===null){cell.innerHTML='<span style="color:#c4b5d0">?</span>';return;}
-          if(s>=qty){
+          if(s<3){
+            // 库存<3：紧张，容易被抢
+            cell.innerHTML='<span style="color:#f59e0b;font-weight:700" title="库存紧张，容易被别人买走">⚠'+s+'</span>';
+            tightCnt++; lowStockShops.push(it.shop+'('+s+'本)');
+            if(s>=qty&&!bestEnough)bestEnough=it;
+          }else if(s>=qty){
             cell.innerHTML='<span style="color:#059669;font-weight:700">'+s+'</span>';
             if(!bestEnough)bestEnough=it;
           }else{
@@ -566,8 +573,13 @@ function queryStock(data){
           var old=box.querySelector('.mul-row');
           if(old)old.remove();
           var warn=bestEnough?'':'<span style="color:#ef4444">（低价店库存不足，需换店或联系卖家）</span>';
+          // 库存紧张提醒：有店铺库存<3本
+          var tightWarn='';
+          if(tightCnt>0){
+            tightWarn='<div style="margin-top:4px;padding:4px 6px;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;color:#c2410c;font-weight:600">⚡ 库存紧张：'+lowStockShops.slice(0,3).join('、')+(lowStockShops.length>3?'等'+lowStockShops.length+'家':'')+' · 容易被别人买走，建议尽快下单</div>';
+          }
           var html='<div class="mul-row" style="margin:6px 0;padding:6px 8px;background:#fff0f6;border:1px solid #ffd6e6;border-radius:8px;font-size:.72rem">'+
-            '🛒 买 <strong>'+qty+'</strong> 本：成本约 <strong>¥'+costTotal.toFixed(1)+'</strong> → 建议售价 <strong style="color:#e0578f">¥'+sug.toFixed(1)+'</strong> '+warn+'</div>';
+            '🛒 买 <strong>'+qty+'</strong> 本：成本约 <strong>¥'+costTotal.toFixed(1)+'</strong> → 建议售价 <strong style="color:#e0578f">¥'+sug.toFixed(1)+'</strong> '+warn+tightWarn+'</div>';
           box.insertAdjacentHTML('afterbegin',html);
         }
       });
