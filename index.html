@@ -519,20 +519,19 @@ function queryStock(data){
   var qtyEl=id('qtyInput');
   var qty=parseInt((qtyEl&&qtyEl.value)||'1',10);
   if(isNaN(qty)||qty<1)qty=1;
-  // 收集所有候选店 shopId:itemId
+  // 只收集每本书"最低价店"的 shopId:itemId（减少请求量，避免触发WAF）
   var pairs=[], seen={};
   (data||[]).forEach(function(r){
     if(!r||!r.cheapest)return;
-    (r.top_cheapest||[r.cheapest]).forEach(function(it){
-      if(it.itemId&&it.shopId){
-        var k=it.shopId+':'+it.itemId;
-        if(!seen[k]){seen[k]=1;pairs.push(k);}
-      }
-    });
+    var it=r.cheapest;
+    if(it.itemId&&it.shopId){
+      var k=it.shopId+':'+it.itemId;
+      if(!seen[k]){seen[k]=1;pairs.push(k);}
+    }
   });
   if(!pairs.length)return;
-  // 限制查询数量（避免太慢）
-  var maxPairs=30;
+  // 限制查询数量（最多20本，避免请求过多被拦）
+  var maxPairs=20;
   var queryPairs=pairs.slice(0,maxPairs);
   fj('/api/stock?items='+encodeURIComponent(queryPairs.join(',')))
     .then(function(d){
@@ -540,27 +539,26 @@ function queryStock(data){
       // 填充每行的库存
       (data||[]).forEach(function(r){
         if(!r||!r.cheapest)return;
-        var items=r.top_cheapest||[r.cheapest];
+        var it=r.cheapest;   // 只查最低价店（减少请求，避免WAF）
         var bestEnough=null;
         var tightCnt=0;   // 库存<3的紧张店铺数
         var lowStockShops=[];
-        items.forEach(function(it){
-          var cell=id('stk_'+(r.isbn||'')+'_'+(it.itemId||''));
-          if(!cell)return;
+        var cell=id('stk_'+(r.isbn||'')+'_'+(it.itemId||''));
+        if(cell){
           var s=stock[it.itemId];
-          if(s===undefined||s===null){cell.innerHTML='<span style="color:#c4b5d0">?</span>';return;}
-          if(s<3){
+          if(s===undefined||s===null){cell.innerHTML='<span style="color:#c4b5d0">?</span>';}
+          else if(s<3){
             // 库存<3：紧张，容易被抢
             cell.innerHTML='<span style="color:#f59e0b;font-weight:700" title="库存紧张，容易被别人买走">⚠'+s+'</span>';
             tightCnt++; lowStockShops.push(it.shop+'('+s+'本)');
-            if(s>=qty&&!bestEnough)bestEnough=it;
+            if(s>=qty)bestEnough=it;
           }else if(s>=qty){
             cell.innerHTML='<span style="color:#059669;font-weight:700">'+s+'</span>';
-            if(!bestEnough)bestEnough=it;
+            bestEnough=it;
           }else{
             cell.innerHTML='<span style="color:#ef4444">'+s+'</span>';
           }
-        });
+        }
         // 多套建议价（用库存够的最低价店；没有则用最低价店）
         var use=bestEnough||r.cheapest;
         var unit=use.price+use.shipping;
