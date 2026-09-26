@@ -60,7 +60,88 @@ def _throttle():
         _LAST_REQUEST_TS[0] = time.monotonic()
 
 # 限流关键词
-_RATE_LIMIT_HINTS = ("请求过于频繁", "访问频次", "频繁", "frequency", "too many", "请登录", "登录后再")
+_RATE_LIMIT_HINTS = ("请求过于频繁", "访问频次", "频繁", "frequency", "too many", "请登录", "登录后再", "验证码", "captcha", "封禁", "禁止访问")
+
+# ── 指数退避 + 熔断（v2 反爬加固） ──────────
+# 连续触发限流时，退避时间随失败次数指数增长；失败超过阈值进入熔断，
+# 暂停一段时间内所有出站请求，避免硬碰孔夫子风控导致账号被封。
+_CIRCUIT_BREAKER = {
+    "fail_streak": 0,       # 连续限流失败次数
+    "opened_until": 0.0,    # 熔断打开截止时间（单调时钟）
+    "last_backoff": 0.0,    # 上次退避秒数
+    "break_events": 0,      # 累计熔断次数
+}
+
+_CB_MAX_BACKOFF = 60.0      # 单次退避上限 60 秒
+_CB_OPEN_AFTER = 5          # 连续失败 5 次后打开熔断
+_CB_OPEN_DURATION = 120.0   # 熔断持续时间 120 秒
+
+def _backoff_seconds(fail_streak):
+    """指数退避：3s、6s、12s、24s、48s、60s(封顶)"""
+    secs = 3.0 * (2 ** min(fail_streak - 1, 5))
+    return min(secs, _CB_MAX_BACKOFF)
+
+def _circuit_open():
+    """熔断是否打开（True 表示应暂停出站请求）"""
+    return time.monotonic() < _CIRCUIT_BREAKER["opened_until"]
+
+def _circuit_check():
+    """出站前调用：若熔断打开则阻塞等待直到恢复。返回本次是否经历了熔断等待。"""
+    waited = False
+    if _circuit_open():
+        wait = _CIRCUIT_BREAKER["opened_until"] - time.monotonic()
+        if wait > 0:
+            waited = True
+            time.sleep(min(wait, _CB_OPEN_DURATION))
+    return waited
+
+def _record_rate_limit():
+    """检测到限流/封禁时调用：累计失败、指数退避、必要时打开熔断。"""
+    cb = _CIRCUIT_BREAKER
+    cb["fail_streak"] += 1
+    streak = cb["fail_streak"]
+    _log_rate_limit(streak)
+    if streak >= _CB_OPEN_AFTER:
+        # 连续失败过多 → 打开熔断，暂停一段时间
+        cb["opened_until"] = time.monotonic() + _CB_OPEN_DURATION
+        cb["break_events"] += 1
+        cb["fail_streak"] = 0
+        cb["last_backoff"] = _CB_OPEN_DURATION
+        _log_circuit_break()
+    else:
+        secs = _backoff_seconds(streak)
+        cb["last_backoff"] = secs
+        time.sleep(secs)
+
+
+def _log_rate_limit(streak):
+    try:
+        from kongfz_log import record_rate_limit
+        record_rate_limit(f"连续第 {streak} 次限流，退避 {_backoff_seconds(streak):.0f}s")
+    except Exception:
+        pass
+
+
+def _log_circuit_break():
+    try:
+        from kongfz_log import record_circuit_break
+        record_circuit_break(f"熔断打开，暂停 {_CB_OPEN_DURATION:.0f}s")
+    except Exception:
+        pass
+
+def _clear_rate_limit():
+    """成功请求后重置熔断计数（逐步恢复，允许下次轻微失败不立即熔断）"""
+    _CIRCUIT_BREAKER["fail_streak"] = max(0, _CIRCUIT_BREAKER["fail_streak"] - 1)
+
+def _breaker_status():
+    """返回熔断器当前状态（供结构化日志/自检使用）"""
+    cb = _CIRCUIT_BREAKER
+    return {
+        "open": _circuit_open(),
+        "fail_streak": cb["fail_streak"],
+        "break_events": cb["break_events"],
+        "last_backoff": round(cb["last_backoff"], 1),
+    }
 
 # ── 线程级 HTTP 连接池（复用 TLS 连接，减少握手开销） ──
 _CONN_LOCK = threading.Lock()
@@ -327,14 +408,15 @@ def _query_api(isbn, cookie_str, quality_filter="", user_area="", pages=1, smart
 
     for page in range(1, pages + 1):
         _throttle()
+        # 熔断检查：若已被限流打开熔断，阻塞等待恢复后再请求
+        _circuit_check()
         data, err = _do_request(page)
 
-        # 限流检测：遇到"请求过于频繁"等待 2 秒重试一次
+        # 限流检测：遇到限流/验证码/封禁 → 指数退避，连续触发则熔断
         if data and data.get("status") != 1:
             msg = str(data.get("message", ""))
             if any(hint in msg for hint in _RATE_LIMIT_HINTS):
-                _record_fail()
-                time.sleep(3.0)
+                _record_rate_limit()
                 data, err = _do_request(page)
 
         if err:
@@ -349,6 +431,7 @@ def _query_api(isbn, cookie_str, quality_filter="", user_area="", pages=1, smart
             break
 
         _record_success()
+        _clear_rate_limit()
         payload = data.get("data", {})
         item_resp = payload.get("itemResponse", {})
         items = item_resp.get("list") or item_resp.get("items") or []
@@ -409,18 +492,32 @@ def query_isbn(isbn, cookie_str, quality_filter=""):
     if cached:
         return cached
 
+    _t0 = time.time()
     items, total = _query_api(isbn, cookie_str, quality_filter, pages=5, smart_stop=True)
+    _cost = (time.time() - _t0) * 1000
 
     if items is None:
+        _log_record_query(False, isbn, _cost, total)
         return {"isbn": isbn, "title": "—", "error": total}
 
     if not items:
+        _log_record_query(False, isbn, _cost, "无在售记录")
         return {"isbn": isbn, "title": "—", "error": "无在售记录", "count": total}
 
     result = _build_result(isbn, items, total_found=total)
+    _log_record_query(True, isbn, _cost)
 
     _cache_set(isbn, quality_filter, result)
     return result
+
+
+def _log_record_query(ok, isbn, cost_ms, error=""):
+    """结构化日志：记录查价结果（延迟导入避免循环依赖）"""
+    try:
+        from kongfz_log import record_query
+        record_query(ok, isbn=isbn, cost_ms=cost_ms, error=error)
+    except Exception:
+        pass
 
 
 def query_isbn_simple(isbn, cookie_str):

@@ -194,6 +194,16 @@ input[type=checkbox],input[type=radio]{accent-color:#f472b6}
           <button class="btn btn-primary" onclick="saveCookie()" style="background:#f59e0b;font-size:.8rem">💾 保存</button>
           <span id="cookMsg" style="font-size:.8rem"></span>
         </div>
+        <div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px">
+          <div style="font-size:.75rem;color:#475569;font-weight:600;margin-bottom:4px">🔒 访问口令（可选）</div>
+          <div style="font-size:.72rem;color:#9d8bb0;margin-bottom:6px">服务器设置了 ACCESS_TOKEN 时需填写，防止他人白嫖你的服务器。留空表示不启用。</div>
+          <input id="tokenInp" type="password" placeholder="与服务端 ACCESS_TOKEN 一致" style="width:100%;padding:7px 10px;border:2px solid #ffd6e6;border-radius:8px;font-size:.8rem;outline:none;background:#fff;font-family:monospace">
+          <div class="row" style="margin-top:6px">
+            <button class="btn btn-outline" onclick="saveToken()" style="font-size:.8rem">💾 保存口令</button>
+            <button class="btn btn-outline" onclick="clearToken()" style="font-size:.8rem;color:#fb9cc4">清除</button>
+            <span id="tokenMsg" style="font-size:.78rem"></span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -214,7 +224,18 @@ var R=false,L=[],I=id('inputArea'),S=id('status'),E=id('results'),N=id('empty'),
 function id(s){return document.getElementById(s)}
 function esc(s){return(s||'').replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
 function ss(t,c){S.textContent=t;S.className=c||''}
-function fj(u,o){return fetch(u,o||{}).then(function(r){return r.json()})}
+// 访问口令：与后端 ACCESS_TOKEN 对应。在页面设置里填写后持久化到 localStorage，
+// 所有 /api/* 请求统一携带 X-Access-Token 头。未填写时行为与之前完全一致。
+function _authToken(){try{return localStorage.getItem('kfz_access_token')||''}catch(e){return ''}}
+function fj(u,o){
+  o=o||{};o.headers=o.headers||{};
+  var tk=_authToken();
+  if(tk){o.headers['X-Access-Token']=tk}
+  return fetch(u,o).then(function(r){
+    if(r.status===401){ss('🔒 访问口令无效，请在设置里更新','error');return Promise.reject(new Error('unauthorized'))}
+    return r.json()
+  })
+}
 
 // ── iOS Safari 缓存根治：版本自检 + bfcache 处理 ──
 // 页面被从 bfcache 恢复时（返回键），强制重新加载
@@ -399,6 +420,32 @@ Q.onclick=function(){
   var ex=extractAll(t);
   var is=ex.valid;
   if(!is.length&&!ex.invalid.length){ss('无效 ISBN','error');return}
+
+  // 查价前 Cookie 前置检查：/api/cookie/status 只读本地存储，零爬虫成本。
+  // 失效时直接拦截，避免用户白查一整轮才发现 Cookie 过期。
+  fj('/api/cookie/status').then(function(cs){
+    if(!cs.has_cookie){
+      ss('❌ 未设置 Cookie，无法查价','error');
+      toast('🔴 请先设置孔夫子 Cookie');
+      fold('cookie');
+      ckC();
+      return;
+    }
+    if(cs.is_valid===false){
+      ss('❌ Cookie 已失效，请更新','error');
+      toast('🔴 Cookie 已失效，请更新后重试');
+      fold('cookie');
+      ckC();
+      return;
+    }
+    _startQuery(ex,is);
+  }).catch(function(){
+    // status 探测失败（网络异常等）不阻断，直接尝试查价，由查价结果兜底
+    _startQuery(ex,is);
+  });
+};
+
+function _startQuery(ex,is){
   R=1;Q.disabled=1;N.style.display='none';E.innerHTML='';
   var ql=id('qualitySelect').value,st=Date.now();
   ss('⏳ 批量查询 '+is.length+' 本...','loading');
@@ -1155,6 +1202,23 @@ function saveCookie(){
 
 function toast(t){var el=id('toast');el.textContent=t;el.style.display='block';clearTimeout(el._t);el._t=setTimeout(function(){el.style.display='none'},2000)}
 
+// 访问口令管理（存 localStorage，随请求头 X-Access-Token 发送）
+function saveToken(){
+  var inp=id('tokenInp'),msg=id('tokenMsg'),v=inp.value.trim();
+  if(!v){msg.textContent='❌ 请输入口令';msg.style.color='#ef4444';return}
+  try{localStorage.setItem('kfz_access_token',v);msg.textContent='✅ 已保存';msg.style.color='#10b981';inp.value=''}
+  catch(e){msg.textContent='❌ 保存失败';msg.style.color='#ef4444'}
+}
+function clearToken(){
+  try{localStorage.removeItem('kfz_access_token');}catch(e){}
+  var inp=id('tokenInp'),msg=id('tokenMsg');inp.value='';
+  msg.textContent='已清除';msg.style.color='#9d8bb0';
+}
+function initToken(){
+  var inp=id('tokenInp');if(!inp)return;
+  try{var v=localStorage.getItem('kfz_access_token');if(v)inp.value=v}catch(e){}
+}
+
 // 地址清理
 function cleanupAddr(isAuto){
   var label=isAuto?'⏳':'🧹';
@@ -1191,7 +1255,7 @@ function cleanupAddr(isAuto){
 
 // 初始化
 id('btnClear').onclick=function(){I.value='';E.innerHTML='';N.style.display='block';ss('就绪','')};
-setTimeout(function(){ckC();loadH()},500);
+setTimeout(function(){ckC();loadH();initToken()},500);
 // 启动时静默检查地址
 setTimeout(function(){cleanupAddr(true)},3000);
 

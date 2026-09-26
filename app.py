@@ -56,6 +56,11 @@ from kongfz_order import search_by_phone, monitor_orders
 PORT = int(os.environ.get("PORT", 5000))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 
+# 访问口令（可选）。设置了 ACCESS_TOKEN 环境变量后，所有 /api/* 请求
+# 都必须携带匹配的 X-Access-Token 请求头，否则返回 401。
+# 未设置时保持开放（兼容本地开发），仅生产环境建议启用。
+ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN", "").strip()
+
 # 确保 data 目录存在（用于持久化 Cookie 和历史记录）
 os.makedirs(DATA_DIR, exist_ok=True)
 
@@ -145,6 +150,24 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if "/api/query" in msg or "/api/batch" in msg:
             print(f"  📡 {msg}")
 
+    def _authorized(self):
+        """校验访问口令。未配置 ACCESS_TOKEN 时放行（兼容本地开发）。
+        已配置时，要求 X-Access-Token 请求头精确匹配，否则拒绝。"""
+        if not ACCESS_TOKEN:
+            return True
+        token = self.headers.get("X-Access-Token", "")
+        return token == ACCESS_TOKEN
+
+    def _send_unauthorized(self):
+        """返回 401，提示需要访问口令。"""
+        self.send_response(401)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        body = json.dumps({"error": "未授权：缺少或错误的访问口令"}).encode("utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_GET(self):
         path = urllib.parse.urlparse(self.path).path
 
@@ -152,6 +175,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if path.startswith("/static/"):
             self.serve_static(path)
             return
+
+        # 鉴权：除健康检查、版本号、首页外的 /api/* 均需口令
+        if path.startswith("/api/") and path not in ("/api/health", "/api/version"):
+            if not self._authorized():
+                self._send_unauthorized()
+                return
 
         # API 路由
         if path == "/" or path == "/index.html":
@@ -499,6 +528,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
             except Exception:
                 ver = ""
             self.send_json({"version": ver, "ts": datetime.now().strftime("%H:%M:%S")})
+        elif path.startswith("/api/logs"):
+            # 结构化日志查询：?limit=N（默认100），附带统计和熔断状态
+            from kongfz_log import get_logs, get_stats
+            from kongfz_query import _breaker_status
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            try:
+                limit = int(q.get("limit", ["100"])[0])
+            except (TypeError, ValueError):
+                limit = 100
+            self.send_json({
+                "logs": get_logs(limit),
+                "stats": get_stats(),
+                "breaker": _breaker_status(),
+            })
         elif path.startswith("/api/self_check"):
             self._do_self_check()
         elif path.startswith("/api/"):
@@ -508,6 +551,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.serve_html()
 
     def do_POST(self):
+        # 鉴权：所有 /api/* POST 请求均需口令（无豁免）
+        if self.path.startswith("/api/"):
+            if not self._authorized():
+                self._send_unauthorized()
+                return
+
         if self.path.startswith("/api/address/add"):
             # 添加收货地址到孔夫子
             cookie = load_cookie()
