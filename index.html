@@ -115,9 +115,9 @@ input[type=checkbox],input[type=radio]{accent-color:#d65a8f}
     <div style="font-size:.66rem;color:#d890ae;margin:-6px 0 8px" id="appVer">前端 v6.0 · 查价提速+物流监控 (d108632)</div>
     <div class="hero-stats">
       <div class="h-stat" onclick="scrollTo(0,0)"><div class="hs-n" id="statToday">0</div><div class="hs-l">今日查价</div></div>
-      <div class="h-stat" onclick="showTrack()"><div class="hs-n">📦</div><div class="hs-l">快递追踪</div></div>
+      <div class="h-stat" onclick="showTrack()"><div class="hs-n">📮</div><div class="hs-l">快递追踪</div></div>
       <div class="h-stat" onclick="fold('hist')"><div class="hs-n" id="statHist">0</div><div class="hs-l">历史记录</div></div>
-      <div class="h-stat" onclick="cleanupAddr()"><div class="hs-n">🧹</div><div class="hs-l">清理地址</div></div>
+      <div class="h-stat" onclick="cleanupAddr()"><div class="hs-n">🧺</div><div class="hs-l">清理地址</div></div>
     </div>
   </div>
 
@@ -210,12 +210,12 @@ input[type=checkbox],input[type=radio]{accent-color:#d65a8f}
 </div>
 
 <div class="bottom-nav">
-  <button onclick="scrollTo(0,0)"><svg viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg><span>顶部</span></button>
-  <button onclick="showTrack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg><span>📦 快递</span></button>
-  <button onclick="fold('cookie')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg><span>Cookie</span></button>
-  <button onclick="fold('hist')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>历史</span></button>
-  <button onclick="cleanupAddr()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg><span>清理地址</span></button>
-  <button onclick="selfCheck()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg><span>自检</span></button>
+  <button onclick="scrollTo(0,0)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.5a1 1 0 0 1 .71.29l5 5a1 1 0 0 1-1.42 1.42L13 6.91V19a1 1 0 1 1-2 0V6.91l-3.29 3.3a1 1 0 0 1-1.42-1.42l5-5A1 1 0 0 1 12 3.5z"/><rect x="8" y="19.5" width="8" height="2.5" rx="1.25"/></svg><span>顶部</span></button>
+  <button onclick="showTrack()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3h-4.5l-1.5 2-1.5-2H6a3 3 0 0 1-3-3V6zm5 4.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm8 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/></svg><span>快递</span></button>
+  <button onclick="fold('cookie')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 1 0 9 9c0-.55-.45-1-1-1h-1.2A6 6 0 0 1 13 4.2V3c0-.55-.45-1-1-1zM8.5 12.5a1.3 1.3 0 1 1 0-2.6 1.3 1.3 0 0 1 0 2.6zm4 4.5a1.3 1.3 0 1 1 0-2.6 1.3 1.3 0 0 1 0 2.6zm5-1a1.3 1.3 0 1 1 0-2.6 1.3 1.3 0 0 1 0 2.6z"/></svg><span>Cookie</span></button>
+  <button onclick="fold('hist')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9zm1 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 4.5V17a1 1 0 1 1-2 0v-4.5A1 1 0 0 1 13 12.5z"/></svg><span>历史</span></button>
+  <button onclick="cleanupAddr()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14.5 3a.5.5 0 0 1 .5.5V5h4a1 1 0 1 1 0 2h-.3l-1.2 11.5A2.5 2.5 0 0 1 15 20.6l-.1.4a1.5 1.5 0 0 1-1.4 1H10.5a1.5 1.5 0 0 1-1.4-1l-.1-.4A2.5 2.5 0 0 1 6.5 18.5L5.3 7H5a1 1 0 0 1 0-2h4v-.5a.5.5 0 0 1 1 0V5h4zM10 10a.75.75 0 0 0-.75.75v5a.75.75 0 0 0 1.5 0v-5A.75.75 0 0 0 10 10zm4 0a.75.75 0 0 0-.75.75v5a.75.75 0 0 0 1.5 0v-5A.75.75 0 0 0 14 10z"/></svg><span>清理</span></button>
+  <button onclick="selfCheck()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9zm-1 11.2l-2.3-2.3a1 1 0 0 0-1.4 1.4l3 3a1 1 0 0 0 1.4 0l5-5a1 1 0 0 0-1.4-1.4l-4.3 4.3z"/></svg><span>自检</span></button>
 </div>
 <div class="toast" id="toast"></div>
 
