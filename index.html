@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#DB2777">
+<meta name="theme-color" content="#E6004C">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <title>孔夫子 ISBN 查价</title>
@@ -12,14 +12,29 @@
 <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
 <style>
 :root{
---bg:#FFF9FC;--card:#fff;--line:#FCE7F0;--line2:#F9D5E4;
---t1:#7A3D58;--t2:#A0647C;--t3:#C9A0B2;
---brand:#F472B6;--brand-soft:#FDF2F8;--brand-line:#FBCFE8;--brand-ink:#DB2777;
---warn:#E11D48;--warn-ink:#BE123C;--warn-bg:#FFF1F2;--warn-line:#FDA4AF;
+/* ── HelloKitty 手账主题 v6.3（叠加 视觉系统 v1.0 token）── */
+--bg:#FFF5F9;--card:#fff;--line:#FFD0E2;--line2:#FFB8D2;
+--stripe:#FFDCEA;--stripe2:#FFFFFF;
+--t1:#5C2740;--t2:#96607A;--t3:#C79BB0;
+--brand:#FF8FB1;--brand-soft:#FFF0F6;--brand-line:#FFC9DD;--brand-ink:#E6004C;
+--warn:#E6004C;--warn-ink:#B8003D;--warn-bg:#FFF0F3;--warn-line:#FFA8BE;
+/* 业务状态色：物流语义，永不变 */
 --ok:#059669;--info:#3B82F6;--purple:#A855F7;--amber:#EAB308;
+/* 手账点缀色（参考图：闹钟紫 / Kitty 鼻子黄） */
+--bow:#E6004C;--bow-dark:#C4003F;--accent-purple:#C9A0DC;--accent-yellow:#FFD93D;
+/* ── 视觉系统 v1.0：语义别名 + 间距/圆角/阴影（旧名保留，零破坏）── */
+--surface:#fff;--surface-tint:var(--brand-soft);--surface-sunken:#FCEFF5;
+--text-1:var(--t1);--text-2:var(--t2);--text-3:var(--t3);--text-on-brand:#fff;
+--line-strong:var(--line2);
+--status-ok:var(--ok);--status-info:var(--info);--status-purple:var(--purple);--status-amber:var(--amber);--status-danger:var(--warn);--status-orange:#FB8C5A;
+--r-sm:10px;--r-md:14px;--r-lg:20px;--r-pill:999px;--r-full:50%;
+--sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:20px;--sp-6:24px;--sp-8:32px;--sp-10:40px;--sp-12:48px;
+--sh-1:0 2px 8px rgba(219,39,119,.08);--sh-2:0 4px 16px rgba(219,39,119,.12);--sh-3:0 6px 22px rgba(219,39,119,.16);
+--sh-press:inset 0 2px 5px rgba(196,0,63,.30);
+--ring:0 0 0 3px rgba(255,143,177,.55);
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background-color:var(--bg);background-image:radial-gradient(circle,var(--line) 1.5px,transparent 1.5px),radial-gradient(circle,var(--brand-soft) 1.5px,transparent 1.5px);background-size:22px 22px;background-position:0 0,11px 11px;color:var(--t1);padding:16px 10px 76px;min-height:100vh;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background-color:var(--bg);background-image:repeating-linear-gradient(180deg,var(--stripe) 0 11px,var(--stripe2) 11px 22px);color:var(--t1);padding:16px 10px 76px;min-height:100vh;-webkit-tap-highlight-color:transparent}
 .container{max-width:960px;margin:0 auto}
 /* 顶部标题区 */
 .hero{margin-bottom:14px;text-align:center;position:relative}
@@ -31,7 +46,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 .h-stat:active{transform:scale(.96)}
 .hs-n{font-size:1.1rem;font-weight:800;color:var(--brand-ink)}
 .hs-l{font-size:.64rem;color:var(--t2);margin-top:2px}
-h1{font-size:1.25rem;background:linear-gradient(135deg,#d94f87,#a855f7,var(--warn));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:2px}
+h1{font-size:1.25rem;background:linear-gradient(135deg,#FF4D7E,var(--brand),var(--brand-ink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:2px}
 .subtitle{color:var(--t2);font-size:.78rem;margin-bottom:14px}
 .card{background:#fff;border-radius:20px;padding:15px;box-shadow:0 4px 16px rgba(219,39,119,.12);margin-bottom:14px;border:2px solid var(--line)}
 .card-title{font-size:.92rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;color:var(--brand-ink)}
@@ -39,12 +54,16 @@ textarea,.field{width:100%;padding:10px 12px;border:2px dashed var(--line);borde
 textarea:focus,.field:focus{border-color:var(--brand-ink);box-shadow:0 0 0 3px var(--line)}
 textarea{min-height:120px;line-height:1.5;resize:vertical}
 .row{display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap}
-.btn{padding:8px 18px;border-radius:12px;border:none;font-weight:600;cursor:pointer;font-size:.82rem;transition:opacity .15s}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.btn-primary{background:linear-gradient(135deg,var(--brand-ink),var(--brand));color:#fff;box-shadow:0 3px 12px rgba(219,39,119,.22)}
-.btn-primary:hover:not(:disabled){background:linear-gradient(135deg,var(--brand),var(--brand));box-shadow:0 4px 16px rgba(219,39,119,.25)}
-.btn-outline{background:#fff;border:2px solid var(--line);color:var(--brand-ink)}
-.btn-outline:hover{background:var(--brand-soft)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:inherit;font-weight:600;font-size:.82rem;line-height:1;padding:9px 20px;border-radius:999px;border:2px solid transparent;cursor:pointer;user-select:none;white-space:nowrap;transition:transform .14s ease,box-shadow .14s ease,background .14s ease,color .14s ease,border-color .14s ease}
+.btn:focus-visible{outline:none;box-shadow:var(--ring)}
+.btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;transform:none}
+.btn:active:not(:disabled){transform:translateY(1px) scale(.975)}
+.btn-primary{background:linear-gradient(135deg,var(--brand-ink),var(--brand));color:#fff;box-shadow:0 4px 14px rgba(230,0,76,.28)}
+.btn-primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(230,0,76,.34)}
+.btn-primary:active:not(:disabled){box-shadow:var(--sh-press)}
+.btn-outline{background:#fff;border:2px solid var(--line2);color:var(--brand-ink)}
+.btn-outline:hover:not(:disabled){background:var(--brand-soft);transform:translateY(-1px)}
+.btn-outline:active:not(:disabled){transform:translateY(0) scale(.975)}
 #status{font-size:.8rem;color:var(--t2)}
 #status.loading{color:var(--brand-ink)}
 #status.done{color:var(--brand)}
@@ -53,7 +72,7 @@ table{width:100%;border-collapse:collapse;font-size:.78rem;margin-top:4px}
 thead{background:var(--brand-soft)}
 th{padding:5px;text-align:left;font-weight:700;white-space:nowrap;border-bottom:2px solid var(--line);color:var(--brand-ink)}
 td{padding:5px;border-bottom:1px solid var(--line)}
-tr:hover td{background:#ffe6ee}
+tr:hover td{background:var(--brand-soft)}
 .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:6px;margin-bottom:10px}
 .s-card{text-align:center;padding:9px;border-radius:16px;background:#fff;box-shadow:0 3px 12px rgba(219,39,119,.10);border:1px solid var(--line)}
 .s-card .n{font-size:1.1rem;font-weight:800}
@@ -80,10 +99,10 @@ input[type=checkbox],input[type=radio]{accent-color:var(--brand-ink)}
 .h-item .meta{font-size:.7rem;color:var(--t2);margin-top:2px}
 .h-item .actions{display:flex;gap:4px}
 .h-item .actions button{padding:5px 10px;border-radius:10px;border:none;cursor:pointer;font-size:.72rem;font-weight:600}
-.btn-h-q{background:linear-gradient(135deg,var(--brand-ink),var(--brand));color:#fff}
-.btn-h-v{background:var(--brand-ink);color:#fff}
-.btn-h-c{background:var(--brand-ink);color:#fff}
-.btn-h-d{background:transparent;border:2px solid var(--line)!important;color:var(--t2)}
+.btn-h-q,.btn-h-v,.btn-h-c{background:linear-gradient(135deg,var(--brand-ink),var(--brand));color:#fff;box-shadow:0 3px 10px rgba(219,39,119,.22)}
+.btn-h-q:hover:not(:disabled),.btn-h-v:hover:not(:disabled),.btn-h-c:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 5px 16px rgba(230,0,76,.30)}
+.btn-h-d{background:transparent;border:2px dashed var(--line2)!important;color:var(--t2)}
+.btn-h-d:hover:not(:disabled){background:var(--brand-soft);color:var(--brand-ink)}
 
 /* Cookie 条 */
 #cookieBar{padding:8px 12px;border-radius:14px;cursor:pointer;display:none;margin-bottom:10px;font-size:.82rem;border:2px solid var(--line)}
@@ -93,7 +112,8 @@ input[type=checkbox],input[type=radio]{accent-color:var(--brand-ink)}
 .fail-chip{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border:2px solid var(--warn-line);border-radius:16px;font-size:.72rem;font-family:monospace;background:#fff;cursor:pointer;color:var(--brand)}
 .save-bar{display:flex;gap:6px;align-items:center;justify-content:center;margin-bottom:10px;padding:8px;background:var(--brand-soft);border:2px solid var(--brand-ink);border-radius:14px;flex-wrap:wrap}
 .save-bar input{max-width:200px;padding:5px 8px;border:2px solid var(--line);border-radius:10px;font-size:.8rem;outline:none;background:var(--brand-soft)}
-.btn-save{background:linear-gradient(135deg,var(--brand-ink),var(--brand));color:#fff;padding:5px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:600;font-size:.8rem}
+.btn-save{background:linear-gradient(135deg,var(--brand-ink),var(--brand));color:#fff;padding:6px 16px;border-radius:999px;border:none;cursor:pointer;font-weight:600;font-size:.8rem;box-shadow:0 3px 10px rgba(219,39,119,.22);transition:transform .14s ease,box-shadow .14s ease}
+.btn-save:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 5px 16px rgba(230,0,76,.30)}
 .pc-bar{display:flex;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;background:var(--brand-soft);border:2px solid var(--line);border-radius:14px;font-size:.8rem}
 
 /* 底部导航 */
@@ -115,9 +135,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--brand-ink)}
 .s-card .n{font-size:1.25rem}
 .s-card .l{color:var(--t3)}
 .summary{gap:8px}
-.btn-primary,.btn-save,.btn-h-q{border-radius:999px;box-shadow:0 3px 10px rgba(219,39,119,.28)}
-.btn-primary{background:linear-gradient(135deg,var(--brand-ink),var(--brand))}
-.btn-primary:hover:not(:disabled){background:linear-gradient(135deg,var(--brand),var(--brand-ink))}
+/* 注：.btn-primary/.btn-save/.btn-h-q 的 999px 圆角与阴影已由基础 .btn 体系统一定义，此处不再覆盖 */
 textarea,.field{border:2px solid var(--line2);border-radius:12px}
 .card{border:2px solid var(--line);box-shadow:0 4px 16px rgba(219,39,119,.10)}
 table{font-size:.76rem}
@@ -132,6 +150,108 @@ tr:hover td{background:var(--brand-soft)}
   .summary{grid-template-columns:repeat(auto-fit,minmax(110px,1fr))}
   .card{padding:18px}
 }
+/* ── 骨架改造 v6.2：吸顶输入 / 吸底操作 / 结果层级 ── */
+.sticky-input{position:sticky;top:0;z-index:60;background:var(--card);padding:6px 0 8px;transition:all .18s}
+.sticky-input.compact textarea{min-height:44px!important;height:44px!important}
+.sticky-input.compact .row{display:none}
+.sticky-input.compact .btn{padding:11px 14px!important;font-size:.9rem!important}
+.sticky-input.compact .card-title{font-size:.78rem;margin-bottom:4px}
+.action-bar{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 54px);background:rgba(255,255,255,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:2px solid var(--line);display:none;align-items:center;justify-content:space-between;padding:8px 14px;z-index:98;gap:8px}
+.action-bar.show{display:flex}
+body.has-actionbar{padding-bottom:136px}
+.ab-left{display:flex;flex-direction:column;line-height:1.25}
+.ab-left .c{font-size:.7rem;color:var(--t3)}
+.ab-left .t{font-size:1.05rem;font-weight:800;color:var(--brand-ink)}
+.ab-right{display:flex;gap:6px;flex-shrink:0}
+.ab-right button{padding:9px 11px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--t2);font-size:.76rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:transform .14s ease,background .14s ease,color .14s ease,box-shadow .14s ease}
+.ab-right button:hover:not(:disabled){background:var(--brand-soft);color:var(--brand-ink);transform:translateY(-1px)}
+.ab-right button:active:not(:disabled){transform:translateY(0) scale(.975)}
+.ab-right button:focus-visible{outline:none;box-shadow:var(--ring)}
+.ab-right .ab-main{background:linear-gradient(135deg,var(--brand-ink),var(--brand));color:#fff;border:none;padding:9px 16px;box-shadow:0 3px 10px rgba(219,39,119,.28);transition:transform .14s ease,box-shadow .14s ease}
+.ab-right .ab-main:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 5px 16px rgba(230,0,76,.30)}
+.ab-right .ab-main:active:not(:disabled){box-shadow:var(--sh-press)}
+.ab-right .ab-main:focus-visible{outline:none;box-shadow:var(--ring)}
+.price-trio{background:var(--brand-soft)!important;border-radius:10px;padding:7px 4px!important}
+.price-trio strong{font-size:1.08rem!important}
+.price-trio div>div:first-child{color:var(--t2)!important}
+@media(min-width:900px){.action-bar{display:none!important}}
+
+/* ══════════ HelloKitty 手账主题 v6.3 ══════════ */
+/* 蝴蝶结：内联 SVG 背景，一套尺寸走天下 */
+.bow{display:inline-block;width:20px;height:20px;flex-shrink:0;vertical-align:-3px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M11.2 12 4 7.6v8.8L11.2 12z' fill='%23E6004C'/><path d='M12.8 12 20 7.6v8.8L12.8 12z' fill='%23E6004C'/><circle cx='12' cy='12' r='2.7' fill='%23C4003F'/></svg>") center/contain no-repeat}
+.bow-lg{width:46px;height:46px}
+.bow-sm{width:15px;height:15px;vertical-align:-2px}
+
+/* 顶部：大蝴蝶结 + 星尘 */
+.hero-bow{display:flex;justify-content:center;align-items:center;gap:8px;margin-bottom:2px;letter-spacing:0}
+.hero-bow .star{font-size:.8rem;color:var(--brand);opacity:.9}
+.hero-position{position:relative}
+.hero-title{font-size:1.7rem;font-weight:800;color:var(--brand-ink);letter-spacing:2px;text-shadow:2px 2px 0 #fff,4px 4px 0 var(--brand-line)}
+.hero-date{color:var(--t2)}
+
+/* 卡片：贴纸厚边 + 虚线描边（手账内页感） */
+.card{border:2px dashed var(--line2);border-radius:22px;box-shadow:0 5px 0 rgba(255,184,210,.45),0 10px 22px rgba(230,0,76,.07)}
+.card-title{color:var(--brand-ink);font-weight:800}
+.card-title::before{content:'';display:inline-block;width:18px;height:18px;flex-shrink:0;margin-right:1px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M11.2 12 4 7.6v8.8L11.2 12z' fill='%23FF8FB1'/><path d='M12.8 12 20 7.6v8.8L12.8 12z' fill='%23FF8FB1'/><circle cx='12' cy='12' r='2.7' fill='%23E6004C'/></svg>") center/contain no-repeat}
+
+/* 统计卡：小贴纸 */
+.h-stat{border:2px dashed var(--line2);border-radius:18px;box-shadow:0 4px 0 rgba(255,184,210,.5),0 6px 14px rgba(230,0,76,.07)}
+.hs-n{color:var(--brand-ink)}
+
+/* 按钮：Kitty 红 + 厚底边（按下去会陷进去） */
+.btn{border-radius:999px}
+.btn-primary,.btn-save,.btn-h-q{background:linear-gradient(135deg,#FF4D7E,var(--brand-ink));border-radius:999px;box-shadow:0 4px 0 #B8003D,0 6px 16px rgba(230,0,76,.25)}
+.btn-primary:hover:not(:disabled){background:linear-gradient(135deg,#FF5C89,#F0004F)}
+.btn-primary:active:not(:disabled),.btn-save:active,.btn-h-q:active{transform:translateY(3px);box-shadow:0 1px 0 #B8003D,0 3px 10px rgba(230,0,76,.22)}
+.btn-outline{background:#fff;border:2px dashed var(--line2);color:var(--brand-ink);border-radius:999px}
+.btn-outline:hover{background:var(--brand-soft);border-style:solid}
+.btn-h-v,.btn-h-c{background:var(--brand-ink);border-radius:999px;box-shadow:0 3px 0 #B8003D}
+
+/* 输入区：手账横格感 */
+textarea,.field{border:2px dashed var(--line2);border-radius:16px;background:var(--brand-soft)}
+textarea:focus,.field:focus{border-style:solid;border-color:var(--brand-ink);box-shadow:0 0 0 4px rgba(255,184,210,.35)}
+select{border:2px dashed var(--line2);border-radius:12px;background:var(--brand-soft)}
+input[type=checkbox],input[type=radio]{accent-color:var(--brand-ink)}
+
+/* 结果卡 & 汇总卡 */
+.result-box{border:2px dashed var(--brand-line);border-radius:22px;background:linear-gradient(135deg,#fff,var(--brand-soft))}
+.result-box .book-title{color:var(--brand-ink)}
+.s-card{border:2px dashed var(--line2);border-radius:18px;box-shadow:0 4px 0 rgba(255,184,210,.45)}
+.s-card .n{color:var(--brand-ink)}
+.price-trio{background:var(--brand-soft)!important;border-radius:12px;padding:7px 4px!important;border:1.5px dashed var(--line2)}
+
+/* 底部导航 & 吸底条：粉色缎带 */
+.bottom-nav{background:rgba(255,245,249,.97);border-top:3px solid var(--brand-line);box-shadow:0 -3px 0 rgba(255,184,210,.4)}
+.bottom-nav button:active{color:var(--brand-ink)}
+.action-bar{background:rgba(255,245,249,.98);border-top:3px solid var(--brand-line);border-radius:22px 22px 0 0}
+.ab-left .t{color:var(--brand-ink)}
+.ab-right button{border:2px dashed var(--line2);border-radius:999px;color:var(--brand-ink)}
+.ab-right .ab-main{background:linear-gradient(135deg,#FF4D7E,var(--brand-ink));border:none;border-radius:999px;box-shadow:0 3px 0 #B8003D}
+
+/* 历史条目 / 折叠条 */
+.h-item{border:2px dashed var(--line2);border-radius:16px;background:var(--brand-soft)}
+th{border-bottom:2px dashed var(--line2);color:var(--brand-ink)}
+thead{background:var(--brand-soft)}
+tr:hover td{background:var(--brand-soft)}
+::selection{background:var(--brand-line);color:var(--brand-ink)}
+
+/* ── Kitty 元素：猫脸 / 猫爪 / 猫头 ── */
+.kitty-face{display:block;width:84px;height:68px;margin:0 auto 4px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 72' fill='none'><path d='M18 25 L13 8 L33 17 Z' fill='%23fff' stroke='%23E6004C' stroke-width='3.2' stroke-linejoin='round'/><path d='M70 25 L75 8 L55 17 Z' fill='%23fff' stroke='%23E6004C' stroke-width='3.2' stroke-linejoin='round'/><ellipse cx='44' cy='41' rx='32' ry='25' fill='%23fff' stroke='%23E6004C' stroke-width='3.2'/><path d='M13 12C9 7 3 8 4 12C5 16 9 17 13 12Z' fill='%23FF8FB1' stroke='%23E6004C' stroke-width='2.2' stroke-linejoin='round'/><path d='M13 12C17 7 23 8 22 12C21 16 17 17 13 12Z' fill='%23FF8FB1' stroke='%23E6004C' stroke-width='2.2' stroke-linejoin='round'/><circle cx='13' cy='12' r='2.6' fill='%23C4003F'/><ellipse cx='32' cy='39' rx='3.4' ry='4.6' fill='%233A1B2A'/><ellipse cx='56' cy='39' rx='3.4' ry='4.6' fill='%233A1B2A'/><ellipse cx='44' cy='49' rx='5.4' ry='3.8' fill='%23FFD93D' stroke='%23D9A400' stroke-width='1.6'/><path d='M6 33 L21 35 M5 42 L21 42 M6 51 L21 49' stroke='%23E6004C' stroke-width='2.6' stroke-linecap='round'/><path d='M82 33 L67 35 M83 42 L67 42 M82 51 L67 49' stroke='%23E6004C' stroke-width='2.6' stroke-linecap='round'/></svg>") center/contain no-repeat}
+.paw{display:inline-block;width:17px;height:17px;vertical-align:-3px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'><ellipse cx='12' cy='16.5' rx='6.2' ry='5' fill='%23E6004C'/><ellipse cx='5.6' cy='10' rx='2.5' ry='3.2' fill='%23E6004C'/><ellipse cx='10' cy='6.6' rx='2.5' ry='3.4' fill='%23E6004C'/><ellipse cx='15.4' cy='6.6' rx='2.5' ry='3.4' fill='%23E6004C'/><ellipse cx='19.4' cy='10.4' rx='2.5' ry='3.2' fill='%23E6004C'/></svg>") center/contain no-repeat}
+.paw-lg{width:19px;height:19px}
+.paw-white{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'><ellipse cx='12' cy='16.5' rx='6.2' ry='5' fill='%23fff'/><ellipse cx='5.6' cy='10' rx='2.5' ry='3.2' fill='%23fff'/><ellipse cx='10' cy='6.6' rx='2.5' ry='3.4' fill='%23fff'/><ellipse cx='15.4' cy='6.6' rx='2.5' ry='3.4' fill='%23fff'/><ellipse cx='19.4' cy='10.4' rx='2.5' ry='3.2' fill='%23fff'/></svg>")}
+.cat-head{display:inline-block;width:20px;height:17px;vertical-align:-3px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 20' fill='none'><path d='M5 7 L3 2 L9 5 Z' fill='%23fff' stroke='%23E6004C' stroke-width='2' stroke-linejoin='round'/><path d='M19 7 L21 2 L15 5 Z' fill='%23fff' stroke='%23E6004C' stroke-width='2' stroke-linejoin='round'/><ellipse cx='12' cy='12' rx='9' ry='7' fill='%23fff' stroke='%23E6004C' stroke-width='2'/><circle cx='8.6' cy='11' r='1.1' fill='%233A1B2A'/><circle cx='15.4' cy='11' r='1.1' fill='%233A1B2A'/><ellipse cx='12' cy='15' rx='1.7' ry='1.2' fill='%23FFD93D'/></svg>") center/contain no-repeat}
+
+/* 导航猫爪方块 */
+.nav-ico{width:30px;height:30px;border-radius:11px;background:#FFE3EE;display:flex;align-items:center;justify-content:center}
+.nav-ico.on{background:var(--brand-ink)}
+.nav-ico.on .paw{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'><ellipse cx='12' cy='16.5' rx='6.2' ry='5' fill='%23fff'/><ellipse cx='5.6' cy='10' rx='2.5' ry='3.2' fill='%23fff'/><ellipse cx='10' cy='6.6' rx='2.5' ry='3.4' fill='%23fff'/><ellipse cx='15.4' cy='6.6' rx='2.5' ry='3.4' fill='%23fff'/><ellipse cx='19.4' cy='10.4' rx='2.5' ry='3.2' fill='%23fff'/></svg>")}
+
+/* 数字排版：书号用 Inter 等宽，金额加大 */
+.isbn{font-family:Inter,-apple-system,sans-serif;font-weight:600;font-size:.78rem;color:var(--t3);letter-spacing:.2px}
+.price-trio{text-align:center}
+.price-trio strong{font-family:Inter,-apple-system,sans-serif;font-size:1.02rem!important;letter-spacing:-.2px}
+.hs-l{font-weight:700;color:var(--t1)}
 </style>
 
 </head>
@@ -139,21 +259,22 @@ tr:hover td{background:var(--brand-soft)}
 <div class="container">
   <!-- 顶部标题区 -->
   <div class="hero">
-    <div class="hero-bow">🎀</div>
+    <div class="hero-bow"><i class="kitty-face"></i></div>
     <div class="hero-title">孔夫子查价</div>
     <div class="hero-date" id="heroDate"></div>
-    <div style="font-size:.66rem;color:var(--t2);margin:-6px 0 8px" id="appVer">前端 v6.0 · 查价提速+物流监控 (d108632)</div>
+    <div style="font-size:.66rem;color:var(--t2);margin:-6px 0 8px" id="appVer">前端 v6.4 · Kitty 猫脸猫爪 + 居中排版修复 (c3f8a06)</div>
     <div class="hero-stats">
       <div class="h-stat" onclick="scrollTo(0,0)"><div class="hs-n" id="statToday">0</div><div class="hs-l">今日查价</div></div>
-      <div class="h-stat" onclick="showTrack()"><div class="hs-n">📮</div><div class="hs-l">快递追踪</div></div>
+      <div class="h-stat" onclick="showTrack()"><div class="hs-n"><i class="paw" style="width:20px;height:20px"></i></div><div class="hs-l">快递追踪</div></div>
       <div class="h-stat" onclick="fold('hist')"><div class="hs-n" id="statHist">0</div><div class="hs-l">历史记录</div></div>
-      <div class="h-stat" onclick="cleanupAddr()"><div class="hs-n">🧺</div><div class="hs-l">清理地址</div></div>
+      <div class="h-stat" onclick="cleanupAddr()"><div class="hs-n"><i class="paw" style="width:20px;height:20px"></i></div><div class="hs-l">清理地址</div></div>
     </div>
   </div>
 
   <!-- 查价主操作区 -->
   <div class="card" style="position:relative;padding-top:18px">
     <div class="card-title" style="position:absolute;top:-10px;left:14px;background:var(--brand-ink);color:#fff;font-size:.72rem;font-weight:700;padding:3px 14px;border-radius:10px;box-shadow:0 2px 5px rgba(219,39,119,.3);margin-bottom:0">📖 查价</div>
+    <div class="sticky-input">
     <div class="card-title">📖 ISBN（每行一个）</div>
     <textarea id="inputArea" placeholder="每行一个书号&#10;如：9787108009821&#10;9787020002207"></textarea>
     <div class="row" style="justify-content:space-between;gap:10px">
@@ -173,9 +294,10 @@ tr:hover td{background:var(--brand-soft)}
       <span id="status" style="font-size:.78rem;color:var(--t2);margin-left:auto">就绪</span>
     </div>
     <div style="display:flex;gap:8px;margin-top:10px">
-      <button class="btn btn-primary" id="btnQuery" style="flex:1;padding:15px 0;font-size:1.08rem;font-weight:800;border-radius:14px;letter-spacing:1px">🔍 查最低价</button>
+      <button class="btn btn-primary" id="btnQuery" style="flex:1;padding:15px 0;font-size:1.08rem;font-weight:800;border-radius:14px;letter-spacing:1px"><i class="paw paw-white paw-lg"></i>查最低价</button>
       <button class="btn btn-outline" id="btnClear" style="padding:15px 22px;font-size:.9rem;border-radius:14px">清空</button>
     </div>
+    </div><!-- /sticky-input -->
     <div style="margin-top:10px;padding:10px 12px;background:var(--brand-soft);border:2px dashed var(--brand-ink);border-radius:12px">
       <div style="font-size:.8rem;color:var(--brand-ink);font-weight:600;margin-bottom:6px">📮 收货地址（选填 · 自动按地址算运费）</div>
       <div style="display:flex;gap:6px">
@@ -240,13 +362,22 @@ tr:hover td{background:var(--brand-soft)}
   </div>
 </div>
 
+<div class="action-bar" id="actionBar">
+  <div class="ab-left"><span class="c" id="abCount">0 本</span><span class="t" id="abTotal">¥0.0</span></div>
+  <div class="ab-right">
+    <button onclick="clearAllCart()">🗑️ 清空</button>
+    <button onclick="copyToBuyer()">📤 复制</button>
+    <button class="ab-main" onclick="ba()">🛒 一键加购</button>
+  </div>
+</div>
+
 <div class="bottom-nav">
-  <button onclick="scrollTo(0,0)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.5a1 1 0 0 1 .71.29l5 5a1 1 0 0 1-1.42 1.42L13 6.91V19a1 1 0 1 1-2 0V6.91l-3.29 3.3a1 1 0 0 1-1.42-1.42l5-5A1 1 0 0 1 12 3.5z"/><rect x="8" y="19.5" width="8" height="2.5" rx="1.25"/></svg><span>顶部</span></button>
-  <button onclick="showTrack()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3h-4.5l-1.5 2-1.5-2H6a3 3 0 0 1-3-3V6zm5 4.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm8 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/></svg><span>快递</span></button>
-  <button onclick="fold('cookie')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 1 0 9 9c0-.55-.45-1-1-1h-1.2A6 6 0 0 1 13 4.2V3c0-.55-.45-1-1-1zM8.5 12.5a1.3 1.3 0 1 1 0-2.6 1.3 1.3 0 0 1 0 2.6zm4 4.5a1.3 1.3 0 1 1 0-2.6 1.3 1.3 0 0 1 0 2.6zm5-1a1.3 1.3 0 1 1 0-2.6 1.3 1.3 0 0 1 0 2.6z"/></svg><span>Cookie</span></button>
-  <button onclick="fold('hist')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9zm1 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 4.5V17a1 1 0 1 1-2 0v-4.5A1 1 0 0 1 13 12.5z"/></svg><span>历史</span></button>
-  <button onclick="cleanupAddr()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14.5 3a.5.5 0 0 1 .5.5V5h4a1 1 0 1 1 0 2h-.3l-1.2 11.5A2.5 2.5 0 0 1 15 20.6l-.1.4a1.5 1.5 0 0 1-1.4 1H10.5a1.5 1.5 0 0 1-1.4-1l-.1-.4A2.5 2.5 0 0 1 6.5 18.5L5.3 7H5a1 1 0 0 1 0-2h4v-.5a.5.5 0 0 1 1 0V5h4zM10 10a.75.75 0 0 0-.75.75v5a.75.75 0 0 0 1.5 0v-5A.75.75 0 0 0 10 10zm4 0a.75.75 0 0 0-.75.75v5a.75.75 0 0 0 1.5 0v-5A.75.75 0 0 0 14 10z"/></svg><span>清理</span></button>
-  <button onclick="selfCheck()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9zm-1 11.2l-2.3-2.3a1 1 0 0 0-1.4 1.4l3 3a1 1 0 0 0 1.4 0l5-5a1 1 0 0 0-1.4-1.4l-4.3 4.3z"/></svg><span>自检</span></button>
+  <button onclick="scrollTo(0,0)"><span class="nav-ico"><i class="paw"></i></span><span>顶部</span></button>
+  <button onclick="showTrack()"><span class="nav-ico"><i class="paw"></i></span><span>快递</span></button>
+  <button onclick="fold('cookie')"><span class="nav-ico"><i class="paw"></i></span><span>Cookie</span></button>
+  <button onclick="fold('hist')"><span class="nav-ico"><i class="paw"></i></span><span>历史</span></button>
+  <button onclick="cleanupAddr()"><span class="nav-ico"><i class="paw"></i></span><span>清理</span></button>
+  <button onclick="selfCheck()"><span class="nav-ico"><i class="paw"></i></span><span>自检</span></button>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -540,6 +671,19 @@ function _startQuery(ex,is){
   }
 };
 
+// 吸底操作条：汇总已查到的最低价，滚动时始终可见
+function updActionBar(data){
+  var bar=id('actionBar');if(!bar)return;
+  var ok=(data||[]).filter(function(r){return r&&r.cheapest});
+  if(!ok.length){bar.classList.remove('show');document.body.classList.remove('has-actionbar');return}
+  var tot=0;ok.forEach(function(r){tot+=(r.cheapest.total||0)});
+  var c=id('abCount'),t=id('abTotal');
+  if(c)c.textContent=ok.length+' 本';
+  if(t)t.textContent='¥'+tot.toFixed(1);
+  bar.classList.add('show');
+  document.body.classList.add('has-actionbar');
+}
+
 function sh(data){
   var ok=data.filter(function(r){return !r.error}),pd=ok.filter(function(r){return r.cheapest}),fl=data.filter(function(r){return r.error}),html='';
   var hc=0,so=0;data.forEach(function(r){hc+=r.holiday_shop_count||0;so+=r.sold_out_skipped||0});
@@ -565,12 +709,12 @@ function sh(data){
   data.forEach(function(r){
     if(r.error){html+='<div class="card" style="border-left:3px solid var(--warn)"><div style="font-family:monospace;font-size:.75rem;color:var(--t3)">'+esc(r.isbn)+'</div><div style="color:var(--warn);font-size:.8rem;margin-top:2px">'+esc(r.error)+'</div></div>'}
     else if(r.cheapest){
-      html+='<div class="result-box" id="rb_'+(r.isbn||'')+'"><div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:4px"><div class="book-title">'+esc(r.title)+' <span style="font-size:.85rem">🎀</span></div><span style="font-size:.7rem;color:var(--t3)">'+esc(r.isbn)+'</span></div>';
+      html+='<div class="result-box" id="rb_'+(r.isbn||'')+'"><div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:4px"><div class="book-title"><i class="cat-head"></i> '+esc(r.title)+'</div><span class="isbn">'+esc(r.isbn)+'</span></div>';
       if(r.author||r.press)html+='<div class="meta">'+esc(r.author)+(r.author&&r.press?' · ':'')+esc(r.press)+'</div>';
       // 价格参考行：最低总价(含运费)、均价、最高价
       var pr=r.price_range||{},prmin=pr.min||0,pravg=pr.avg||0,prmax=pr.max||0;
       var cheapTotal=r.cheapest?r.cheapest.total:prmin;
-      html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin:3px 0 6px;padding:4px 8px;background:#f8fafc;border-radius:6px;font-size:.72rem;text-align:center"><div><div style="font-size:.6rem;color:var(--t3)">最低总价(含运费)</div><strong style="color:var(--brand);font-size:.85rem">¥'+cheapTotal.toFixed(1)+'</strong></div><div><div style="font-size:.6rem;color:var(--t3)">均价</div><strong style="font-size:.85rem">¥'+pravg.toFixed(1)+'</strong></div><div><div style="font-size:.6rem;color:var(--t3)">最高</div><strong style="color:var(--t3);font-size:.85rem">¥'+prmax.toFixed(1)+'</strong></div></div><div style="font-size:.65rem;color:var(--t3);margin:-3px 0 2px;text-align:center">在售 '+r.total_count+' 本 · 书价最低¥'+prmin.toFixed(1)+'</div>';
+      html+='<div class="price-trio" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin:3px 0 6px;padding:4px 8px;background:#f8fafc;border-radius:6px;font-size:.72rem;text-align:center"><div><div style="font-size:.6rem;color:var(--t3)">最低总价(含运费)</div><strong style="color:var(--brand);font-size:.85rem">¥'+cheapTotal.toFixed(1)+'</strong></div><div><div style="font-size:.6rem;color:var(--t3)">均价</div><strong style="font-size:.85rem">¥'+pravg.toFixed(1)+'</strong></div><div><div style="font-size:.6rem;color:var(--t3)">最高</div><strong style="color:var(--t3);font-size:.85rem">¥'+prmax.toFixed(1)+'</strong></div></div><div style="font-size:.65rem;color:var(--t3);margin:-3px 0 2px;text-align:center">在售 '+r.total_count+' 本 · 书价最低¥'+prmin.toFixed(1)+'</div>';
       if(r.cheapest.itemId&&r.cheapest.shopId){var c=r.cheapest;html+='<div style="margin:4px 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button onclick="ac('+c.itemId+','+c.shopId+',this)" style="padding:5px 14px;border-radius:6px;border:none;background:var(--ok);color:#fff;cursor:pointer;font-size:.82rem;font-weight:500">🛒 最低价 ¥'+c.total.toFixed(1)+'</button><span style="font-size:.7rem;color:var(--t2)">'+esc(c.shop)+' · '+esc(c.quality_text)+'</span></div>'}
       // 记账按钮
       var aun=r.author||''; var p=r.cheapest?r.cheapest.price:0; var sp=r.cheapest?r.cheapest.shipping:0;
@@ -582,7 +726,7 @@ function sh(data){
       html+='</tbody></table><div style="font-size:.65rem;color:var(--t3);margin-top:3px">扫描'+(r.pages_scanned||1)+'页 · 在售'+r.total_count+'本'+(r.holiday_shop_count?' · 🛌 排除'+r.holiday_shop_count+'个休假/异常店铺':'')+(r.sold_out_skipped?' · 已售罄'+r.sold_out_skipped+'本':'')+(r.precise?' · 🎯 已精确比价'+r.scan_count+'家店确认最低':'')+'</div></div>'
     }
   });
-  E.innerHTML=html;L=data;
+  E.innerHTML=html;L=data;updActionBar(data);
   var sb='sb_'+Date.now();E.insertAdjacentHTML('afterbegin','<div class="save-bar" id="'+sb+'"><span>💾</span><input id="si" placeholder="命名（可选）"><button class="btn-save" onclick="sH(\''+sb+'\')">保存查询</button><button class="btn-save" onclick="cpyQuote(0)" style="background:var(--ok);margin-left:4px">📋 我的成本</button><button class="btn-save" onclick="showBuyerFormat()" style="background:#a855f7;margin-left:2px">📤 发给买家</button></div>');
   // 自动记录本次查价（供反查验证）；反查快照时跳过
   if(!_viewHist){
@@ -660,7 +804,7 @@ function queryStock(data){
           if(tightCnt>0){
             tightWarn='<div style="margin-top:4px;padding:4px 6px;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;color:#c2410c;font-weight:600">⚡ 库存紧张：'+lowStockShops.slice(0,3).join('、')+(lowStockShops.length>3?'等'+lowStockShops.length+'家':'')+' · 容易被别人买走，建议尽快下单</div>';
           }
-          var html='<div class="mul-row" style="margin:6px 0;padding:6px 8px;background:#ffe6ee;border:1px solid var(--line);border-radius:8px;font-size:.72rem">'+
+          var html='<div class="mul-row" style="margin:6px 0;padding:6px 8px;background:var(--brand-soft);border:1px dashed var(--line2);border-radius:12px;font-size:.72rem">'+
             '🛒 买 <strong>'+qty+'</strong> 本：成本约 <strong>¥'+costTotal.toFixed(1)+'</strong> → 建议售价 <strong style="color:var(--brand-ink)">¥'+sug.toFixed(1)+'</strong> '+warn+tightWarn+'</div>';
           box.insertAdjacentHTML('afterbegin',html);
         }
@@ -919,18 +1063,18 @@ function txtToImage(txt,title){
   ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
   // 顶部渐变条
   var g=ctx.createLinearGradient(0,0,W,0);
-  g.addColorStop(0,'#DB2777');g.addColorStop(1,'#a855f7');
+  g.addColorStop(0,'#E6004C');g.addColorStop(1,'#FF8FB1');
   ctx.fillStyle=g;ctx.fillRect(0,0,W,10);
   // 标题
-  ctx.fillStyle='#7A3D58';
+  ctx.fillStyle='#5C2740';
   ctx.font='bold 24px -apple-system,"PingFang SC",sans-serif';
   ctx.fillText(title||'报价清单',pad,52);
   // 副标题：本数 + 字数
-  ctx.fillStyle='#A0647C';
+  ctx.fillStyle='#96607A';
   ctx.font='15px -apple-system,"PingFang SC",sans-serif';
   ctx.fillText('共 '+lines.length+' 本 · '+txt.length+' 字',pad,76);
   // 分割线
-  ctx.strokeStyle='#FCE7F0';ctx.lineWidth=1;
+  ctx.strokeStyle='#FFD0E2';ctx.lineWidth=1;
   ctx.beginPath();ctx.moveTo(pad,92);ctx.lineTo(W-pad,92);ctx.stroke();
   // 内容行
   ctx.fillStyle='#3f3f46';
@@ -1383,6 +1527,9 @@ function loc(){location.reload()}
 // === 快递查号 ===
 var _tkTab='query'; // 当前Tab: monitor=异常监控, query=订单查询
 function showTrack(){
+  // 切到物流页时隐藏查价的吸底操作条
+  var _ab=id('actionBar');if(_ab)_ab.classList.remove('show');
+  document.body.classList.remove('has-actionbar');
   var cont=document.querySelector('.container');
   var h='<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button onclick="loc()" style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:.8rem;cursor:pointer">← 返回查价</button><strong style="font-size:.9rem">📦 物流中心</strong></div>';
   // Tab 导航
@@ -2064,6 +2211,11 @@ function copyToBuyerTrack(){
   var txt=lines.join('\n');
   doCopy(txt,function(){toast('✅ 已复制，可直接发给买家')},function(){prompt('📋 发给买家：',txt)});
 }
+// 滚动超过阈值 → 输入区收缩为紧凑态（吸顶不挡结果）
+window.addEventListener('scroll',function(){
+  var si=document.querySelector('.sticky-input');if(!si)return;
+  if(window.scrollY>140){si.classList.add('compact')}else{si.classList.remove('compact')}
+},{passive:true});
 </script>
 </body>
 </html>
