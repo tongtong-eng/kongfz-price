@@ -12,7 +12,7 @@
 <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
 <style>
 :root{
-/* ── HelloKitty 手账主题 v6.3（叠加 视觉系统 v1.0 token）── */
+/* ── 蝴蝶结手账主题（叠加 视觉系统 v1.0 token）── */
 --bg:#FFF5F9;--card:#fff;--line:#FFD0E2;--line2:#FFB8D2;
 --stripe:#FFDCEA;--stripe2:#FFFFFF;
 --t1:#5C2740;--t2:#96607A;--t3:#C79BB0;
@@ -34,7 +34,7 @@
 --ring:0 0 0 3px rgba(255,143,177,.55);
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background-color:var(--bg);background-image:repeating-linear-gradient(180deg,var(--stripe) 0 11px,var(--stripe2) 11px 22px);color:var(--t1);padding:16px 10px 76px;min-height:100vh;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background-color:var(--bg);color:var(--t1);padding:16px 10px 76px;min-height:100vh;-webkit-tap-highlight-color:transparent}
 .container{max-width:960px;margin:0 auto}
 /* 顶部标题区 */
 .hero{margin-bottom:14px;text-align:center;position:relative}
@@ -176,7 +176,7 @@ body.has-actionbar{padding-bottom:136px}
 .price-trio div>div:first-child{color:var(--t2)!important}
 @media(min-width:900px){.action-bar{display:none!important}}
 
-/* ══════════ HelloKitty 手账主题 v6.3 ══════════ */
+/* ══════════ 蝴蝶结手账主题 ══════════ */
 /* 蝴蝶结：内联 SVG 背景，一套尺寸走天下 */
 .bow{display:inline-block;width:20px;height:20px;flex-shrink:0;vertical-align:-3px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M11.2 12 4 7.6v8.8L11.2 12z' fill='%23E6004C'/><path d='M12.8 12 20 7.6v8.8L12.8 12z' fill='%23E6004C'/><circle cx='12' cy='12' r='2.7' fill='%23C4003F'/></svg>") center/contain no-repeat}
 .bow-lg{width:46px;height:46px}
@@ -198,7 +198,7 @@ body.has-actionbar{padding-bottom:136px}
 .h-stat{border:2px dashed var(--line2);border-radius:18px;box-shadow:0 4px 0 rgba(255,184,210,.5),0 6px 14px rgba(230,0,76,.07)}
 .hs-n{color:var(--brand-ink)}
 
-/* 按钮：Kitty 红 + 厚底边（按下去会陷进去） */
+/* 按钮：绛红 + 厚底边（按下去会陷进去） */
 .btn{border-radius:999px}
 .btn-primary,.btn-save,.btn-h-q{background:linear-gradient(135deg,#FF4D7E,var(--brand-ink));border-radius:999px;box-shadow:0 4px 0 #B8003D,0 6px 16px rgba(230,0,76,.25)}
 .btn-primary:hover:not(:disabled){background:linear-gradient(135deg,#FF5C89,#F0004F)}
@@ -235,17 +235,17 @@ thead{background:var(--brand-soft)}
 tr:hover td{background:var(--brand-soft)}
 ::selection{background:var(--brand-line);color:var(--brand-ink)}
 
-/* ── Kitty 元素：猫脸 / 猫爪 / 猫头 ── */
-.kitty-face{display:block;width:84px;height:68px;margin:0 auto 4px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 72' fill='none'><path d='M18 25 L13 8 L33 17 Z' fill='%23fff' stroke='%23E6004C' stroke-width='3.2' stroke-linejoin='round'/><path d='M70 25 L75 8 L55 17 Z' fill='%23fff' stroke='%23E6004C' stroke-width='3.2' stroke-linejoin='round'/><ellipse cx='44' cy='41' rx='32' ry='25' fill='%23fff' stroke='%23E6004C' stroke-width='3.2'/><path d='M13 12C9 7 3 8 4 12C5 16 9 17 13 12Z' fill='%23FF8FB1' stroke='%23E6004C' stroke-width='2.2' stroke-linejoin='round'/><path d='M13 12C17 7 23 8 22 12C21 16 17 17 13 12Z' fill='%23FF8FB1' stroke='%23E6004C' stroke-width='2.2' stroke-linejoin='round'/><circle cx='13' cy='12' r='2.6' fill='%23C4003F'/><ellipse cx='32' cy='39' rx='3.4' ry='4.6' fill='%233A1B2A'/><ellipse cx='56' cy='39' rx='3.4' ry='4.6' fill='%233A1B2A'/><ellipse cx='44' cy='49' rx='5.4' ry='3.8' fill='%23FFD93D' stroke='%23D9A400' stroke-width='1.6'/><path d='M6 33 L21 35 M5 42 L21 42 M6 51 L21 49' stroke='%23E6004C' stroke-width='2.6' stroke-linecap='round'/><path d='M82 33 L67 35 M83 42 L67 42 M82 51 L67 49' stroke='%23E6004C' stroke-width='2.6' stroke-linecap='round'/></svg>") center/contain no-repeat}
-.paw{display:inline-block;width:17px;height:17px;vertical-align:-3px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'><ellipse cx='12' cy='16.5' rx='6.2' ry='5' fill='%23E6004C'/><ellipse cx='5.6' cy='10' rx='2.5' ry='3.2' fill='%23E6004C'/><ellipse cx='10' cy='6.6' rx='2.5' ry='3.4' fill='%23E6004C'/><ellipse cx='15.4' cy='6.6' rx='2.5' ry='3.4' fill='%23E6004C'/><ellipse cx='19.4' cy='10.4' rx='2.5' ry='3.2' fill='%23E6004C'/></svg>") center/contain no-repeat}
+/* ── 蝴蝶结元素 ── */
+.kitty-face{display:block;width:84px;height:64px;margin:0 auto 4px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 48'><path d='M30 24 6 10v28L30 24z' fill='%23FF6FA0'/><path d='M34 24 58 10v28L34 24z' fill='%23FF6FA0'/><path d='M30 24 14 44 26 30Z' fill='%23E6004C'/><path d='M34 24 50 44 38 30Z' fill='%23E6004C'/><circle cx='32' cy='24' r='5' fill='%23E6004C'/></svg>") center/contain no-repeat}
+.paw{display:inline-block;width:17px;height:17px;vertical-align:-3px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M11.2 12 4 7.6v8.8L11.2 12z' fill='%23E6004C'/><path d='M12.8 12 20 7.6v8.8L12.8 12z' fill='%23E6004C'/><circle cx='12' cy='12' r='2.7' fill='%23C4003F'/></svg>") center/contain no-repeat}
 .paw-lg{width:19px;height:19px}
-.paw-white{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'><ellipse cx='12' cy='16.5' rx='6.2' ry='5' fill='%23fff'/><ellipse cx='5.6' cy='10' rx='2.5' ry='3.2' fill='%23fff'/><ellipse cx='10' cy='6.6' rx='2.5' ry='3.4' fill='%23fff'/><ellipse cx='15.4' cy='6.6' rx='2.5' ry='3.4' fill='%23fff'/><ellipse cx='19.4' cy='10.4' rx='2.5' ry='3.2' fill='%23fff'/></svg>")}
-.cat-head{display:inline-block;width:20px;height:17px;vertical-align:-3px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 20' fill='none'><path d='M5 7 L3 2 L9 5 Z' fill='%23fff' stroke='%23E6004C' stroke-width='2' stroke-linejoin='round'/><path d='M19 7 L21 2 L15 5 Z' fill='%23fff' stroke='%23E6004C' stroke-width='2' stroke-linejoin='round'/><ellipse cx='12' cy='12' rx='9' ry='7' fill='%23fff' stroke='%23E6004C' stroke-width='2'/><circle cx='8.6' cy='11' r='1.1' fill='%233A1B2A'/><circle cx='15.4' cy='11' r='1.1' fill='%233A1B2A'/><ellipse cx='12' cy='15' rx='1.7' ry='1.2' fill='%23FFD93D'/></svg>") center/contain no-repeat}
+.paw-white{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M11.2 12 4 7.6v8.8L11.2 12z' fill='%23fff'/><path d='M12.8 12 20 7.6v8.8L12.8 12z' fill='%23fff'/><circle cx='12' cy='12' r='2.7' fill='%23fff'/></svg>")}
+.cat-head{display:inline-block;width:20px;height:17px;vertical-align:-3px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M11.2 12 4 7.6v8.8L11.2 12z' fill='%23E6004C'/><path d='M12.8 12 20 7.6v8.8L12.8 12z' fill='%23E6004C'/><circle cx='12' cy='12' r='2.7' fill='%23C4003F'/></svg>") center/contain no-repeat}
 
-/* 导航猫爪方块 */
+/* 导航方块 */
 .nav-ico{width:30px;height:30px;border-radius:11px;background:#FFE3EE;display:flex;align-items:center;justify-content:center}
 .nav-ico.on{background:var(--brand-ink)}
-.nav-ico.on .paw{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'><ellipse cx='12' cy='16.5' rx='6.2' ry='5' fill='%23fff'/><ellipse cx='5.6' cy='10' rx='2.5' ry='3.2' fill='%23fff'/><ellipse cx='10' cy='6.6' rx='2.5' ry='3.4' fill='%23fff'/><ellipse cx='15.4' cy='6.6' rx='2.5' ry='3.4' fill='%23fff'/><ellipse cx='19.4' cy='10.4' rx='2.5' ry='3.2' fill='%23fff'/></svg>")}
+.nav-ico.on .paw{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M11.2 12 4 7.6v8.8L11.2 12z' fill='%23fff'/><path d='M12.8 12 20 7.6v8.8L12.8 12z' fill='%23fff'/><circle cx='12' cy='12' r='2.7' fill='%23fff'/></svg>")}
 
 /* 数字排版：书号用 Inter 等宽，金额加大 */
 .isbn{font-family:Inter,-apple-system,sans-serif;font-weight:600;font-size:.78rem;color:var(--t3);letter-spacing:.2px}
@@ -262,7 +262,7 @@ tr:hover td{background:var(--brand-soft)}
     <div class="hero-bow"><i class="kitty-face"></i></div>
     <div class="hero-title">孔夫子查价</div>
     <div class="hero-date" id="heroDate"></div>
-    <div style="font-size:.66rem;color:var(--t2);margin:-6px 0 8px" id="appVer">前端 v6.4 · Kitty 猫脸猫爪 + 居中排版修复 (c3f8a06)</div>
+    <div style="font-size:.66rem;color:var(--t2);margin:-6px 0 8px" id="appVer">前端 v6.4 · 蝴蝶结主题 + 居中排版修复 (c3f8a06)</div>
     <div class="hero-stats">
       <div class="h-stat" onclick="scrollTo(0,0)"><div class="hs-n" id="statToday">0</div><div class="hs-l">今日查价</div></div>
       <div class="h-stat" onclick="showTrack()"><div class="hs-n"><i class="paw" style="width:20px;height:20px"></i></div><div class="hs-l">快递追踪</div></div>
